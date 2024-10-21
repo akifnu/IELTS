@@ -1,7 +1,7 @@
 # Import necessary libraries
 import streamlit as st
 import pandas as pd
-import docx
+import mammoth
 import nltk
 import numpy as np
 import faiss
@@ -44,8 +44,9 @@ def read_file(file):
     if file.name.endswith(".txt"):
         content = file.read().decode("utf-8")
     elif file.name.endswith(".docx"):
-        doc = docx.Document(file)
-        content = "\n".join([para.text for para in doc.paragraphs])
+        with file as f:
+            result = mammoth.extract_raw_text(f)
+            content = result.value
     else:
         content = ""
     return content
