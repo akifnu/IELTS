@@ -8,3 +8,4 @@ sentence-transformers==2.2.2
 groq==0.1.0
 torch==1.12.1
 python-docx
+mammoth
