@@ -9,7 +9,7 @@ def openai_chat(messages):
     Function to interact with OpenAI API and get responses for improving IELTS writing.
     """
     response = client.chat.completions.create(
-        model="gpt-4-turbo",
+        model="gpt-4o-mini",
         messages=messages
     )
     return response.choices[0].message.content
