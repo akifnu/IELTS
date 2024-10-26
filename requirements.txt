@@ -1,12 +1,2 @@
 streamlit==1.15.0
-pandas==1.4.3
-python-docx==0.8.11
-nltk==3.7
-numpy==1.21.6
-faiss-cpu==1.7.3
-sentence-transformers==2.2.2
-groq==0.1.0
-torch==1.12.1
-python-docx
-mammoth
 openai
