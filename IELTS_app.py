@@ -3,14 +3,14 @@ import streamlit as st
 import os
 
 # Load API Key securely from Streamlit secrets
-openai.api_key = "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"
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 def openai_chat(messages):
     """
     Function to interact with OpenAI API and get responses for improving IELTS writing.
     """
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-4o_mini",
         messages=messages
     )
     return response['choices'][0]['message']['content']
