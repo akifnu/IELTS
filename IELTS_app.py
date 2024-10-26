@@ -48,23 +48,11 @@ if user_input:
     st.session_state["messages"].append({"role": "user", "content": user_input})
 
     with st.spinner("Analyzing your writing..."):
-        # Step 2: Analyze the Writing and Provide Feedback
-        feedback_request = {"role": "user", "content": "Please analyze the writing, provide detailed feedback on content, coherence, grammar, and vocabulary."}
-        st.session_state["messages"].append(feedback_request)
-        feedback_response = openai_chat(st.session_state["messages"])
-        st.session_state["messages"].append({"role": "assistant", "content": feedback_response})
-
-        # Step 3: Score the Essay Out of 9 Based on IELTS Criteria
-        score_request = {"role": "user", "content": "Give a score out of 9 for this essay based on the IELTS criteria (Task Achievement, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy)."}
-        st.session_state["messages"].append(score_request)
-        score_response = openai_chat(st.session_state["messages"])
-        st.session_state["messages"].append({"role": "assistant", "content": score_response})
-
-        # Step 4: Provide Suggestions for Improvement
-        improvement_request = {"role": "user", "content": "Please provide suggestions on how to improve this essay to achieve a higher score."}
-        st.session_state["messages"].append(improvement_request)
-        improvement_response = openai_chat(st.session_state["messages"])
-        st.session_state["messages"].append({"role": "assistant", "content": improvement_response})
+        # Combined request for feedback, scoring, and improvement suggestions
+        combined_request = {"role": "user", "content": "Please analyze the writing, provide detailed feedback on content, coherence, grammar, and vocabulary, give a score out of 9 based on IELTS criteria (Task Achievement, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy), and provide suggestions on how to improve this essay to achieve a higher score."}
+        st.session_state["messages"].append(combined_request)
+        combined_response = openai_chat(st.session_state["messages"])
+        st.session_state["messages"].append({"role": "assistant", "content": combined_response})
 
     # Display the full conversation
     for message in st.session_state["messages"]:
