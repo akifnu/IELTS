@@ -57,7 +57,5 @@ if user_input:
         combined_response = openai_chat(st.session_state["messages"])
         st.session_state["messages"].append({"role": "assistant", "content": combined_response})
 
-    # Display the full conversation
-    for message in st.session_state["messages"]:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    # Display only the final combined response
+    st.markdown(st.session_state["messages"][-1]["content"])
