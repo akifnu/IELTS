@@ -38,7 +38,10 @@ prompts = [
 if st.button("Generate Task 2 Prompt"):
     prompt_message_content = random.choice(prompts)
     prompt_message = {"role": "assistant", "content": f"Write an essay of at least 250 words on the following topic: '{prompt_message_content}'"}
-    st.session_state["messages"].append(prompt_message)
+    st.session_state["messages"] = [
+        st.session_state["messages"][0],  # Keep the system message
+        prompt_message
+    ]
     st.write("### Task 2 Prompt:")
     st.write(prompt_message["content"])
 
