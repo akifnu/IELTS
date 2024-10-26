@@ -10,10 +10,10 @@ def openai_chat(messages):
     Function to interact with OpenAI API and get responses for improving IELTS writing.
     """
     response = openai.ChatCompletion.create(
-        model="gpt-4o_mini",
+        model="gpt-4-turbo",
         messages=messages
     )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message["content"]
 
 # Initialize chat history in session state
 if "messages" not in st.session_state:
@@ -39,4 +39,3 @@ if user_input:
     for message in st.session_state["messages"]:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
