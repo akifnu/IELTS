@@ -22,7 +22,7 @@ if "messages" not in st.session_state:
         {"role": "system", "content": "You are an IELTS writing assistant."}
     ]
 
-st.title("IELTS Writing Checker with GPT-4")
+st.title("IELTS Writing Checker for Task 2")
 st.write("This tool helps improve IELTS writing by providing corrections, changes, and feedback.")
 
 # Chat input and display
