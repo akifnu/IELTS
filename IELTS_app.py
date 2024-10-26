@@ -40,18 +40,24 @@ sample_prompts = [
     "Some people think that it is more important to plant trees in open areas of towns and cities than to build more housing. To what extent do you agree or disagree?"
 ]
 
-if st.button("Generate Task 2 Prompt"):
-    prompt_message_content = openai_chat([
-        {"role": "system", "content": "You are an assistant that generates unique IELTS Task 2 prompts based on the following examples."},
-        {"role": "user", "content": f"Generate a unique IELTS Task 2 writing prompt similar to these examples: {sample_prompts}"}
-    ])
-    prompt_message = {"role": "assistant", "content": f"Write an essay of at least 250 words on the following topic: '{prompt_message_content}'"}
-    st.session_state["messages"] = [
-        st.session_state["messages"][0],  # Keep the system message
-        prompt_message
-    ]
-    st.write("### Task 2 Prompt:")
-    st.write(prompt_message["content"])
+st.write("### Step 1: Choose or Enter Your Own Task 2 Prompt")
+user_prompt = st.text_input("Enter your own Task 2 prompt (or leave empty to generate a random one):")
+
+if user_prompt:
+    prompt_message_content = user_prompt
+else:
+    if st.button("Generate Task 2 Prompt"):
+        prompt_message_content = openai_chat([
+            {"role": "system", "content": "You are an assistant that generates unique IELTS Task 2 prompts based on the following examples."},
+            {"role": "user", "content": f"Generate a unique IELTS Task 2 writing prompt similar to these examples: {sample_prompts}"}
+        ])
+        prompt_message = {"role": "assistant", "content": f"Write an essay of at least 250 words on the following topic: '{prompt_message_content}'"}
+        st.session_state["messages"] = [
+            st.session_state["messages"][0],  # Keep the system message
+            prompt_message
+        ]
+        st.write("### Task 2 Prompt:")
+        st.write(prompt_message["content"])
 
 # Chat input and display
 user_input = st.chat_input("Paste your IELTS writing here:")
