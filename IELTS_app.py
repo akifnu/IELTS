@@ -2,7 +2,7 @@ from openai import OpenAI
 import streamlit as st
 
 # Instantiate OpenAI client with your API key
-client = OpenAI(api_key=st.secrets[OPENAI_API_KEY])
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def openai_chat(messages):
     """
