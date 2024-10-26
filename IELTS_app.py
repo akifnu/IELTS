@@ -35,7 +35,7 @@ prompts = [
     "Some people think that all university students should study whatever they like, while others believe that they should only be allowed to study subjects that will be useful in the future, such as those related to science and technology. Discuss both views and give your opinion."
 ]
 
-if st.button("Generate Task 2 Prompt"):
+if st.button("Generate Task 2 question"):
     prompt_message_content = random.choice(prompts)
     prompt_message = {"role": "assistant", "content": f"Write an essay of at least 250 words on the following topic: '{prompt_message_content}'"}
     st.session_state["messages"] = [
