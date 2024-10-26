@@ -20,7 +20,7 @@ def openai_chat(messages):
 # Initialize chat history in session state
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "system", "content": "You are an IELTS writing assistant. You will help users by generating prompts, analyzing their writing, providing feedback, giving a score out of 9, offering suggestions for improvement, and providing a corrected version of their text."}
+        {"role": "system", "content": "You are an IELTS writing assistant. You will help users by generating prompts, analyzing their writing, providing feedback, giving a score out of 9, offering suggestions for improvement, and providing a corrected version of their text. If all the criteria are met perfectly, the score should be 9."}
     ]
 
 st.title("IELTS Writing Checker for Task 2")
@@ -60,7 +60,7 @@ if user_input:
 
     with st.spinner("Analyzing your writing..."):
         # Combined request for feedback, scoring, improvement suggestions, and corrected version
-        combined_request = {"role": "user", "content": "Please analyze the writing, provide detailed feedback on content, coherence, grammar, and vocabulary, give a score out of 9 based on IELTS criteria (Task Achievement, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy), provide suggestions on how to improve this essay to achieve a higher score, and provide a corrected version of the essay."}
+        combined_request = {"role": "user", "content": "Please analyze the writing, provide detailed feedback on content, coherence, grammar, and vocabulary, give a score out of 9 based on IELTS criteria (Task Achievement, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy), provide suggestions on how to improve this essay to achieve a higher score, and provide a corrected version of the essay. If all the criteria are met perfectly, the score should be 9."}
         st.session_state["messages"].append(combined_request)
         combined_response = openai_chat(st.session_state["messages"])
         st.session_state["messages"].append({"role": "assistant", "content": combined_response})
