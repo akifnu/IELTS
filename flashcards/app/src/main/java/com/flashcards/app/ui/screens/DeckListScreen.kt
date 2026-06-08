@@ -51,7 +51,7 @@ fun DeckListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Flashcards") },
+                title = { Text("Shine") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary

@@ -40,13 +40,13 @@ The release APK will be at `app/build/outputs/apk/release/app-release.apk`.
 
 ### Install on your phone
 
-Download the latest **Shine** APK from [GitHub Releases](https://github.com/akifnu/IELTS/releases/latest) (`Shine-Flashcards.apk`, currently **v1.4.0**).
+Download the latest **Shine** APK from [GitHub Releases](https://github.com/akifnu/IELTS/releases/latest) (`Shine-Flashcards.apk`, currently **v2.0.0**).
 
 1. Transfer the file to your phone (download link, email, USB, etc.)
 2. Open the APK and allow **Install unknown apps** when prompted
 3. Tap **Install**
 
-The Android build bundles the full Shine web app (clusters, decks, study modes, sharing UI) and works offline. Google Sign-In needs internet.
+The Android app is **fully native** (Jetpack Compose + Room). It works offline with no WebView.
 
 Build locally:
 
