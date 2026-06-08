@@ -13,8 +13,8 @@ android {
         applicationId = "com.flashcards.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3.0"
+        versionCode = 11
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,32 +54,6 @@ android {
     }
 }
 
-val copyWebAssets = tasks.register<Copy>("copyWebAssets") {
-    from("${rootProject.projectDir}/web") {
-        exclude(
-            "share-relay/**",
-            "serve.sh",
-            "netlify.toml",
-            "README.md",
-            ".gitignore",
-            ".netlify/**",
-            "auth-config.js"
-        )
-    }
-    into(layout.projectDirectory.dir("src/main/assets/www"))
-    doLast {
-        copy {
-            from("${rootProject.projectDir}/web/auth-config.example.js")
-            into(layout.projectDirectory.dir("src/main/assets/www"))
-            rename { "auth-config.js" }
-        }
-    }
-}
-
-tasks.named("preBuild") {
-    dependsOn(copyWebAssets)
-}
-
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)
@@ -100,6 +74,8 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
+
+    implementation("com.google.code.gson:gson:2.11.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
