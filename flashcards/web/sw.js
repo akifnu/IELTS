@@ -1,16 +1,16 @@
-const CACHE = 'shine-v5';
+const CACHE = 'shine-v6';
 const SHELL = [
   './manifest.json',
   './icons/icon.svg',
   './auth-config.js',
-  './images/splash/forest-light.jpg',
-  './images/splash/golden-sea.jpg',
-  './images/splash/golden-field.jpg',
-  './images/splash/shore-line.jpg',
-  './images/splash/fog-peaks.jpg',
-  './images/splash/alps-sunrise.jpg',
-  './images/splash/ocean-dawn.jpg',
+  './images/splash/sunrise-alps.jpg',
+  './images/splash/golden-dawn.jpg',
+  './images/splash/seedling.jpg',
   './images/splash/open-road.jpg',
+  './images/splash/ocean-dawn.jpg',
+  './images/splash/ocean-waves.jpg',
+  './images/splash/open-book.jpg',
+  './images/splash/forest-mist.jpg',
 ];
 
 self.addEventListener('install', (e) => {
