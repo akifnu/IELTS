@@ -32,11 +32,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     private var webView: WebView? = null
     private var pageLoaded by mutableStateOf(false)
+
+    var windowInsetsCss: IntArray = intArrayOf(0, 0, 0, 0)
+        private set
+
+    private fun pxToCss(px: Int): Int {
+        val density = resources.displayMetrics.density
+        return (px / density).roundToInt()
+    }
+
+    fun pushInsetsToWebView() {
+        val view = webView ?: return
+        val insets = windowInsetsCss
+        val js = "window.applyShineInsets&&window.applyShineInsets(${insets[0]},${insets[1]},${insets[2]},${insets[3]})"
+        view.evaluateJavascript(js, null)
+    }
+
+    private fun applyWindowInsets(insets: WindowInsetsCompat) {
+        val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+        windowInsetsCss = intArrayOf(
+            pxToCss(bars.top),
+            pxToCss(bars.bottom),
+            pxToCss(bars.left),
+            pxToCss(bars.right),
+        )
+        pushInsetsToWebView()
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,10 +117,15 @@ class MainActivity : ComponentActivity() {
                             settings.mixedContentMode =
                                 android.webkit.WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
                             addJavascriptInterface(ShineBridge(this@MainActivity), "ShineAndroid")
+                            ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+                                applyWindowInsets(insets)
+                                insets
+                            }
                             webChromeClient = WebChromeClient()
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     pageLoaded = true
+                                    pushInsetsToWebView()
                                 }
 
                                 override fun shouldOverrideUrlLoading(
@@ -142,6 +176,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
+            applyWindowInsets(insets)
+            insets
         }
     }
 }

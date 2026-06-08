@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <title>Shine — Lifestyle Flashcards</title>
   <meta name="description" content="Shine helps you store everyday knowledge in clusters and review with smart spaced repetition." />
   <meta name="theme-color" content="#5b5ef7" />
@@ -34,18 +34,31 @@
       --ease:cubic-bezier(.22,1,.36,1);
       --glass:rgba(255,255,255,.78);
       --glass-border:rgba(255,255,255,.65);
+      --app-vh:100dvh;
+      --safe-top:env(safe-area-inset-top,0px);
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+      --safe-left:env(safe-area-inset-left,0px);
+      --safe-right:env(safe-area-inset-right,0px);
+      --modal-max-h:min(88dvh,640px);
+      --keyboard-gap:0px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    html{-webkit-tap-highlight-color:transparent}
+    html{-webkit-tap-highlight-color:transparent;height:100%}
     body{
       font-family:'Plus Jakarta Sans',system-ui,sans-serif;
       background:linear-gradient(165deg,#e8eaff 0%,#f4f6fb 38%,#faf8ff 100%);
       color:var(--text);
-      min-height:100vh;max-width:480px;margin:0 auto;
+      min-height:100%;min-height:var(--app-vh);
+      max-width:480px;width:100%;margin:0 auto;
       -webkit-font-smoothing:antialiased;
-      position:relative;overflow-x:hidden;
+      position:relative;overflow-x:hidden;overflow-y:auto;
       box-shadow:0 0 80px rgba(91,94,247,.12);
+      padding-left:var(--safe-left);padding-right:var(--safe-right);
     }
+    html.is-android body,html.is-mobile body{max-width:none;box-shadow:none}
+    #modal-root{position:fixed;inset:0;z-index:300;pointer-events:none}
+    #modal-root:not(:empty){pointer-events:auto}
+    #toast-root{position:fixed;left:50%;bottom:calc(96px + var(--safe-bottom));transform:translateX(-50%);z-index:450;pointer-events:none;max-width:min(90%,420px);width:max-content}
     body::before,body::after{
       content:'';position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(60px);opacity:.55;
     }
@@ -65,7 +78,7 @@
     }
     .splash-content{
       position:relative;z-index:2;width:100%;max-width:480px;color:#fff;
-      padding:0 24px calc(28px + env(safe-area-inset-bottom));text-align:left;
+      padding:var(--safe-top) 24px calc(28px + var(--safe-bottom));text-align:left;
     }
     .splash-content.splash-in .splash-brand,.splash-content.splash-in .splash-essence,.splash-content.splash-in .splash-headline,
     .splash-content.splash-in .splash-subline,.splash-content.splash-in .splash-personal,.splash-content.splash-in .splash-actions,
@@ -117,7 +130,7 @@
     @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
     header.app-header{
       background:rgba(255,255,255,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-      border-bottom:1px solid rgba(91,94,247,.08);padding:18px 20px 16px;
+      border-bottom:1px solid rgba(91,94,247,.08);padding:calc(18px + var(--safe-top)) 20px 16px;
       display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;
       box-shadow:0 4px 24px rgba(91,94,247,.06);
     }
@@ -126,13 +139,13 @@
       content:'';position:absolute;top:0;left:0;right:0;height:3px;
       background:linear-gradient(90deg,var(--primary),var(--accent),#a78bfa);
     }
-    header:not(.app-header){background:var(--glass);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);padding:14px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+    header:not(.app-header){background:var(--glass);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);padding:calc(14px + var(--safe-top)) 18px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
     header h1{font-size:1.15rem;font-weight:700;flex:1;color:var(--text);letter-spacing:-.02em}
     .brand{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
     .brand-mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;box-shadow:0 8px 20px rgba(91,94,247,.35);flex-shrink:0}
     .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-soft);font-size:1rem;padding:9px 11px;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .15s var(--ease),box-shadow .15s}
     .icon-btn:active{transform:scale(.96)}
-    main{padding:18px 18px 110px}
+    main{padding:18px 18px calc(110px + var(--safe-bottom))}
     .deck-card{
       background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(248,249,253,.92));
       border:1px solid rgba(91,94,247,.14);border-radius:var(--radius);
@@ -168,14 +181,28 @@
     .access-banner{padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:14px;font-size:.8rem;color:var(--muted);line-height:1.45}
     .access-banner strong{color:var(--text)}
     body.modal-open{overflow:hidden;touch-action:none}
-    .modal-share{max-width:420px;max-height:min(88vh,640px);overflow-y:auto;overscroll-behavior:contain;padding:20px 22px calc(22px + env(safe-area-inset-bottom));position:relative;contain:layout style}
-    @media (max-width:520px){
-      .modal-bg{align-items:flex-end;padding:0}
-      .modal-share{max-width:100%;width:100%;border-radius:22px 22px 0 0;max-height:min(92vh,720px)}
+    .modal-share{
+      display:flex;flex-direction:column;max-width:420px;width:100%;
+      max-height:var(--modal-max-h);overflow:hidden;padding:0;position:relative;
+      contain:layout style;
     }
-    .modal-share .modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;font-size:.9rem;line-height:1;transition:background .15s,color .15s}
+    .share-sheet-handle{display:none;width:40px;height:4px;border-radius:99px;background:rgba(15,23,42,.14);margin:10px auto 6px;flex-shrink:0}
+    .share-sheet-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 18px calc(18px + var(--safe-bottom))}
+    .share-header{flex-shrink:0;padding:4px 18px 0;padding-right:48px;margin-bottom:12px}
+    html.is-mobile .modal-bg-sheet,html.is-android .modal-bg-sheet{align-items:flex-end;padding:0;padding-bottom:var(--keyboard-gap)}
+    html.is-mobile .modal-share,html.is-android .modal-share{max-width:100%;border-radius:20px 20px 0 0;max-height:calc(var(--app-vh) - var(--safe-top) - 8px)}
+    html.is-mobile .share-sheet-handle,html.is-android .share-sheet-handle{display:block}
+    html.is-mobile .modal-bg:not(.modal-bg-sheet),html.is-android .modal-bg:not(.modal-bg-sheet){align-items:flex-end;padding:0;padding-bottom:var(--keyboard-gap)}
+    html.is-mobile .modal:not(.modal-share),html.is-android .modal:not(.modal-share){max-width:100%;max-height:var(--modal-max-h);overflow-y:auto;border-radius:20px 20px 0 0;margin-bottom:0}
+    @media (max-width:520px){
+      .modal-bg-sheet{align-items:flex-end;padding:0;padding-bottom:var(--keyboard-gap)}
+      .modal-share{max-width:100%;border-radius:20px 20px 0 0;max-height:calc(var(--app-vh) - var(--safe-top) - 8px)}
+      .share-sheet-handle{display:block}
+      .modal-bg:not(.modal-bg-sheet){align-items:flex-end;padding:0;padding-bottom:var(--keyboard-gap)}
+      .modal:not(.modal-share){max-width:100%;max-height:var(--modal-max-h);overflow-y:auto;border-radius:20px 20px 0 0}
+    }
+    .modal-share .modal-close{position:absolute;top:max(10px,var(--safe-top));right:max(14px,var(--safe-right));width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;font-size:.9rem;line-height:1;transition:background .15s,color .15s;z-index:2}
     .modal-share .modal-close:hover{background:var(--primary-light);color:var(--primary)}
-    .share-header{padding-right:36px;margin-bottom:16px}
     .share-header h2{margin-bottom:4px;font-size:1.12rem}
     .share-deck-name{font-size:.92rem;font-weight:700;color:var(--text);margin:0;line-height:1.3}
     .share-meta{font-size:.76rem;color:var(--muted);margin:4px 0 0}
@@ -214,6 +241,17 @@
     .share-more-body{padding:2px 0 8px;display:flex;flex-direction:column;gap:8px}
     .share-more .btn-outline{width:100%;margin-bottom:0;padding:11px 14px;font-size:.84rem}
     .share-more .share-note{font-size:.72rem;color:var(--muted);line-height:1.45;margin:0}
+    @media (max-width:400px){
+      .role-segment{flex-direction:column;min-height:auto;gap:4px}
+      .role-segment button{min-height:42px;padding:8px 10px}
+      .share-invite-row{flex-direction:column}
+      .btn-send{width:100%;padding:12px 16px}
+      .collab-item{grid-template-columns:28px minmax(0,1fr) 28px;grid-template-areas:"avatar info remove" "avatar role remove"}
+      .collab-role-select{grid-area:role;max-width:none;width:100%;margin-top:2px}
+      .collab-remove{grid-area:remove}
+      .collab-info{grid-area:info}
+      .collab-avatar{grid-area:avatar}
+    }
     .fab{
       position:fixed;right:20px;bottom:92px;width:58px;height:58px;border-radius:18px;
       background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;
@@ -309,7 +347,12 @@
     .missed{background:var(--surface);border:1.5px solid var(--border)!important;color:var(--text-soft)}
     .got-it{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 8px 20px rgba(91,94,247,.35)}
     .show-answer{width:100%;padding:16px;background:var(--surface);border:1.5px solid var(--blue-soft);color:var(--primary-dark);border-radius:var(--radius-sm);font-weight:700;font-size:.92rem;cursor:pointer;box-shadow:var(--shadow-sm)}
-    .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:300;animation:fadeIn .25s ease}
+    .modal-bg{
+      position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(6px);
+      display:flex;align-items:center;justify-content:center;
+      padding:max(12px,var(--safe-top)) max(12px,var(--safe-right)) max(12px,var(--safe-bottom)) max(12px,var(--safe-left));
+      z-index:300;animation:fadeIn .25s ease;
+    }
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
     .modal{background:var(--surface);border-radius:24px;padding:24px;width:100%;max-width:400px;box-shadow:var(--shadow-lg);animation:modalIn .35s var(--ease);border:1px solid var(--glass-border)}
     .modal-stable,.modal-bg.modal-stable{animation:none!important}
@@ -424,7 +467,6 @@
     .btn-google-oneclick.splash-google{background:rgba(255,255,255,.95);border-color:rgba(255,255,255,.9)}
     .google-fallback-host{display:flex;justify-content:center;min-height:0;overflow:hidden}
     .google-fallback-host:empty{display:none}
-    #toast-root{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:450;pointer-events:none;max-width:90%}
     .toast{background:#0f172a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.85rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:center;animation:fadeUp .3s ease}
     .toast.toast-stable{animation:none}
     .due-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
@@ -926,19 +968,33 @@
     function refreshShareCollaboratorsPanel() {
       const deckId = state.modal?.deckId;
       const d = deckById(deckId);
-      const modal = document.querySelector('.modal-share');
-      if (!modal || !d) return;
+      const body = document.querySelector('.share-sheet-body');
+      if (!body || !d) return;
       const html = renderCollaboratorsList(d);
       const existing = document.getElementById('share-collab-section');
-      const anchor = modal.querySelector('[data-share-device-anchor]');
+      const anchor = body.querySelector('[data-share-device-anchor]');
       if (html) {
         if (existing) existing.outerHTML = html;
         else if (anchor) anchor.insertAdjacentHTML('beforebegin', html);
-        else modal.querySelector('.share-section')?.insertAdjacentHTML('afterend', html);
+        else body.querySelector('.share-section')?.insertAdjacentHTML('afterend', html);
       } else {
         existing?.remove();
       }
       bindShareCollaboratorHandlers();
+    }
+
+    function syncShareModalViewport() {
+      const body = document.querySelector('.share-sheet-body');
+      if (!body || state.modal?.type !== 'share-deck') return;
+      requestAnimationFrame(() => {
+        const modal = document.querySelector('.modal-share');
+        if (!modal) return;
+        const head = modal.querySelector('.share-header');
+        const handle = modal.querySelector('.share-sheet-handle');
+        const headH = (head?.offsetHeight || 0) + (handle?.offsetHeight || 0) + 8;
+        const max = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--modal-max-h')) || window.innerHeight;
+        body.style.maxHeight = `${Math.max(180, max - headH)}px`;
+      });
     }
 
     function clearShareInviteField() {
@@ -961,6 +1017,7 @@
       const bg = root.querySelector('.modal-bg');
       modal?.classList.add('modal-stable');
       bg?.classList.add('modal-stable');
+      if (state.modal?.type === 'share-deck') syncShareModalViewport();
     }
 
     function bindShareCollaboratorHandlers() {
@@ -1030,6 +1087,12 @@
       });
       document.getElementById('share-deck-email')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') submitSendDeck(e.target.value);
+      });
+      document.getElementById('share-deck-email')?.addEventListener('focus', () => {
+        setTimeout(() => {
+          document.getElementById('share-deck-email')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          syncShareModalViewport();
+        }, 80);
       });
       document.querySelectorAll('[data-send-deck-user]').forEach(el => el.addEventListener('click', () => {
         submitSendDeck(el.dataset.sendDeckUser);
@@ -3157,39 +3220,42 @@
         const shareRole = m.shareRole || 'viewer';
         const link = shareDeckLink(m.deckId);
         const canLink = link && link.length <= SHARE_URL_MAX;
-        return `<div class="modal-bg" data-close><div class="modal modal-share" onclick="event.stopPropagation()">
+        return `<div class="modal-bg modal-bg-sheet" data-close><div class="modal modal-share" onclick="event.stopPropagation()">
+          <div class="share-sheet-handle" aria-hidden="true"></div>
           <button type="button" class="modal-close" data-close aria-label="Close">✕</button>
           <div class="share-header">
             <h2>Share deck</h2>
             <p class="share-deck-name">${esc(d?.name || 'Deck')}</p>
             <p class="share-meta">${cardCount} card${cardCount !== 1 ? 's' : ''}</p>
           </div>
-          <div class="share-section">
-            <div class="share-section-title">Invite someone</div>
-            <div class="role-segment">
-              <button type="button" class="${shareRole === 'viewer' ? 'active' : ''}" data-pick-role="viewer">
-                Can view<span>${DECK_ROLES.viewer.desc}</span>
-              </button>
-              <button type="button" class="${shareRole === 'editor' ? 'active' : ''}" data-pick-role="editor">
-                Can edit<span>${DECK_ROLES.editor.desc}</span>
-              </button>
+          <div class="share-sheet-body">
+            <div class="share-section">
+              <div class="share-section-title">Invite someone</div>
+              <div class="role-segment">
+                <button type="button" class="${shareRole === 'viewer' ? 'active' : ''}" data-pick-role="viewer">
+                  Can view<span>${DECK_ROLES.viewer.desc}</span>
+                </button>
+                <button type="button" class="${shareRole === 'editor' ? 'active' : ''}" data-pick-role="editor">
+                  Can edit<span>${DECK_ROLES.editor.desc}</span>
+                </button>
+              </div>
+              <div class="share-invite-row">
+                <input id="share-deck-email" type="email" placeholder="Email address" autocomplete="email" inputmode="email" value="${esc(m.recipientEmail || '')}" />
+                <button type="button" class="btn-send" data-send-deck-email>Send</button>
+              </div>
+              <p class="share-hint-inline">They&apos;ll accept in Account with the access you choose.</p>
             </div>
-            <div class="share-invite-row">
-              <input id="share-deck-email" type="email" placeholder="Email address" value="${esc(m.recipientEmail || '')}" />
-              <button type="button" class="btn-send" data-send-deck-email>Send</button>
-            </div>
-            <p class="share-hint-inline">They&apos;ll accept in Account with the access you choose.</p>
-          </div>
-          ${renderCollaboratorsList(d)}
-          ${renderDeviceUserChips(listDeviceUsers())}
-          <div class="share-more">
-            <button type="button" class="share-more-toggle" aria-expanded="${m.shareMoreOpen ? 'true' : 'false'}">Other ways to share</button>
-            <div class="share-more-panel${m.shareMoreOpen ? ' open' : ''}">
-              <div class="share-more-body">
-                ${typeof navigator !== 'undefined' && (navigator.share || window.ShineAndroid) ? '<button type="button" class="btn-outline" data-native-share-deck>Send file via Messages or Mail</button>' : ''}
-                <button type="button" class="btn-outline" data-download-share-deck>Download deck file</button>
-                ${canLink ? '<button type="button" class="btn-outline" data-copy-share-link>Copy share link</button>' : ''}
-                ${!canLink ? '<p class="share-note">This deck is too large for a link — use email invite or download.</p>' : ''}
+            ${renderCollaboratorsList(d)}
+            ${renderDeviceUserChips(listDeviceUsers())}
+            <div class="share-more">
+              <button type="button" class="share-more-toggle" aria-expanded="${m.shareMoreOpen ? 'true' : 'false'}">Other ways to share</button>
+              <div class="share-more-panel${m.shareMoreOpen ? ' open' : ''}">
+                <div class="share-more-body">
+                  ${typeof navigator !== 'undefined' && (navigator.share || window.ShineAndroid) ? '<button type="button" class="btn-outline" data-native-share-deck>Send file via Messages or Mail</button>' : ''}
+                  <button type="button" class="btn-outline" data-download-share-deck>Download deck file</button>
+                  ${canLink ? '<button type="button" class="btn-outline" data-copy-share-link>Copy share link</button>' : ''}
+                  ${!canLink ? '<p class="share-note">This deck is too large for a link — use email invite or download.</p>' : ''}
+                </div>
               </div>
             </div>
           </div>
@@ -3612,10 +3678,56 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations()
         .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-        .then(() => navigator.serviceWorker.register('sw.js?v=8'))
+        .then(() => navigator.serviceWorker.register('sw.js?v=9'))
         .catch(() => {});
     }
 
+    function applyShineInsets(top, bottom, left, right) {
+      const root = document.documentElement;
+      root.style.setProperty('--safe-top', `${top || 0}px`);
+      root.style.setProperty('--safe-bottom', `${bottom || 0}px`);
+      root.style.setProperty('--safe-left', `${left || 0}px`);
+      root.style.setProperty('--safe-right', `${right || 0}px`);
+      updateViewportMetrics();
+    }
+    window.applyShineInsets = applyShineInsets;
+
+    function updateViewportMetrics() {
+      const root = document.documentElement;
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      const keyboard = Math.max(0, window.innerHeight - height - offsetTop);
+      root.style.setProperty('--app-vh', `${height}px`);
+      root.style.setProperty('--vv-top', `${offsetTop}px`);
+      root.style.setProperty('--keyboard-gap', `${keyboard}px`);
+      const safeTop = parseFloat(getComputedStyle(root).getPropertyValue('--safe-top')) || 0;
+      const modalMax = Math.max(240, height - safeTop - 8);
+      root.style.setProperty('--modal-max-h', `${modalMax}px`);
+      syncShareModalViewport();
+    }
+
+    function installViewportAdapter() {
+      const root = document.documentElement;
+      if (window.ShineAndroid) root.classList.add('is-android');
+      if (window.matchMedia('(max-width: 520px)').matches || 'ontouchstart' in window) {
+        root.classList.add('is-mobile');
+      }
+      try {
+        const raw = window.ShineAndroid?.getInsets?.();
+        if (raw) {
+          const insets = JSON.parse(raw);
+          applyShineInsets(insets.top, insets.bottom, insets.left, insets.right);
+        }
+      } catch (e) {}
+      updateViewportMetrics();
+      window.visualViewport?.addEventListener('resize', updateViewportMetrics);
+      window.visualViewport?.addEventListener('scroll', updateViewportMetrics);
+      window.addEventListener('resize', updateViewportMetrics);
+      window.addEventListener('orientationchange', () => setTimeout(updateViewportMetrics, 120));
+    }
+
+    installViewportAdapter();
     captureShareFromUrl();
     startSplash();
     load();

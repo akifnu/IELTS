@@ -2,9 +2,21 @@ package com.flashcards.app
 
 import android.content.Intent
 import androidx.core.content.FileProvider
+import org.json.JSONObject
 import java.io.File
 
 class ShineBridge(private val activity: MainActivity) {
+
+    @android.webkit.JavascriptInterface
+    fun getInsets(): String {
+        val insets = activity.windowInsetsCss
+        return JSONObject()
+            .put("top", insets[0])
+            .put("bottom", insets[1])
+            .put("left", insets[2])
+            .put("right", insets[3])
+            .toString()
+    }
 
     @android.webkit.JavascriptInterface
     fun shareFile(filename: String, json: String, title: String) {
