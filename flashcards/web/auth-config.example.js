@@ -5,3 +5,7 @@
 // 3. Authorized JavaScript origins: https://YOUR-DOMAIN.com (and http://localhost:8080 for dev)
 // 4. Paste the Client ID below and deploy
 window.SHINE_GOOGLE_CLIENT_ID = '';
+
+// Optional: Cloudflare Worker URL for cross-device deck delivery (see share-relay/).
+// Example: 'https://shine-share-relay.your-account.workers.dev'
+window.SHINE_SHARE_API = '';

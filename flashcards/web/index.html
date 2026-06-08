@@ -142,13 +142,32 @@
     }
     .deck-card::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:5px;border-radius:0 6px 6px 0;background:linear-gradient(180deg,var(--primary),var(--accent));box-shadow:0 0 12px rgba(91,94,247,.4)}
     .deck-card:active{transform:scale(.985);box-shadow:var(--shadow)}
-    .deck-card h2{font-size:1.02rem;font-weight:700;color:var(--text);letter-spacing:-.01em;padding-right:28px}
+    .deck-card h2{font-size:1.02rem;font-weight:700;color:var(--text);letter-spacing:-.01em;padding-right:72px}
     .deck-card p{color:var(--muted);font-size:.84rem;margin-top:6px;line-height:1.45}
     .deck-card .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:.72rem;font-weight:600}
     .deck-card .due{color:var(--primary);background:var(--primary-light);padding:4px 10px;border-radius:var(--radius-pill)}
     .deck-card .next{color:var(--muted);background:var(--surface-2);padding:4px 10px;border-radius:var(--radius-pill)}
-    .deck-card .delete{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:none;color:var(--muted);cursor:pointer;font-size:.75rem;transition:background .15s,color .15s}
+    .deck-card .share,.deck-card .delete{position:absolute;top:14px;width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:none;color:var(--muted);cursor:pointer;font-size:.75rem;transition:background .15s,color .15s}
+    .deck-card .share{right:46px}
+    .deck-card .share:hover{background:var(--primary-light);color:var(--primary)}
+    .deck-card .delete{right:14px}
     .deck-card .delete:hover{background:#fee2e2;color:var(--danger)}
+    .nav-badge{position:absolute;top:2px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--primary);color:#fff;font-size:.62rem;font-weight:800;line-height:16px;text-align:center}
+    .bottom-nav button{position:relative}
+    .user-pick{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+    .user-pick button{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-pill);background:var(--white);cursor:pointer;font-size:.8rem;font-weight:600;color:var(--text)}
+    .user-pick button:hover{border-color:var(--primary);background:var(--primary-light)}
+    .user-pick .avatar{width:24px;height:24px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;overflow:hidden}
+    .user-pick .avatar img{width:100%;height:100%;object-fit:cover}
+    .inbox-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;margin-left:6px;border-radius:99px;background:var(--primary);color:#fff;font-size:.7rem;font-weight:800;vertical-align:middle}
+    .inbox-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+    .inbox-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)}
+    .inbox-item-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .inbox-item-main strong{font-size:.88rem}
+    .inbox-actions{display:flex;gap:6px;flex-shrink:0}
+    .btn-sm{padding:8px 12px;font-size:.78rem}
+    .share-advanced{margin-top:14px}
+    .share-advanced summary{font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer}
     .fab{
       position:fixed;right:20px;bottom:92px;width:58px;height:58px;border-radius:18px;
       background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;
@@ -517,6 +536,7 @@
     const ACCOUNTS_KEY = 'shine_accounts';
     const GOOGLE_CLIENT_KEY = 'shine_google_client_id';
     const ONBOARDING_KEY = 'shine_onboarded';
+    const DELIVERIES_KEY = 'shine_deliveries';
     const SPLASH_LAST_SCENE_KEY = 'shine_splash_scene';
     // Optional: set your Google OAuth Web Client ID here or in Account → settings
     const GOOGLE_CLIENT_ID_DEFAULT = '';
@@ -584,6 +604,12 @@
       try {
         return localStorage.getItem(GOOGLE_CLIENT_KEY) || window.SHINE_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_DEFAULT || '';
       } catch (e) { return GOOGLE_CLIENT_ID_DEFAULT || ''; }
+    }
+
+    function getShareApiUrl() {
+      try {
+        return String(window.SHINE_SHARE_API || localStorage.getItem('shine_share_api') || '').replace(/\/$/, '');
+      } catch (e) { return ''; }
     }
 
     function activeStorageKey() {
@@ -1024,39 +1050,145 @@
       const filename = `shine-deck-${slug}.json`;
       try {
         const file = new File([json], filename, { type: 'application/json' });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({
-            title: `Shine: ${d.name}`,
-            text: `Import this deck in Shine`,
-            files: [file],
-          });
-          return true;
+        if (!navigator.canShare?.({ files: [file] })) {
+          showToast('Your device cannot share files from the browser');
+          return false;
         }
-        const link = shareDeckLink(deckId);
-        if (link && link.length <= SHARE_URL_MAX) {
-          await navigator.share({
-            title: `Shine: ${d.name}`,
-            text: `Import this deck in Shine`,
-            url: link,
-          });
-          return true;
-        }
+        await navigator.share({
+          title: `Shine: ${d.name}`,
+          text: `A Shine flashcard deck — open in Shine to import`,
+          files: [file],
+        });
+        return true;
       } catch (e) {
         if (e.name !== 'AbortError') showToast('Could not share');
       }
       return false;
     }
 
-    function openShareDeckModal(deckId) {
+    function getDeliveries() {
+      try { return JSON.parse(localStorage.getItem(DELIVERIES_KEY) || '{}'); }
+      catch (e) { return {}; }
+    }
+
+    function saveDeliveries(deliveries) {
+      try { localStorage.setItem(DELIVERIES_KEY, JSON.stringify(deliveries)); } catch (e) {}
+    }
+
+    function createDeliveryEntry(deckId) {
       const d = deckById(deckId);
-      if (!d) return;
-      const link = shareDeckLink(deckId);
-      state.modal = {
-        type: 'share-deck',
-        deckId: d.id,
-        link: link && link.length <= SHARE_URL_MAX ? link : null,
-        linkTooLong: !!(link && link.length > SHARE_URL_MAX),
+      if (!d) throw new Error('Deck not found');
+      return {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        fromEmail: state.auth.user?.email || null,
+        fromName: state.auth.user?.name || state.userName || 'A Shine user',
+        deckName: d.name,
+        payload: buildDeckSharePayload(d),
+        createdAt: new Date().toISOString(),
       };
+    }
+
+    function listDeviceUsers() {
+      const me = normalizeEmail(state.auth.user?.email);
+      return Object.values(getAccountsDb().users).filter(u => normalizeEmail(u.email) !== me);
+    }
+
+    async function pushDeliveryToCloud(recipientEmail, entry) {
+      const api = getShareApiUrl();
+      if (!api) return true;
+      try {
+        const res = await fetch(`${api}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: recipientEmail, ...entry }),
+        });
+        return res.ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function sendDeckToUser(recipientEmail, deckId) {
+      const em = normalizeEmail(recipientEmail);
+      if (!em || !em.includes('@')) throw new Error('Enter a valid email');
+      const me = normalizeEmail(state.auth.user?.email);
+      if (me && me === em) throw new Error('You cannot send a deck to yourself');
+      const entry = createDeliveryEntry(deckId);
+      const deliveries = getDeliveries();
+      if (!deliveries[em]) deliveries[em] = [];
+      deliveries[em].push(entry);
+      saveDeliveries(deliveries);
+      const cloudOk = await pushDeliveryToCloud(em, entry);
+      return { entry, cloudOk };
+    }
+
+    function getInboxForCurrentUser() {
+      const em = normalizeEmail(state.auth.user?.email);
+      if (!em) return [];
+      return getDeliveries()[em] || [];
+    }
+
+    function inboxCount() {
+      return getInboxForCurrentUser().length;
+    }
+
+    async function syncInboxFromCloud() {
+      const api = getShareApiUrl();
+      const em = normalizeEmail(state.auth.user?.email);
+      if (!api || !em) return 0;
+      try {
+        const res = await fetch(`${api}/inbox?to=${encodeURIComponent(em)}`);
+        if (!res.ok) return 0;
+        const remote = await res.json();
+        if (!Array.isArray(remote) || !remote.length) return 0;
+        const deliveries = getDeliveries();
+        const inbox = deliveries[em] || [];
+        const ids = new Set(inbox.map(i => i.id));
+        let added = 0;
+        remote.forEach(item => {
+          if (!item?.id || ids.has(item.id)) return;
+          inbox.push(item);
+          ids.add(item.id);
+          added++;
+        });
+        if (added) {
+          deliveries[em] = inbox;
+          saveDeliveries(deliveries);
+        }
+        return added;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    function dismissInboxItem(deliveryId) {
+      const em = normalizeEmail(state.auth.user?.email);
+      if (!em) return;
+      const deliveries = getDeliveries();
+      deliveries[em] = (deliveries[em] || []).filter(i => i.id !== deliveryId);
+      saveDeliveries(deliveries);
+      const api = getShareApiUrl();
+      if (api) {
+        fetch(`${api}/dismiss`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: em, id: deliveryId }),
+        }).catch(() => {});
+      }
+    }
+
+    function maybePromptInbox() {
+      if (!state.ready || state.modal || !state.auth.user) return;
+      const inbox = getInboxForCurrentUser();
+      if (!inbox.length) return;
+      const latest = inbox[inbox.length - 1];
+      state.modal = { type: 'import-share', payload: latest.payload, deliveryId: latest.id };
+      render();
+    }
+
+    function openShareDeckModal(deckId) {
+      if (!deckById(deckId)) return;
+      state.modal = { type: 'share-deck', deckId };
       render();
     }
 
@@ -1117,21 +1249,37 @@
       render();
     }
 
+    function renderInboxPanel() {
+      const items = getInboxForCurrentUser();
+      if (!items.length) return '';
+      return `
+        <div class="panel-card inbox-panel">
+          <h2>Decks sent to you<span class="inbox-count">${items.length}</span></h2>
+          <p class="hint" style="margin:0 0 4px">Someone shared these directly with your account.</p>
+          <div class="inbox-list">
+            ${items.slice().reverse().map(item => `
+              <div class="inbox-item">
+                <div class="inbox-item-main">
+                  <strong>${esc(item.deckName || 'Shared deck')}</strong>
+                  <span class="hint" style="margin:0">from ${esc(item.fromName || 'Someone')}</span>
+                </div>
+                <div class="inbox-actions">
+                  <button type="button" class="btn-primary btn-sm" data-accept-inbox="${esc(item.id)}">Add</button>
+                  <button type="button" class="btn-outline btn-sm" data-dismiss-inbox="${esc(item.id)}">Dismiss</button>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
     function renderShareImportPanel() {
       return `
         <div class="panel-card">
-          <h2>Shared decks</h2>
-          <p class="hint" style="margin:0 0 12px">Import a deck someone shared. Sharing only sends cards and settings — not your study history.</p>
-          <div class="field" style="margin-bottom:10px">
-            <label>Paste share link</label>
-            <input id="import-share-link" placeholder="https://…?share=…" />
-          </div>
-          <div class="backup-row">
-            <button type="button" class="btn-primary" data-import-share-paste>Import</button>
-            <label class="btn-outline" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0">
-              From file<input type="file" id="import-share-file" accept="application/json,.json" hidden />
-            </label>
-          </div>
+          <h2>Import from file</h2>
+          <p class="hint" style="margin:0 0 12px">Have a deck file from someone? Import it here.</p>
+          <label class="btn-outline" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0;width:100%">
+            Choose file<input type="file" id="import-share-file" accept="application/json,.json" hidden />
+          </label>
         </div>`;
     }
 
@@ -1144,9 +1292,11 @@
       load();
       mergeGuestDataIntoAccount() || migrateGuestDataIfEmpty();
       save();
+      await syncInboxFromCloud();
       if (state.tab === 'account') state.authMode = 'signin';
       render();
       initGoogleButton();
+      if (inboxCount()) maybePromptInbox();
     }
 
     async function registerWithEmail(name, email, password) {
@@ -1747,6 +1897,12 @@
       try {
         if (state.pendingShare) maybePromptPendingShare();
         else if (!isOnboarded() && !state.auth.user) state.modal = { type: 'onboard' };
+        if (state.auth.user) {
+          syncInboxFromCloud().then((added) => {
+            if (added && !state.modal) maybePromptInbox();
+            else if (added) render();
+          });
+        }
         render();
       } catch (e) {
         console.error(e);
@@ -1876,7 +2032,7 @@
         <nav class="bottom-nav">
           <button class="${state.tab === 'decks' ? 'active' : ''}" data-tab="decks"><span class="ni">${NAV_ICONS.decks}</span>Decks</button>
           <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar"><span class="ni">${NAV_ICONS.calendar}</span>Calendar</button>
-          <button class="${state.tab === 'account' ? 'active' : ''}" data-tab="account"><span class="ni">${NAV_ICONS.account}</span>Account</button>
+          <button class="${state.tab === 'account' ? 'active' : ''}" data-tab="account"><span class="ni">${NAV_ICONS.account}</span>Account${inboxCount() ? `<span class="nav-badge">${inboxCount()}</span>` : ''}</button>
         </nav>`;
     }
 
@@ -1903,6 +2059,7 @@
               <h2>Your library</h2>
               <p class="hint" style="margin:0">${state.clusters.length} cluster${state.clusters.length !== 1 ? 's' : ''} · ${state.decks.length} deck${state.decks.length !== 1 ? 's' : ''} saved on this device</p>
             </div>
+            ${renderInboxPanel()}
             ${renderShareImportPanel()}
             <div class="panel-card">
               <h2>Backup</h2>
@@ -1947,7 +2104,8 @@
       const next = nextScheduled(d);
       return `
         <div class="deck-card" data-open-deck="${d.id}">
-          <button class="delete" data-del-deck="${d.id}">✕</button>
+          <button type="button" class="share" data-share-deck-card="${d.id}" title="Share deck">↗</button>
+          <button type="button" class="delete" data-del-deck="${d.id}">✕</button>
           <h2>${esc(d.name)}${isSmartScheduleOn(d) ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h2>
           <p>${esc(d.description || '')}</p>
           <div class="meta">
@@ -2483,22 +2641,41 @@
       if (m.type === 'share-deck') {
         const d = deckById(m.deckId);
         const cardCount = d?.cards.length || 0;
+        const deviceUsers = listDeviceUsers();
+        const link = shareDeckLink(m.deckId);
+        const canLink = link && link.length <= SHARE_URL_MAX;
+        const devicePick = deviceUsers.length ? `
+          <p style="font-size:.78rem;font-weight:600;color:var(--muted);margin:12px 0 6px">People on this device</p>
+          <div class="user-pick">
+            ${deviceUsers.map(u => `
+              <button type="button" data-send-deck-user="${esc(u.email)}" title="Send to ${esc(u.email)}">
+                <span class="avatar">${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : esc((u.name || u.email).charAt(0).toUpperCase())}</span>
+                ${esc(u.name || u.email.split('@')[0])}
+              </button>`).join('')}
+          </div>` : '';
         return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
-          <h2>Share deck</h2>
+          <h2>Send deck</h2>
           <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;line-height:1.45">
-            Send <strong>${esc(d?.name || 'this deck')}</strong> (${cardCount} card${cardCount !== 1 ? 's' : ''}) to someone else. Study progress is not included.
+            Send <strong>${esc(d?.name || 'this deck')}</strong> (${cardCount} card${cardCount !== 1 ? 's' : ''}) directly to another Shine user. Study progress is not included.
           </p>
-          ${m.link ? `
-            <label style="font-size:.78rem;font-weight:600;color:var(--muted)">Share link</label>
-            <div class="share-link-row">
-              <input id="share-deck-link" readonly value="${esc(m.link)}" />
-              <button type="button" class="btn-outline" data-copy-share-link style="flex:0 0 auto">Copy</button>
-            </div>` : `
-            <p class="share-hint">This deck is too large for a share link. Download the file and send it instead.</p>`}
-          <div class="backup-row" style="margin-top:14px">
-            <button type="button" class="btn-primary" data-download-share-deck>Download file</button>
-            ${typeof navigator !== 'undefined' && navigator.share ? '<button type="button" class="btn-outline" data-native-share-deck>Share…</button>' : ''}
+          <div class="field" style="margin-bottom:8px">
+            <label>Recipient email</label>
+            <input id="share-deck-email" type="email" placeholder="friend@example.com" value="${esc(m.recipientEmail || '')}" />
           </div>
+          <button type="button" class="btn-primary" data-send-deck-email style="width:100%">Send deck</button>
+          <p class="share-hint">They&apos;ll see it in Account when signed in with that email.</p>
+          ${devicePick}
+          ${typeof navigator !== 'undefined' && navigator.share ? `
+            <button type="button" class="btn-outline" data-native-share-deck style="width:100%;margin-top:10px">Send via Messages, Mail, etc.</button>
+            <p class="share-hint">Shares the deck file through your apps — no link needed.</p>` : ''}
+          <details class="share-advanced">
+            <summary>Other options</summary>
+            <div class="backup-row" style="margin-top:10px">
+              <button type="button" class="btn-outline" data-download-share-deck>Download file</button>
+              ${canLink ? '<button type="button" class="btn-outline" data-copy-share-link>Copy link</button>' : ''}
+            </div>
+            ${!canLink ? '<p class="share-hint">This deck is too large for a share link — use direct send or download the file.</p>' : ''}
+          </details>
           <div class="modal-actions"><button class="cancel" data-close>Done</button></div>
         </div></div>`;
       }
@@ -2610,21 +2787,42 @@
         if (file) importUserData(file);
         e.target.value = '';
       });
-      document.querySelector('[data-import-share-paste]')?.addEventListener('click', () => {
-        importSharedDeckFromText(document.getElementById('import-share-link')?.value);
-      });
-      document.getElementById('import-share-link')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') importSharedDeckFromText(e.target.value);
-      });
       document.getElementById('import-share-file')?.addEventListener('change', (e) => {
         const file = e.target.files?.[0];
         if (file) importSharedDeckFile(file);
         e.target.value = '';
       });
+      document.querySelectorAll('[data-share-deck-card]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        openShareDeckModal(+el.dataset.shareDeckCard);
+      }));
       document.querySelector('[data-share-deck]')?.addEventListener('click', () => {
         const d = deck();
         if (d) openShareDeckModal(d.id);
       });
+      const submitSendDeck = async (email) => {
+        const deckId = state.modal?.deckId;
+        if (!deckId) return;
+        try {
+          const { cloudOk } = await sendDeckToUser(email, deckId);
+          state.modal = null;
+          showToast(cloudOk || !getShareApiUrl()
+            ? `Deck sent to ${email}`
+            : `Deck saved for ${email} on this device`);
+          render();
+        } catch (e) {
+          showToast(e.message || 'Could not send deck');
+        }
+      };
+      document.querySelector('[data-send-deck-email]')?.addEventListener('click', () => {
+        submitSendDeck(document.getElementById('share-deck-email')?.value);
+      });
+      document.getElementById('share-deck-email')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitSendDeck(e.target.value);
+      });
+      document.querySelectorAll('[data-send-deck-user]').forEach(el => el.addEventListener('click', () => {
+        submitSendDeck(el.dataset.sendDeckUser);
+      }));
       document.querySelector('[data-copy-share-link]')?.addEventListener('click', () => {
         const deckId = state.modal?.deckId;
         if (deckId) copyShareDeckLink(deckId);
@@ -2644,6 +2842,7 @@
         const clusterId = val === '__new__' ? '__new__' : (val ? parseInt(val, 10) : null);
         try {
           const deckId = importSharedDeck(payload, { clusterId });
+          if (state.modal?.deliveryId) dismissInboxItem(state.modal.deliveryId);
           state.modal = null;
           state.deckId = deckId;
           state.view = 'deck';
@@ -2653,6 +2852,17 @@
           showToast('Could not import shared deck');
         }
       });
+      document.querySelectorAll('[data-accept-inbox]').forEach(el => el.addEventListener('click', () => {
+        const item = getInboxForCurrentUser().find(i => i.id === el.dataset.acceptInbox);
+        if (!item) return;
+        state.modal = { type: 'import-share', payload: item.payload, deliveryId: item.id };
+        render();
+      }));
+      document.querySelectorAll('[data-dismiss-inbox]').forEach(el => el.addEventListener('click', () => {
+        dismissInboxItem(el.dataset.dismissInbox);
+        showToast('Deck dismissed');
+        render();
+      }));
       document.querySelector('[data-sign-out]')?.addEventListener('click', () => {
         if (confirm('Sign out of Shine?')) signOut();
       });
@@ -2662,7 +2872,7 @@
       }));
       document.querySelector('[data-go-home]')?.addEventListener('click', () => { state.view = 'home'; state.deckId = null; render(); });
       document.querySelectorAll('[data-open-deck]').forEach(el => el.addEventListener('click', e => {
-        if (e.target.closest('[data-del-deck]')) return;
+        if (e.target.closest('[data-del-deck]') || e.target.closest('[data-share-deck-card]')) return;
         state.deckId = +el.dataset.openDeck;
         state.view = 'deck';
         render();
