@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Shine — Lifestyle Flashcards</title>
+  <meta name="description" content="Shine helps you store everyday knowledge in clusters and review with smart spaced repetition." />
+  <meta name="theme-color" content="#1565c0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Shine" />
+  <meta property="og:title" content="Shine — Lifestyle Flashcards" />
+  <meta property="og:description" content="Organize knowledge in clusters. Study smarter with Ebbinghaus, Leitner, and SM-2." />
+  <meta property="og:type" content="website" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -15,7 +27,7 @@
     body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto}
     #splash{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden;transition:opacity .6s,visibility .6s}
     #splash.hide{opacity:0;visibility:hidden;pointer-events:none;display:none}
-    #splash{cursor:pointer}
+    #splash{cursor:default}
     .splash-skip{position:relative;z-index:2;margin-top:14px;padding:12px 28px;font-size:.85rem;font-weight:600;color:#fff;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.5);border-radius:999px;cursor:pointer}
     .splash-skip:hover{background:rgba(255,255,255,.3)}
     #splash .bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1499203535255-f9df020d5d0b?auto=format&fit=crop&w=1200&q=80') center/cover;animation:kenburns 2s ease forwards}
@@ -201,11 +213,17 @@
     .btn-google-oneclick.splash-google{margin-top:16px;background:rgba(255,255,255,.95);border-color:rgba(255,255,255,.9)}
     .google-fallback-host{display:flex;justify-content:center;min-height:0;overflow:hidden}
     .google-fallback-host:empty{display:none}
+    .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.85rem;font-weight:500;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:90%;text-align:center;animation:fadeUp .3s ease}
+    .due-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .due-actions button{padding:10px 14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:.85rem}
+    .backup-row{display:flex;gap:8px;margin-top:12px}
+    .backup-row button{flex:1}
+    .btn-primary:disabled,.btn-outline:disabled{opacity:.55;cursor:not-allowed}
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <div id="splash" role="button" tabindex="0" aria-label="Continue to app">
+  <div id="splash" aria-label="Welcome to Shine">
     <div class="bg"></div>
     <div class="overlay"></div>
     <div class="splash-content">
@@ -228,6 +246,7 @@
     const SESSION_KEY = 'shine_session';
     const ACCOUNTS_KEY = 'shine_accounts';
     const GOOGLE_CLIENT_KEY = 'shine_google_client_id';
+    const ONBOARDING_KEY = 'shine_onboarded';
     // Optional: set your Google OAuth Web Client ID here or in Account → settings
     const GOOGLE_CLIENT_ID_DEFAULT = '';
 
@@ -348,6 +367,8 @@
       auth: { user: null },
       authMode: 'signin',
       authError: '',
+      authBusy: false,
+      toast: null,
       ready: false,
       splashDone: false,
     };
@@ -435,14 +456,72 @@
       } catch (e) {}
     }
 
+    function mergeGuestDataIntoAccount() {
+      try {
+        const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
+        if (!guestRaw) return false;
+        const guest = JSON.parse(guestRaw);
+        if (!guest.decks?.length) return false;
+        if (state.decks.length && !confirm('Import decks from your guest session into this account?')) return false;
+        if (!state.decks.length) {
+          applyAppData(guest);
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function showToast(msg) {
+      state.toast = msg;
+      if (state.ready) render();
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => { state.toast = null; if (state.ready) render(); }, 2800);
+    }
+
+    function isOnboarded() {
+      try { return localStorage.getItem(ONBOARDING_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    function markOnboarded() {
+      try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) {}
+    }
+
+    function exportUserData() {
+      const data = snapshotAppData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `shine-backup-${todayStr()}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('Backup downloaded');
+    }
+
+    function importUserData(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data.decks || !Array.isArray(data.decks)) throw new Error('Invalid backup');
+          applyAppData(data);
+          save();
+          showToast('Backup restored');
+          render();
+        } catch (e) {
+          showToast('Could not read backup file');
+        }
+      };
+      reader.readAsText(file);
+    }
+
     async function completeLogin(user) {
-      persistAppData();
+      if (!state.auth.user) persistAppData();
       state.auth.user = user;
       state.userName = user.name || user.email.split('@')[0];
       saveSession(user);
       setAuthError('');
       load();
-      migrateGuestDataIfEmpty();
+      mergeGuestDataIntoAccount() || migrateGuestDataIfEmpty();
       save();
       if (state.tab === 'account') state.authMode = 'signin';
       render();
@@ -455,9 +534,13 @@
         setAuthError('Use a valid email and password (8+ characters).');
         return;
       }
+      state.authBusy = true;
+      setAuthError('');
+      if (state.ready) render();
       const db = getAccountsDb();
       if (Object.values(db.users).some(u => u.email === em)) {
         setAuthError('An account with this email already exists.');
+        state.authBusy = false;
         return;
       }
       const { hash, salt } = await hashPassword(password);
@@ -468,22 +551,28 @@
       };
       saveAccountsDb(db);
       await completeLogin({ id, email: em, name: db.users[id].name, provider: 'email', avatar: null });
+      state.authBusy = false;
     }
 
     async function signInWithEmail(email, password) {
+      state.authBusy = true;
+      if (state.ready) render();
       const em = normalizeEmail(email);
       const db = getAccountsDb();
       const user = Object.values(db.users).find(u => u.email === em && u.provider === 'email');
       if (!user) {
         setAuthError('No account found for this email.');
+        state.authBusy = false;
         return;
       }
       const { hash } = await hashPassword(password, user.salt);
       if (hash !== user.passwordHash) {
         setAuthError('Incorrect password.');
+        state.authBusy = false;
         return;
       }
       await completeLogin({ id: user.id, email: user.email, name: user.name, provider: 'email', avatar: user.avatar });
+      state.authBusy = false;
     }
 
     function handleGoogleCredential(response) {
@@ -582,10 +671,7 @@
       const clientId = getGoogleClientId();
       if (!clientId || !window.google?.accounts?.id) {
         if (clientId) setTimeout(initGoogleButton, 400);
-        return;
       }
-      initGoogleAuth();
-      google.accounts.id.prompt();
     }
 
     window.handleGoogleCredential = handleGoogleCredential;
@@ -693,13 +779,19 @@
         const raw = JSON.parse(stored || 'null');
         if (raw && Array.isArray(raw.decks)) {
           applyAppData(raw);
+        } else if (!state.auth.user && isOnboarded()) {
+          state.decks = [];
+          state.clusters = [];
+        } else if (!state.auth.user && !isOnboarded()) {
+          state.decks = [];
+          state.clusters = [];
         } else if (!state.auth.user) {
           loadSampleData();
         } else {
           state.decks = [];
           state.clusters = [];
         }
-        if (!state.auth.user) save();
+        if (!state.auth.user && (raw || isOnboarded())) save();
       } catch (e) {
         console.warn('Load failed, using defaults', e);
         if (!state.auth.user) loadSampleData();
@@ -982,12 +1074,22 @@
       save();
     }
 
+    function seedSmartSchedule(d) {
+      if (!isSmartScheduleOn(d)) return;
+      if (nextScheduled(d)) return;
+      const today = todayStr();
+      scheduleReview(d, today, 'auto');
+      save();
+    }
+
     function setScheduleMode(d, auto) {
       d.ebbinghaus = auto;
       const a = deckAlgo(d);
       d.algo = { ...a, enabled: auto };
-      if (auto && !a.preset) applyPreset(d, 'normal');
-      else save();
+      if (auto) {
+        if (!a.preset) applyPreset(d, 'normal');
+        seedSmartSchedule(d);
+      } else save();
     }
 
     // ── Splash ──
@@ -997,7 +1099,10 @@
       const splash = document.getElementById('splash');
       if (splash) splash.classList.add('hide');
       state.ready = true;
-      try { render(); } catch (e) {
+      try {
+        if (!isOnboarded() && !state.auth.user) state.modal = { type: 'onboard' };
+        render();
+      } catch (e) {
         console.error(e);
         document.getElementById('app').innerHTML = '<main style="padding:24px"><h2>Something went wrong</h2><p>Please refresh the page.</p></main>';
       }
@@ -1006,19 +1111,13 @@
     function startSplash() {
       const el = document.getElementById('splash-name');
       if (el) el.textContent = state.userName ? `Hi ${state.userName} — store what matters` : 'Your lifestyle knowledge hub';
-      const go = (e) => { e?.preventDefault?.(); e?.stopPropagation?.(); finishSplash(); };
+      const goGuest = (e) => { e?.preventDefault?.(); e?.stopPropagation?.(); finishSplash(); };
       window.finishSplash = finishSplash;
-      document.getElementById('splash-continue')?.addEventListener('click', go);
-      document.getElementById('splash')?.addEventListener('click', (e) => {
-        if (e.target.closest('[data-google-oneclick]')) return;
-        go(e);
-      });
+      document.getElementById('splash-continue')?.addEventListener('click', goGuest);
       document.querySelector('#splash [data-google-oneclick]')?.addEventListener('click', (e) => {
         e.stopPropagation();
         triggerGoogleOneClick();
       });
-      document.getElementById('splash')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
-      setTimeout(finishSplash, 2000);
     }
 
     // ── Render ──
@@ -1032,7 +1131,8 @@
         else if (state.tab === 'account') app.innerHTML = renderAccount();
         else app.innerHTML = renderHome();
         if (state.modal) app.innerHTML += renderModal();
-        if (state.view === 'home') app.innerHTML += renderBottomNav();
+        if (state.view === 'home' || state.view === 'deck') app.innerHTML += renderBottomNav();
+        if (state.toast) app.innerHTML += `<div class="toast" role="status">${esc(state.toast)}</div>`;
         bind();
         if (state.tab === 'account') setTimeout(initGoogleButton, 50);
       } catch (e) {
@@ -1067,19 +1167,18 @@
             </div>
             <div class="auth-panel" style="text-align:left">
               <h2 style="font-size:.95rem">Your library</h2>
-              <p class="hint" style="margin:0">${state.clusters.length} cluster${state.clusters.length !== 1 ? 's' : ''} · ${state.decks.length} deck${state.decks.length !== 1 ? 's' : ''} synced to this account</p>
+              <p class="hint" style="margin:0">${state.clusters.length} cluster${state.clusters.length !== 1 ? 's' : ''} · ${state.decks.length} deck${state.decks.length !== 1 ? 's' : ''} saved on this device</p>
             </div>
-            <details class="schedule-fold">
-              <summary>Settings</summary>
-              <div class="sched-body">
-                <div class="field">
-                  <label>Google OAuth Client ID</label>
-                  <input id="google-client-id" value="${esc(getGoogleClientId())}" placeholder="xxxx.apps.googleusercontent.com" />
-                  <small>Paste your Web Client ID from Google Cloud Console to enable Gmail sign-in.</small>
-                </div>
-                <button class="btn-outline" data-save-google-id>Save Google settings</button>
+            <div class="auth-panel" style="text-align:left">
+              <h2 style="font-size:.95rem">Backup</h2>
+              <p class="hint" style="margin:0 0 12px">Export your clusters and decks as JSON. Import on another browser or after clearing data.</p>
+              <div class="backup-row">
+                <button type="button" class="btn-outline" data-export-backup>Export</button>
+                <label class="btn-outline" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0">
+                  Import<input type="file" id="import-backup" accept="application/json,.json" hidden />
+                </label>
               </div>
-            </details>
+            </div>
             <button class="btn-outline" data-sign-out style="margin-top:10px;color:var(--danger);border-color:#fecaca">Sign out</button>
           </main>`;
       }
@@ -1090,7 +1189,7 @@
         <main>
           <div class="auth-panel">
             <h2>Join Shine</h2>
-            <p class="hint">Register with Gmail or a regular email account. Your clusters and decks are saved to your profile.</p>
+            <p class="hint">Sign in with Gmail or create an email account. Your library is saved securely on this device.</p>
             ${state.authError ? `<p style="color:var(--danger);font-size:.82rem;margin-bottom:12px">${esc(state.authError)}</p>` : ''}
             ${renderGoogleOneClickBtn()}
             <div class="auth-divider">or continue with email</div>
@@ -1101,20 +1200,9 @@
             ${mode === 'register' ? '<input id="auth-name" placeholder="Your name" />' : ''}
             <input id="auth-email" type="email" placeholder="Email address" autocomplete="username" />
             <input id="auth-password" type="password" placeholder="Password (8+ characters)" autocomplete="${mode === 'register' ? 'new-password' : 'current-password'}" />
-            <button class="btn-primary" data-auth-submit style="margin-top:12px">${mode === 'register' ? 'Create account' : 'Sign in'}</button>
-            <p class="hint" style="margin-top:14px;margin-bottom:0">You can browse as a guest without signing in. Create an account anytime to keep your knowledge safe.</p>
+            <button class="btn-primary" data-auth-submit style="margin-top:12px" ${state.authBusy ? 'disabled' : ''}>${state.authBusy ? 'Please wait…' : (mode === 'register' ? 'Create account' : 'Sign in')}</button>
+            <p class="hint" style="margin-top:14px;margin-bottom:0">Guest mode works too — sign in anytime to keep a personal profile on this device.</p>
           </div>
-          <details class="schedule-fold">
-            <summary>Gmail sign-in setup (optional)</summary>
-            <div class="sched-body">
-              <div class="field">
-                <label>Google OAuth Web Client ID</label>
-                <input id="google-client-id-guest" value="${esc(getGoogleClientId())}" placeholder="xxxx.apps.googleusercontent.com" />
-                <small>Create at console.cloud.google.com → APIs → Credentials → OAuth 2.0 Client IDs (Web).</small>
-              </div>
-              <button class="btn-outline" data-save-google-id>Save</button>
-            </div>
-          </details>
         </main>`;
     }
 
@@ -1175,7 +1263,10 @@
         <main>
           ${dueDecks.length ? `<div class="overload-box" style="background:var(--blue-light);border-color:var(--blue-soft)">
             <h3 style="color:var(--blue-dark)">${dueDecks.length} deck${dueDecks.length>1?'s':''} due today</h3>
-            <p style="font-size:.85rem;color:var(--muted)">Open Calendar tab to schedule & review</p>
+            <p style="font-size:.85rem;color:var(--muted);margin-bottom:4px">Tap a deck to start reviewing</p>
+            <div class="due-actions">
+              ${dueDecks.map(d => `<button type="button" data-start-deck="${d.id}">Study ${esc(d.name)}</button>`).join('')}
+            </div>
           </div>` : ''}
           ${sections || '<div class="empty"><p>Create a cluster to organize your decks</p></div>'}
           ${otherSection}
@@ -1620,6 +1711,12 @@
 
     function renderModal() {
       const m = state.modal;
+      if (m.type === 'onboard') return `<div class="modal-bg"><div class="modal">
+        <h2>Welcome to Shine ✨</h2>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;line-height:1.45">How would you like to start?</p>
+        <button class="btn-primary" data-onboard-demo style="margin-bottom:10px">Explore with sample decks</button>
+        <button class="btn-outline" data-onboard-empty>Start with an empty library</button>
+      </div></div>`;
       if (m.type === 'welcome') return `<div class="modal-bg"><div class="modal">
         <h2>Welcome to Shine</h2>
         <p style="color:var(--muted);font-size:.88rem;margin-bottom:10px">Your name appears on the splash screen.</p>
@@ -1697,13 +1794,41 @@
         setAuthError('');
         render();
       }));
-      document.querySelector('[data-auth-submit]')?.addEventListener('click', async () => {
+      const submitAuth = async () => {
+        if (state.authBusy) return;
         const email = document.getElementById('auth-email')?.value;
         const password = document.getElementById('auth-password')?.value;
         const name = document.getElementById('auth-name')?.value;
         if (state.authMode === 'register') await registerWithEmail(name, email, password);
         else await signInWithEmail(email, password);
         render();
+      };
+      document.querySelector('[data-auth-submit]')?.addEventListener('click', submitAuth);
+      document.getElementById('auth-password')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitAuth();
+      });
+      document.querySelector('[data-onboard-demo]')?.addEventListener('click', () => {
+        loadSampleData();
+        markOnboarded();
+        save();
+        state.modal = null;
+        showToast('Sample decks loaded — explore and edit freely');
+        render();
+      });
+      document.querySelector('[data-onboard-empty]')?.addEventListener('click', () => {
+        state.decks = [];
+        state.clusters = [];
+        markOnboarded();
+        save();
+        state.modal = null;
+        showToast('Empty library — create your first cluster');
+        render();
+      });
+      document.querySelector('[data-export-backup]')?.addEventListener('click', exportUserData);
+      document.getElementById('import-backup')?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) importUserData(file);
+        e.target.value = '';
       });
       document.querySelector('[data-sign-out]')?.addEventListener('click', () => {
         if (confirm('Sign out of Shine?')) signOut();
@@ -1712,13 +1837,6 @@
         e.stopPropagation();
         triggerGoogleOneClick();
       }));
-      document.querySelector('[data-save-google-id]')?.addEventListener('click', () => {
-        const val = (document.getElementById('google-client-id') || document.getElementById('google-client-id-guest'))?.value.trim();
-        try { localStorage.setItem(GOOGLE_CLIENT_KEY, val); } catch (e) {}
-        alert(val ? 'Google Client ID saved. Tap Continue with Google to sign in.' : 'Google Client ID cleared.');
-        render();
-        initGoogleButton();
-      });
       document.querySelector('[data-go-home]')?.addEventListener('click', () => { state.view = 'home'; state.deckId = null; render(); });
       document.querySelectorAll('[data-open-deck]').forEach(el => el.addEventListener('click', e => {
         if (e.target.closest('[data-del-deck]')) return;
@@ -1841,7 +1959,14 @@
       });
       bindCardReorder();
       document.querySelectorAll('[data-end-study]').forEach(el => el.addEventListener('click', () => {
-        state.study = null; state.view = 'deck'; render();
+        const s = state.study;
+        if (s && !s.done && (s.correct + s.incorrect) > 0) {
+          if (!confirm('End session early? Your progress will be saved.')) return;
+          if (!s.applied) { finishStudy(); s.applied = true; }
+        }
+        state.study = null;
+        state.view = 'deck';
+        render();
       }));
       document.querySelector('[data-save-advanced]')?.addEventListener('click', () => {
         state.deckScheduleOpen = true;
@@ -1923,6 +2048,20 @@
         } else state.study.index++;
         render();
       }));
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (!state.ready) return;
+      const key = activeStorageKey();
+      if (e.key === key || e.key === SESSION_KEY) {
+        if (e.key === SESSION_KEY) state.auth.user = loadSession();
+        load();
+        render();
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
     startSplash();
