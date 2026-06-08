@@ -48,17 +48,12 @@
     .deck-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
     .deck-toolbar .btn-primary{margin-bottom:0}
     .btn-shuffle{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:0}
-    .card-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:0;transition:box-shadow .15s,opacity .15s;cursor:grab}
-    .card-item .card-actions{cursor:default}
-    .card-item.dragging{opacity:.92;box-shadow:0 8px 24px rgba(21,101,192,.2);z-index:2;position:relative}
-    .card-item.drag-over{box-shadow:0 0 0 2px var(--blue-soft)}
-    .card-row{display:flex;gap:8px;align-items:flex-start}
-    .drag-handle{flex-shrink:0;width:16px;padding:10px 4px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;align-self:center;opacity:.35}
-    .drag-handle::before{content:'';display:block;width:2px;height:2px;border-radius:50%;background:var(--muted);box-shadow:0 5px 0 var(--muted),0 10px 0 var(--muted),5px 0 0 var(--muted),5px 5px 0 var(--muted),5px 10px 0 var(--muted)}
-    .drag-handle:hover,.drag-handle:active{opacity:.65}
-    .drag-handle:active{cursor:grabbing}
-    .card-item.card-fill-dark .drag-handle::before{background:rgba(255,255,255,.65);box-shadow:0 5px 0 rgba(255,255,255,.65),0 10px 0 rgba(255,255,255,.65),5px 0 0 rgba(255,255,255,.65),5px 5px 0 rgba(255,255,255,.65),5px 10px 0 rgba(255,255,255,.65)}
-    .card-body{flex:1;min-width:0}
+    .card-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:0;cursor:grab;touch-action:none;will-change:transform}
+    .card-item .card-actions{cursor:default;touch-action:auto}
+    .card-item .card-actions button{cursor:pointer;touch-action:auto}
+    .card-list.is-dragging .card-item:not(.drag-lifted){transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+    .card-item.drag-lifted{cursor:grabbing;box-shadow:0 14px 36px rgba(21,101,192,.28);opacity:.98;pointer-events:none}
+    .card-placeholder{border-radius:var(--radius);border:2px dashed var(--blue-soft);background:var(--blue-light);opacity:.55;transition:height .2s ease,margin .2s ease;box-sizing:border-box}
     .card-item .en{font-weight:600} .card-item .de{color:var(--blue);margin-top:4px;font-size:1.05rem}
     .card-item.card-fill-dark .de{color:rgba(255,255,255,.92)}
     .card-item.card-fill-dark .card-meta{color:rgba(255,255,255,.75)}
@@ -931,24 +926,47 @@
       save();
     }
 
-    function moveCardDom(list, item, clientY) {
-      const siblings = [...list.querySelectorAll('.card-item')].filter(c => c !== item);
-      siblings.forEach(c => c.classList.remove('drag-over'));
-      let insertBefore = null;
+    function flipReorder(list, mutate) {
+      const nodes = [...list.children].filter(c => !c.classList.contains('drag-lifted'));
+      const tops = new Map(nodes.map(c => [c, c.getBoundingClientRect().top]));
+      mutate();
+      nodes.forEach(c => {
+        if (!list.contains(c)) return;
+        const dy = tops.get(c) - c.getBoundingClientRect().top;
+        if (!dy) return;
+        c.style.transition = 'none';
+        c.style.transform = `translateY(${dy}px)`;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            c.style.transition = '';
+            c.style.transform = '';
+          });
+        });
+      });
+    }
+
+    function placeholderTarget(list, placeholder, clientY) {
+      const siblings = [...list.children].filter(c => c !== placeholder);
       for (const sib of siblings) {
         const rect = sib.getBoundingClientRect();
-        if (clientY < rect.top + rect.height / 2) {
-          insertBefore = sib;
-          break;
-        }
+        if (clientY < rect.top + rect.height / 2) return sib;
       }
-      if (insertBefore) {
-        insertBefore.classList.add('drag-over');
-        if (item.nextElementSibling !== insertBefore) list.insertBefore(item, insertBefore);
-      } else if (siblings.length) {
-        siblings[siblings.length - 1].classList.add('drag-over');
-        if (item !== list.lastElementChild) list.appendChild(item);
+      return null;
+    }
+
+    function movePlaceholder(list, placeholder, clientY) {
+      const target = placeholderTarget(list, placeholder, clientY);
+      if (target) {
+        if (placeholder.nextElementSibling === target) return;
+        flipReorder(list, () => list.insertBefore(placeholder, target));
+      } else if (placeholder !== list.lastElementChild) {
+        flipReorder(list, () => list.appendChild(placeholder));
       }
+    }
+
+    function clearDragStyles(item) {
+      item.classList.remove('drag-lifted');
+      ['position', 'left', 'top', 'width', 'margin', 'zIndex', 'transition', 'transform'].forEach(k => { item.style[k] = ''; });
     }
 
     function bindCardReorder() {
@@ -957,24 +975,85 @@
 
       let drag = null;
 
-      const endDrag = (e) => {
-        if (!drag) return;
-        if (e && e.pointerId != null && e.pointerId !== drag.pointerId) return;
-        drag.item.classList.remove('dragging');
-        list.querySelectorAll('.card-item').forEach(c => c.classList.remove('drag-over'));
-        if (drag.moved) syncCardOrderFromDom();
-        drag = null;
+      const cleanupListeners = () => {
         document.removeEventListener('pointermove', onPointerMove);
         document.removeEventListener('pointerup', endDrag);
         document.removeEventListener('pointercancel', endDrag);
       };
 
+      const finishDrop = () => {
+        if (!drag) return;
+        const { item, list, placeholder, moved } = drag;
+        list.classList.remove('is-dragging');
+        cleanupListeners();
+
+        if (!moved) {
+          if (placeholder) placeholder.remove();
+          if (item.parentElement === document.body) list.appendChild(item);
+          clearDragStyles(item);
+          drag = null;
+          return;
+        }
+
+        const targetTop = placeholder.getBoundingClientRect().top;
+        item.style.transition = 'top .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease';
+        item.style.top = `${targetTop}px`;
+
+        let settled = false;
+        const settle = () => {
+          if (settled) return;
+          settled = true;
+          list.insertBefore(item, placeholder);
+          placeholder.remove();
+          clearDragStyles(item);
+          syncCardOrderFromDom();
+          drag = null;
+        };
+
+        const onDone = (ev) => {
+          if (ev.propertyName !== 'top') return;
+          item.removeEventListener('transitionend', onDone);
+          settle();
+        };
+        item.addEventListener('transitionend', onDone);
+        setTimeout(settle, 280);
+      };
+
+      const endDrag = (e) => {
+        if (!drag) return;
+        if (e && e.pointerId != null && e.pointerId !== drag.pointerId) return;
+        finishDrop();
+      };
+
       const onPointerMove = (e) => {
         if (!drag || e.pointerId !== drag.pointerId) return;
-        if (!drag.moved && Math.abs(e.clientY - drag.startY) < 8) return;
-        drag.moved = true;
+        if (!drag.moved && Math.abs(e.clientY - drag.startY) < 6) return;
+
+        if (!drag.moved) {
+          drag.moved = true;
+          const { item, list } = drag;
+          const rect = item.getBoundingClientRect();
+          const placeholder = document.createElement('div');
+          placeholder.className = 'card-placeholder';
+          placeholder.style.height = `${rect.height}px`;
+          list.insertBefore(placeholder, item);
+          drag.placeholder = placeholder;
+          list.classList.add('is-dragging');
+          item.classList.add('drag-lifted');
+          document.body.appendChild(item);
+          Object.assign(item.style, {
+            position: 'fixed',
+            left: `${rect.left}px`,
+            top: `${rect.top}px`,
+            width: `${rect.width}px`,
+            margin: '0',
+            zIndex: '1000',
+          });
+        }
+
         e.preventDefault();
-        moveCardDom(list, drag.item, e.clientY);
+        drag.item.style.top = `${e.clientY - drag.offsetY}px`;
+        movePlaceholder(drag.list, drag.placeholder, e.clientY);
       };
 
       list.addEventListener('pointerdown', (e) => {
@@ -982,8 +1061,18 @@
         if (e.target.closest('.card-actions') || e.target.closest('button')) return;
         const item = e.target.closest('.card-item');
         if (!item || !list.contains(item)) return;
-        drag = { item, pointerId: e.pointerId, startY: e.clientY, moved: false };
-        item.classList.add('dragging');
+
+        const rect = item.getBoundingClientRect();
+        drag = {
+          item,
+          list,
+          placeholder: null,
+          pointerId: e.pointerId,
+          startY: e.clientY,
+          offsetY: e.clientY - rect.top,
+          moved: false,
+        };
+
         document.addEventListener('pointermove', onPointerMove, { passive: false });
         document.addEventListener('pointerup', endDrag);
         document.addEventListener('pointercancel', endDrag);
@@ -994,15 +1083,10 @@
       const alg = getAlgorithm(d);
       const cards = d.cards.map(c => `
         <div class="card-item ${cardColorClass(c.color)}" style="${cardColorStyle(c.color)}" data-card-id="${c.id}">
-          <div class="card-row">
-            <span class="drag-handle" aria-label="Drag to reorder" title="Drag to reorder"></span>
-            <div class="card-body">
-              <div class="en">${esc(c.en)}</div>
-              <div class="de">${esc(c.de)}</div>
-              ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
-              ${isSmartScheduleOn(d) && alg === 'sm2' ? `<div class="card-meta">SM-2 · ${c.sm2?.intervalDays || 0}d interval · ease ${(c.sm2?.easeFactor || 2.5).toFixed(1)}</div>` : ''}
-            </div>
-          </div>
+          <div class="en">${esc(c.en)}</div>
+          <div class="de">${esc(c.de)}</div>
+          ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
+          ${isSmartScheduleOn(d) && alg === 'sm2' ? `<div class="card-meta">SM-2 · ${c.sm2?.intervalDays || 0}d interval · ease ${(c.sm2?.easeFactor || 2.5).toFixed(1)}</div>` : ''}
           <div class="card-actions">
             <button data-edit-card="${c.id}">Edit</button>
             <button data-del-card="${c.id}" style="color:var(--danger)">Delete</button>
