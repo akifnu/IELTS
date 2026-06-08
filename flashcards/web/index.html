@@ -4,178 +4,290 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flashcards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --primary: #2e7d32;
-      --primary-dark: #1b5e20;
-      --primary-light: #c8e6c9;
-      --accent: #ffb300;
-      --bg: #f5f7f5;
-      --card: #fff;
-      --text: #1a1c1a;
-      --muted: #5c6b5c;
-      --danger: #c62828;
-      --shadow: 0 2px 12px rgba(0,0,0,.08);
-      --radius: 16px;
+      --blue: #1565c0;
+      --blue-dark: #0d47a1;
+      --blue-light: #e3f2fd;
+      --blue-soft: #bbdefb;
+      --bg: #f8fbff;
+      --white: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --shadow: 0 4px 24px rgba(21, 101, 192, 0.08);
+      --radius: 18px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       max-width: 480px;
       margin: 0 auto;
     }
+
+    /* Splash */
+    #splash {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      background: #000; overflow: hidden;
+      transition: opacity .6s ease, visibility .6s;
+    }
+    #splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+    #splash .bg {
+      position: absolute; inset: 0;
+      background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80') center/cover;
+      transform: scale(1.05);
+      animation: kenburns 2s ease forwards;
+    }
+    #splash .overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(13,71,161,.45) 0%, rgba(21,101,192,.75) 100%);
+    }
+    @keyframes kenburns { to { transform: scale(1); } }
+    .splash-content {
+      position: relative; z-index: 1; text-align: center; color: #fff;
+      padding: 32px; animation: fadeUp .8s ease;
+    }
+    .splash-content .greeting { font-size: 1rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; opacity: .9; }
+    .splash-content h1 { font-size: 2.4rem; font-weight: 700; margin-top: 12px; line-height: 1.2; }
+    .splash-content p { margin-top: 10px; opacity: .85; font-size: .95rem; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     header {
-      background: var(--primary);
-      color: #fff;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
       padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 10;
     }
-    header h1 { font-size: 1.25rem; font-weight: 600; flex: 1; }
-    button, .btn {
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      font: inherit;
-    }
+    header h1 { font-size: 1.15rem; font-weight: 600; flex: 1; color: var(--blue-dark); }
     .icon-btn {
-      background: transparent;
-      color: inherit;
-      font-size: 1.4rem;
-      padding: 4px 8px;
-      line-height: 1;
+      background: var(--blue-light); border: none; border-radius: 12px;
+      color: var(--blue); font-size: 1.1rem; padding: 8px 12px; cursor: pointer;
     }
-    main { padding: 16px; padding-bottom: 88px; }
+    main { padding: 16px 16px 100px; }
+
+    .due-banner {
+      background: linear-gradient(135deg, var(--blue) 0%, #1976d2 100%);
+      color: #fff; border-radius: var(--radius); padding: 18px 20px;
+      margin-bottom: 16px; box-shadow: var(--shadow);
+    }
+    .due-banner h2 { font-size: 1rem; font-weight: 600; }
+    .due-banner p { font-size: .85rem; opacity: .9; margin: 6px 0 14px; }
+    .due-banner button {
+      background: #fff; color: var(--blue); border: none;
+      border-radius: 12px; padding: 10px 18px; font-weight: 600; cursor: pointer;
+    }
+
     .deck-card {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px;
-      margin-bottom: 12px;
-      cursor: pointer;
-      position: relative;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
+      cursor: pointer; position: relative; transition: box-shadow .2s, border-color .2s;
     }
-    .deck-card h2 { font-size: 1.05rem; margin-bottom: 4px; }
-    .deck-card p { color: var(--muted); font-size: .9rem; }
-    .deck-card .count { color: var(--primary); font-weight: 600; font-size: .85rem; margin-top: 8px; }
+    .deck-card:hover { box-shadow: var(--shadow); border-color: var(--blue-soft); }
+    .deck-card h2 { font-size: 1.05rem; font-weight: 600; color: var(--blue-dark); }
+    .deck-card p { color: var(--muted); font-size: .88rem; margin-top: 4px; }
+    .deck-card .meta { display: flex; gap: 12px; margin-top: 10px; font-size: .8rem; font-weight: 600; }
+    .deck-card .meta .due { color: var(--blue); }
+    .deck-card .meta .total { color: var(--muted); }
     .deck-card .delete {
-      position: absolute; top: 8px; right: 8px;
-      color: var(--danger); background: none; font-size: 1.1rem;
+      position: absolute; top: 12px; right: 12px;
+      background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem;
     }
+
     .fab {
-      position: fixed; right: 20px; bottom: 24px;
+      position: fixed; right: 20px; bottom: 88px;
       width: 56px; height: 56px; border-radius: 50%;
-      background: var(--primary-dark); color: #fff;
-      font-size: 2rem; line-height: 56px; text-align: center;
-      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      background: var(--blue); color: #fff; border: none;
+      font-size: 1.8rem; line-height: 1; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(21,101,192,.35);
     }
-    .study-btn {
-      width: 100%; padding: 14px; margin-bottom: 16px;
-      background: var(--primary); color: #fff; font-weight: 600;
+
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: var(--white); border-top: 1px solid var(--border);
+      display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
     }
+    .bottom-nav button {
+      flex: 1; background: none; border: none; padding: 10px;
+      color: var(--muted); font-size: .72rem; font-weight: 600; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .bottom-nav button.active { color: var(--blue); }
+    .bottom-nav .nav-icon { font-size: 1.25rem; }
+
+    .study-btn, .btn-primary {
+      width: 100%; padding: 14px; margin-bottom: 14px;
+      background: var(--blue); color: #fff; border: none;
+      border-radius: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn-outline {
+      width: 100%; padding: 14px; margin-top: 8px;
+      background: var(--white); color: var(--blue); border: 2px solid var(--blue);
+      border-radius: 14px; font-weight: 600; cursor: pointer;
+    }
+
     .card-item {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px; margin-bottom: 10px;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
     }
-    .card-item .back { color: var(--muted); margin-top: 6px; }
+    .card-item .back { color: var(--muted); margin-top: 6px; font-size: .92rem; }
+    .card-item .sr-info {
+      margin-top: 10px; font-size: .78rem; color: var(--blue);
+      background: var(--blue-light); display: inline-block; padding: 4px 10px; border-radius: 20px;
+    }
     .card-actions { text-align: right; margin-top: 8px; }
-    .card-actions button { background: none; color: var(--muted); padding: 4px 8px; }
+    .card-actions button { background: none; border: none; color: var(--muted); padding: 4px 8px; cursor: pointer; }
     .card-actions .del { color: var(--danger); }
-    .empty {
-      text-align: center; padding: 48px 24px; color: var(--muted);
+
+    /* Calendar */
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
     }
-    .empty .emoji { font-size: 3rem; margin-bottom: 12px; }
-    .progress-row {
-      display: flex; justify-content: space-between;
-      font-size: .85rem; color: var(--muted); margin-bottom: 8px;
+    .cal-header button {
+      background: var(--blue-light); border: none; color: var(--blue);
+      width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 1.1rem;
     }
-    .progress-bar {
-      height: 6px; background: #e0e0e0; border-radius: 3px;
-      margin-bottom: 20px; overflow: hidden;
+    .cal-header h2 { font-size: 1.05rem; font-weight: 600; color: var(--blue-dark); }
+    .cal-weekdays {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      text-align: center; font-size: .72rem; font-weight: 600;
+      color: var(--muted); margin-bottom: 8px;
     }
-    .progress-bar > div {
-      height: 100%; background: var(--primary);
-      transition: width .3s;
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
     }
-    .flip-card {
-      perspective: 1000px;
-      min-height: 280px;
-      margin: 16px 0 24px;
-      cursor: pointer;
+    .cal-day {
+      aspect-ratio: 1; border: none; border-radius: 12px;
+      background: var(--white); font-size: .85rem; font-weight: 500;
+      cursor: pointer; position: relative; color: var(--text);
+      border: 1px solid transparent;
     }
-    .flip-inner {
-      position: relative; width: 100%; height: 280px;
-      transition: transform .5s;
-      transform-style: preserve-3d;
+    .cal-day.other { color: #cbd5e1; background: transparent; }
+    .cal-day.today { border-color: var(--blue); color: var(--blue); font-weight: 700; }
+    .cal-day.has-due { background: var(--blue-light); color: var(--blue-dark); font-weight: 600; }
+    .cal-day.selected { background: var(--blue); color: #fff; }
+    .cal-day .dot {
+      position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+      width: 5px; height: 5px; border-radius: 50%; background: var(--blue);
     }
+    .cal-day.selected .dot { background: #fff; }
+    .cal-legend {
+      display: flex; gap: 16px; margin: 16px 0; font-size: .78rem; color: var(--muted);
+    }
+    .cal-legend span::before {
+      content: ''; display: inline-block; width: 10px; height: 10px;
+      border-radius: 3px; margin-right: 6px; vertical-align: middle;
+    }
+    .cal-legend .l-today::before { border: 2px solid var(--blue); }
+    .cal-legend .l-due::before { background: var(--blue-light); }
+    .cal-detail {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-top: 12px;
+    }
+    .cal-detail h3 { font-size: .95rem; margin-bottom: 10px; color: var(--blue-dark); }
+    .cal-detail-item {
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: .88rem;
+    }
+    .cal-detail-item:last-child { border: none; }
+    .cal-detail-item small { color: var(--muted); display: block; margin-top: 2px; }
+
+    /* Study */
+    .progress-row { display: flex; justify-content: space-between; font-size: .82rem; color: var(--muted); margin-bottom: 8px; }
+    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+    .progress-bar > div { height: 100%; background: var(--blue); transition: width .3s; }
+    .flip-card { perspective: 1000px; min-height: 260px; margin: 16px 0 20px; cursor: pointer; }
+    .flip-inner { position: relative; width: 100%; height: 260px; transition: transform .5s; transform-style: preserve-3d; }
     .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
     .flip-face {
-      position: absolute; inset: 0;
-      backface-visibility: hidden;
-      border-radius: 20px;
-      display: flex; align-items: center; justify-content: center;
-      padding: 24px; text-align: center;
-      font-size: 1.35rem; font-weight: 500;
-      box-shadow: var(--shadow);
+      position: absolute; inset: 0; backface-visibility: hidden;
+      border-radius: 20px; display: flex; align-items: center; justify-content: center;
+      padding: 24px; text-align: center; font-size: 1.3rem; font-weight: 500;
+      border: 1px solid var(--border); box-shadow: var(--shadow);
     }
-    .flip-front { background: var(--primary-light); }
-    .flip-back {
-      background: #fff3e0;
-      transform: rotateY(180deg);
-    }
+    .flip-front { background: var(--white); }
+    .flip-back { background: var(--blue-light); color: var(--blue-dark); transform: rotateY(180deg); }
     .study-actions { display: flex; gap: 12px; }
-    .study-actions button { flex: 1; padding: 14px; font-weight: 600; }
-    .missed { background: #fff; border: 2px solid #ccc; }
-    .got-it { background: var(--primary); color: #fff; }
-    .show-answer {
-      width: 100%; padding: 14px;
-      background: #fff; border: 2px solid var(--primary);
-      color: var(--primary); font-weight: 600;
-    }
+    .study-actions button { flex: 1; padding: 14px; border-radius: 14px; font-weight: 600; cursor: pointer; border: none; }
+    .missed { background: var(--white); border: 2px solid var(--border) !important; color: var(--text); }
+    .got-it { background: var(--blue); color: #fff; }
+    .show-answer { width: 100%; padding: 14px; background: var(--white); border: 2px solid var(--blue); color: var(--blue); border-radius: 14px; font-weight: 600; cursor: pointer; }
+
     .results { text-align: center; padding: 24px 0; }
-    .results .score {
-      font-size: 3rem; font-weight: 700;
-      color: var(--primary); margin: 16px 0;
+    .results .score { font-size: 3rem; font-weight: 700; color: var(--blue); margin: 16px 0; }
+    .results .stats { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: left; margin: 20px 0; }
+
+    .profile-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; text-align: center;
     }
-    .results .stats {
-      background: var(--card); border-radius: var(--radius);
-      padding: 20px; text-align: left; margin: 20px 0;
-      box-shadow: var(--shadow);
+    .profile-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--blue-light); color: var(--blue);
+      font-size: 2rem; font-weight: 700; line-height: 72px; margin: 0 auto 12px;
     }
+    .profile-card input {
+      width: 100%; padding: 12px; margin: 12px 0;
+      border: 1px solid var(--border); border-radius: 12px; font: inherit;
+    }
+    .ebbinghaus-info {
+      background: var(--blue-light); border-radius: var(--radius);
+      padding: 16px; margin-top: 16px; font-size: .85rem; color: var(--blue-dark); line-height: 1.5;
+    }
+    .ebbinghaus-info h3 { font-size: .9rem; margin-bottom: 8px; }
+
+    .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+    .empty .emoji { font-size: 2.5rem; margin-bottom: 12px; }
+
     .modal-bg {
-      position: fixed; inset: 0; background: rgba(0,0,0,.4);
+      position: fixed; inset: 0; background: rgba(15,23,42,.4);
       display: flex; align-items: center; justify-content: center;
-      padding: 20px; z-index: 100;
+      padding: 20px; z-index: 150;
     }
     .modal {
-      background: var(--card); border-radius: var(--radius);
-      padding: 24px; width: 100%; max-width: 400px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+      background: var(--white); border-radius: var(--radius);
+      padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.15);
     }
-    .modal h2 { margin-bottom: 16px; }
+    .modal h2 { margin-bottom: 16px; color: var(--blue-dark); }
     .modal input, .modal textarea {
       width: 100%; padding: 12px; margin-bottom: 12px;
-      border: 1px solid #ccc; border-radius: 10px; font: inherit;
+      border: 1px solid var(--border); border-radius: 12px; font: inherit;
     }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .modal-actions button { padding: 10px 18px; }
-    .cancel { background: #eee; }
-    .confirm { background: var(--primary); color: #fff; }
+    .modal-actions button { padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; }
+    .cancel { background: var(--bg); color: var(--muted); }
+    .confirm { background: var(--blue); color: #fff; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
+  <div id="splash">
+    <div class="bg"></div>
+    <div class="overlay"></div>
+    <div class="splash-content">
+      <div class="greeting">Good day</div>
+      <h1 id="splash-name">Friend</h1>
+      <p>Your memory journey continues</p>
+    </div>
+  </div>
   <div id="app"></div>
+
   <script>
+    // Ebbinghaus-inspired spaced repetition intervals (days)
+    const EBBINGHAUS_DAYS = [1, 2, 4, 7, 15, 30, 60];
+
     const SAMPLE = [
       { id: 1, name: 'Spanish Basics', description: 'Essential Spanish vocabulary', cards: [
         { id: 1, front: 'Hello', back: 'Hola' },
@@ -193,49 +305,170 @@
 
     let state = {
       view: 'decks',
-      decks: JSON.parse(localStorage.getItem('flashcards') || 'null') || SAMPLE,
+      tab: 'decks',
+      decks: [],
+      userName: localStorage.getItem('flashcards_user') || '',
       deckId: null,
       study: null,
       modal: null,
+      calMonth: new Date(),
+      calSelected: todayStr(),
+      ready: false,
     };
 
+    function todayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function parseDate(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+    function addDays(dateStr, days) {
+      const d = parseDate(dateStr);
+      d.setDate(d.getDate() + days);
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+    function formatDate(s) {
+      return parseDate(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    function defaultSR() {
+      return { repetitions: 0, easeFactor: 2.5, interval: 0, nextReview: todayStr(), lastReview: null };
+    }
+
+    function migrateDecks(decks) {
+      return decks.map(deck => ({
+        ...deck,
+        cards: deck.cards.map(c => ({ ...defaultSR(), ...c, nextReview: c.nextReview || todayStr() }))
+      }));
+    }
+
+    function loadDecks() {
+      const raw = JSON.parse(localStorage.getItem('flashcards') || 'null');
+      state.decks = migrateDecks(raw || SAMPLE);
+      save();
+    }
+
     function save() { localStorage.setItem('flashcards', JSON.stringify(state.decks)); }
+    function saveUser() { localStorage.setItem('flashcards_user', state.userName); }
     function deck() { return state.decks.find(d => d.id === state.deckId); }
     function nextId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; }
 
+    function allCards() {
+      return state.decks.flatMap(d => d.cards.map(c => ({ ...c, deckName: d.name, deckId: d.id })));
+    }
+
+    function cardsDueOn(dateStr) {
+      return allCards().filter(c => c.nextReview <= dateStr);
+    }
+
+    function dueTodayCount() { return cardsDueOn(todayStr()).length; }
+
+    // Ebbinghaus algorithm: schedule next review based on recall quality
+    function applyEbbinghaus(card, recalled) {
+      if (!recalled) {
+        card.repetitions = 0;
+        card.interval = 1;
+        card.easeFactor = Math.max(1.3, (card.easeFactor || 2.5) - 0.2);
+      } else {
+        const rep = card.repetitions || 0;
+        if (rep < EBBINGHAUS_DAYS.length) {
+          card.interval = EBBINGHAUS_DAYS[rep];
+        } else {
+          card.interval = Math.round((card.interval || 30) * (card.easeFactor || 2.5));
+        }
+        card.repetitions = rep + 1;
+        card.easeFactor = Math.min(3.0, (card.easeFactor || 2.5) + 0.05);
+      }
+      card.lastReview = todayStr();
+      card.nextReview = addDays(todayStr(), card.interval);
+    }
+
+    function findCard(deckId, cardId) {
+      const d = state.decks.find(x => x.id === deckId);
+      return d?.cards.find(c => c.id === cardId);
+    }
+
+    function startSplash() {
+      const name = state.userName || 'Friend';
+      document.getElementById('splash-name').textContent = name;
+      setTimeout(() => {
+        document.getElementById('splash').classList.add('hide');
+        state.ready = true;
+        if (!state.userName) state.modal = { type: 'welcome' };
+        render();
+      }, 2000);
+    }
+
     function render() {
+      if (!state.ready) return;
       const app = document.getElementById('app');
-      if (state.view === 'decks') app.innerHTML = renderDecks();
+      if (state.view === 'study') app.innerHTML = renderStudy();
       else if (state.view === 'detail') app.innerHTML = renderDetail();
-      else if (state.view === 'study') app.innerHTML = renderStudy();
+      else if (state.tab === 'calendar') app.innerHTML = renderCalendar();
+      else if (state.tab === 'profile') app.innerHTML = renderProfile();
+      else app.innerHTML = renderDecks();
       if (state.modal) app.innerHTML += renderModal();
+      if (state.view !== 'study' && state.view !== 'detail') app.innerHTML += renderNav();
       bind();
     }
 
+    function renderNav() {
+      return `
+        <nav class="bottom-nav">
+          <button class="${state.tab === 'decks' ? 'active' : ''}" data-tab="decks">
+            <span class="nav-icon">📚</span>Decks
+          </button>
+          <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar">
+            <span class="nav-icon">📅</span>Calendar
+          </button>
+          <button class="${state.tab === 'profile' ? 'active' : ''}" data-tab="profile">
+            <span class="nav-icon">👤</span>Profile
+          </button>
+        </nav>`;
+    }
+
     function renderDecks() {
-      const list = state.decks.map(d => `
+      const due = dueTodayCount();
+      const list = state.decks.map(d => {
+        const dueInDeck = d.cards.filter(c => c.nextReview <= todayStr()).length;
+        return `
         <div class="deck-card" data-deck="${d.id}">
-          <button class="delete" data-del-deck="${d.id}" title="Delete">🗑</button>
+          <button class="delete" data-del-deck="${d.id}" title="Delete">✕</button>
           <h2>${esc(d.name)}</h2>
           ${d.description ? `<p>${esc(d.description)}</p>` : ''}
-          <div class="count">${d.cards.length} card${d.cards.length === 1 ? '' : 's'}</div>
-        </div>`).join('');
+          <div class="meta">
+            <span class="due">${dueInDeck} due today</span>
+            <span class="total">${d.cards.length} cards</span>
+          </div>
+        </div>`;
+      }).join('');
+
       return `
         <header><h1>Flashcards</h1></header>
-        <main>${list || `<div class="empty"><div class="emoji">🃏</div><h2>No decks yet</h2><p>Tap + to create your first deck</p></div>`}</main>
+        <main>
+          ${due ? `
+            <div class="due-banner">
+              <h2>${due} card${due === 1 ? '' : 's'} ready to review</h2>
+              <p>Spaced repetition keeps memories strong — Ebbinghaus curve</p>
+              <button data-review-due>Start Review</button>
+            </div>` : ''}
+          ${list || `<div class="empty"><div class="emoji">📚</div><h2>No decks yet</h2><p>Tap + to create your first deck</p></div>`}
+        </main>
         <button class="fab" data-action="new-deck">+</button>`;
     }
 
     function renderDetail() {
       const d = deck();
       if (!d) return '';
+      const due = d.cards.filter(c => c.nextReview <= todayStr()).length;
       const cards = d.cards.map(c => `
         <div class="card-item">
           <div class="front">${esc(c.front)}</div>
           <div class="back">${esc(c.back)}</div>
+          <div class="sr-info">Next: ${formatDate(c.nextReview)} · ${c.repetitions || 0} reviews</div>
           <div class="card-actions">
-            <button data-edit-card="${c.id}">✏️ Edit</button>
-            <button class="del" data-del-card="${c.id}">🗑 Delete</button>
+            <button data-edit-card="${c.id}">Edit</button>
+            <button class="del" data-del-card="${c.id}">Delete</button>
           </div>
         </div>`).join('');
       return `
@@ -244,10 +477,90 @@
           <h1>${esc(d.name)}</h1>
         </header>
         <main>
-          ${d.cards.length ? `<button class="btn study-btn" data-study>▶ Study (${d.cards.length} cards)</button>` : ''}
-          ${cards || `<div class="empty"><div class="emoji">❓</div><h2>No cards in this deck</h2><p>Tap + to add your first flashcard</p></div>`}
+          ${d.cards.length ? `
+            <button class="btn-primary" data-study-due>Review Due (${due})</button>
+            <button class="btn-outline" data-study-all>Study All (${d.cards.length})</button>` : ''}
+          ${cards || `<div class="empty"><div class="emoji">🃏</div><h2>No cards yet</h2><p>Tap + to add cards</p></div>`}
         </main>
         <button class="fab" data-action="new-card">+</button>`;
+    }
+
+    function renderCalendar() {
+      const y = state.calMonth.getFullYear();
+      const m = state.calMonth.getMonth();
+      const first = new Date(y, m, 1);
+      const startDay = first.getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const monthName = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+      const dueMap = {};
+      allCards().forEach(c => {
+        dueMap[c.nextReview] = (dueMap[c.nextReview] || 0) + 1;
+      });
+
+      let cells = '';
+      for (let i = 0; i < startDay; i++) cells += `<button class="cal-day other" disabled></button>`;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const ds = `${y}-${pad(m+1)}-${pad(day)}`;
+        const isToday = ds === todayStr();
+        const hasDue = dueMap[ds] > 0;
+        const selected = ds === state.calSelected;
+        let cls = 'cal-day';
+        if (isToday) cls += ' today';
+        if (hasDue) cls += ' has-due';
+        if (selected) cls += ' selected';
+        cells += `<button class="${cls}" data-cal-day="${ds}">${day}${hasDue ? '<span class="dot"></span>' : ''}</button>`;
+      }
+
+      const selectedCards = cardsDueOn(state.calSelected);
+      const detail = selectedCards.length ? selectedCards.map(c => `
+        <div class="cal-detail-item">
+          ${esc(c.front)}
+          <small>${esc(c.deckName)} · interval ${c.interval || 0}d</small>
+        </div>`).join('') : `<p style="color:var(--muted);font-size:.88rem">No reviews scheduled</p>`;
+
+      return `
+        <header><h1>Review Calendar</h1></header>
+        <main>
+          <div class="cal-header">
+            <button data-cal-prev>‹</button>
+            <h2>${monthName}</h2>
+            <button data-cal-next>›</button>
+          </div>
+          <div class="cal-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+          <div class="cal-grid">${cells}</div>
+          <div class="cal-legend">
+            <span class="l-today">Today</span>
+            <span class="l-due">Review due</span>
+          </div>
+          <div class="cal-detail">
+            <h3>${formatDate(state.calSelected)} — ${selectedCards.length} card${selectedCards.length === 1 ? '' : 's'}</h3>
+            ${detail}
+            ${selectedCards.length && state.calSelected <= todayStr() ? `<button class="btn-primary" style="margin-top:14px" data-review-date="${state.calSelected}">Review Now</button>` : ''}
+          </div>
+          <div class="ebbinghaus-info">
+            <h3>Ebbinghaus Spaced Repetition</h3>
+            Cards are scheduled at 1, 2, 4, 7, 15, 30, then 60+ day intervals — matching how memory fades over time. Miss a card and it resets to 1 day.
+          </div>
+        </main>`;
+    }
+
+    function renderProfile() {
+      const initial = (state.userName || '?')[0].toUpperCase();
+      return `
+        <header><h1>Profile</h1></header>
+        <main>
+          <div class="profile-card">
+            <div class="profile-avatar">${esc(initial)}</div>
+            <h2>${esc(state.userName || 'Set your name')}</h2>
+            <input id="profile-name" placeholder="Your name" value="${esc(state.userName)}" />
+            <button class="btn-primary" data-save-profile>Save Name</button>
+          </div>
+          <div class="ebbinghaus-info">
+            <h3>How it works</h3>
+            When you mark a card <strong>Got it</strong>, the next review moves further out (Ebbinghaus curve). Mark <strong>Missed</strong> and it comes back tomorrow. Check the Calendar tab to plan ahead.
+          </div>
+        </main>`;
     }
 
     function renderStudy() {
@@ -257,24 +570,23 @@
         const total = s.correct + s.incorrect;
         const pct = total ? Math.round(s.correct / total * 100) : 0;
         return `
-          <header><button class="icon-btn" data-back-detail>←</button><h1>Study Session</h1></header>
+          <header><button class="icon-btn" data-back-home>←</button><h1>Session Complete</h1></header>
           <main class="results">
-            <div class="emoji">🏆</div>
-            <h2>Session Complete!</h2>
-            <div class="score">${pct}% correct</div>
+            <div class="emoji">✨</div>
+            <h2>Well done${state.userName ? ', ' + esc(state.userName) : ''}!</h2>
+            <div class="score">${pct}%</div>
             <div class="stats">
               <div>Got it: ${s.correct}</div>
               <div>Missed: ${s.incorrect}</div>
-              <div>Total: ${total}</div>
+              <div>Next reviews scheduled on calendar</div>
             </div>
-            <button class="btn study-btn" data-restart>↻ Study Again</button>
-            <button class="btn show-answer" style="margin-top:8px" data-back-detail>Back to Deck</button>
+            <button class="btn-primary" data-back-home>Back to Decks</button>
           </main>`;
       }
       const card = s.cards[s.index];
       const progress = ((s.index + (s.flipped ? 0.5 : 0)) / s.cards.length) * 100;
       return `
-        <header><button class="icon-btn" data-back-detail>←</button><h1>Study Session</h1></header>
+        <header><button class="icon-btn" data-back-home>←</button><h1>Review</h1></header>
         <main>
           <div class="progress-row"><span>${s.index + 1} / ${s.cards.length}</span><span>${s.flipped ? 'Answer' : 'Question'}</span></div>
           <div class="progress-bar"><div style="width:${progress}%"></div></div>
@@ -284,13 +596,13 @@
               <div class="flip-face flip-back">${esc(card.back)}</div>
             </div>
           </div>
-          <p style="text-align:center;color:var(--muted);margin-bottom:16px">
-            ${s.flipped ? 'How did you do?' : 'Tap the card to reveal the answer'}
+          <p style="text-align:center;color:var(--muted);margin-bottom:16px;font-size:.9rem">
+            ${s.flipped ? 'How well did you remember it?' : 'Tap the card to flip'}
           </p>
           ${s.flipped ? `
             <div class="study-actions">
-              <button class="missed" data-answer="0">✗ Missed</button>
-              <button class="got-it" data-answer="1">✓ Got it</button>
+              <button class="missed" data-answer="0">Missed</button>
+              <button class="got-it" data-answer="1">Got it</button>
             </div>` : `
             <button class="show-answer" data-flip-btn>Show Answer</button>`}
         </main>`;
@@ -298,6 +610,17 @@
 
     function renderModal() {
       const m = state.modal;
+      if (m.type === 'welcome') return `
+        <div class="modal-bg">
+          <div class="modal">
+            <h2>Welcome!</h2>
+            <p style="color:var(--muted);margin-bottom:12px;font-size:.9rem">What's your name? We'll greet you each time you open the app.</p>
+            <input id="welcome-name" placeholder="Your name" autofocus />
+            <div class="modal-actions">
+              <button class="confirm" data-save-welcome>Continue</button>
+            </div>
+          </div>
+        </div>`;
       if (m.type === 'deck') return `
         <div class="modal-bg" data-close-modal>
           <div class="modal" onclick="event.stopPropagation()">
@@ -329,13 +652,49 @@
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
     }
 
+    function startStudy(cards, deckId) {
+      if (!cards.length) return;
+      state.study = {
+        cards: cards.map(c => ({ ...c })),
+        deckId: deckId || null,
+        index: 0, flipped: false, correct: 0, incorrect: 0, done: false
+      };
+      state.view = 'study';
+      render();
+    }
+
     function bind() {
+      document.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', () => {
+        state.tab = el.dataset.tab; state.view = 'decks'; state.deckId = null; render();
+      }));
       document.querySelector('[data-back]')?.addEventListener('click', () => { state.view = 'decks'; state.deckId = null; render(); });
-      document.querySelector('[data-back-detail]')?.addEventListener('click', () => { state.view = 'detail'; state.study = null; render(); });
+      document.querySelectorAll('[data-back-home]').forEach(el => el.addEventListener('click', () => {
+        state.view = 'decks'; state.deckId = null; state.study = null; render();
+      }));
       document.querySelector('[data-action="new-deck"]')?.addEventListener('click', () => { state.modal = { type: 'deck' }; render(); });
       document.querySelector('[data-action="new-card"]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
-      document.querySelector('[data-study]')?.addEventListener('click', startStudy);
-      document.querySelector('[data-restart]')?.addEventListener('click', startStudy);
+      document.querySelector('[data-review-due]')?.addEventListener('click', () => {
+        startStudy(cardsDueOn(todayStr()));
+      });
+      document.querySelector('[data-study-due]')?.addEventListener('click', () => {
+        const d = deck();
+        startStudy(d.cards.filter(c => c.nextReview <= todayStr()), d.id);
+      });
+      document.querySelector('[data-study-all]')?.addEventListener('click', () => {
+        startStudy([...deck().cards], deck().id);
+      });
+      document.querySelector('[data-review-date]')?.addEventListener('click', (e) => {
+        startStudy(cardsDueOn(e.currentTarget.dataset.reviewDate));
+      });
+      document.querySelector('[data-save-profile]')?.addEventListener('click', () => {
+        state.userName = document.getElementById('profile-name').value.trim();
+        saveUser(); render();
+      });
+      document.querySelector('[data-save-welcome]')?.addEventListener('click', () => {
+        const n = document.getElementById('welcome-name').value.trim();
+        if (n) { state.userName = n; saveUser(); }
+        state.modal = null; render();
+      });
       document.querySelectorAll('[data-deck]').forEach(el => el.addEventListener('click', e => {
         if (e.target.closest('[data-del-deck]')) return;
         state.deckId = +el.dataset.deck; state.view = 'detail'; render();
@@ -349,8 +708,7 @@
       }));
       document.querySelectorAll('[data-del-card]').forEach(el => el.addEventListener('click', () => {
         if (confirm('Delete this card?')) {
-          const d = deck();
-          d.cards = d.cards.filter(c => c.id !== +el.dataset.delCard);
+          deck().cards = deck().cards.filter(c => c.id !== +el.dataset.delCard);
           save(); render();
         }
       }));
@@ -380,34 +738,41 @@
           const c = d.cards.find(x => x.id === state.modal.edit);
           c.front = front; c.back = back;
         } else {
-          d.cards.push({ id: nextId(d.cards), front, back });
+          d.cards.push({ id: nextId(d.cards), front, back, ...defaultSR() });
         }
         save(); state.modal = null; render();
       });
+      document.querySelector('[data-cal-prev]')?.addEventListener('click', () => {
+        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() - 1, 1);
+        render();
+      });
+      document.querySelector('[data-cal-next]')?.addEventListener('click', () => {
+        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() + 1, 1);
+        render();
+      });
+      document.querySelectorAll('[data-cal-day]').forEach(el => el.addEventListener('click', () => {
+        state.calSelected = el.dataset.calDay; render();
+      }));
       const flip = () => { if (state.study && !state.study.done) { state.study.flipped = !state.study.flipped; render(); } };
       document.querySelector('[data-flip]')?.addEventListener('click', flip);
       document.querySelector('[data-flip-btn]')?.addEventListener('click', flip);
       document.querySelectorAll('[data-answer]').forEach(el => el.addEventListener('click', () => {
-        const correct = el.dataset.answer === '1';
-        if (correct) state.study.correct++; else state.study.incorrect++;
-        state.study.flipped = false;
-        if (state.study.index + 1 >= state.study.cards.length) state.study.done = true;
-        else state.study.index++;
+        const recalled = el.dataset.answer === '1';
+        const s = state.study;
+        const cardRef = s.cards[s.index];
+        const real = findCard(cardRef.deckId || s.deckId || deck()?.id, cardRef.id);
+        if (real) applyEbbinghaus(real, recalled);
+        if (recalled) s.correct++; else s.incorrect++;
+        save();
+        s.flipped = false;
+        if (s.index + 1 >= s.cards.length) s.done = true;
+        else s.index++;
         render();
       }));
     }
 
-    function startStudy() {
-      const d = deck();
-      state.study = {
-        cards: [...d.cards].sort(() => Math.random() - .5),
-        index: 0, flipped: false, correct: 0, incorrect: 0, done: false
-      };
-      state.view = 'study';
-      render();
-    }
-
-    render();
+    loadDecks();
+    startSplash();
   </script>
 </body>
 </html>
