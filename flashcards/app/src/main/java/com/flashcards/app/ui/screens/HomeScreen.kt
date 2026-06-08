@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -17,17 +16,12 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,106 +42,89 @@ import com.flashcards.app.domain.SpacedRepetitionEngine
 import com.flashcards.app.ui.components.DeckDialog
 import com.flashcards.app.viewmodel.HomeViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onOpenDeck: (Long) -> Unit,
     onStudyDeck: (Long) -> Unit,
+    showDeckDialog: Long?,
+    onDismissDeckDialog: () -> Unit,
+    onAddDeckToCluster: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showDeckDialog by remember { mutableStateOf<Long?>(null) } // null=new any, else clusterId
     var showClusterDialog by remember { mutableStateOf(false) }
     var editCluster by remember { mutableStateOf<Cluster?>(null) }
 
-    Scaffold(
+    LazyColumn(
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Column { Text("Shine"); Text("Your knowledge, organized", style = MaterialTheme.typography.bodySmall) } },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showDeckDialog = state.clusters.firstOrNull()?.id }) {
-                Icon(Icons.Default.Add, contentDescription = "New deck")
-            }
-        },
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (state.dueDecks.isNotEmpty()) {
-                item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("${state.dueDecks.size} deck(s) due today", fontWeight = FontWeight.Bold)
-                            state.dueDecks.forEach { d ->
-                                TextButton(onClick = { onStudyDeck(d.id) }) { Text("Study ${d.name}") }
-                            }
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (state.dueDecks.isNotEmpty()) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("${state.dueDecks.size} deck(s) due today", fontWeight = FontWeight.Bold)
+                        state.dueDecks.forEach { d ->
+                            TextButton(onClick = { onStudyDeck(d.id) }) { Text("Study ${d.name}") }
                         }
                     }
                 }
             }
-            state.clusters.forEach { cluster ->
-                val decks = state.ownedDecks.filter { it.clusterId == cluster.id }
-                item {
-                    ClusterSection(
-                        cluster = cluster,
-                        decks = decks,
-                        onOpenDeck = onOpenDeck,
-                        onStudyDeck = onStudyDeck,
-                        onAddDeck = { showDeckDialog = cluster.id },
-                        onEditCluster = { editCluster = cluster },
-                        onDeleteCluster = { viewModel.deleteCluster(cluster) },
-                        onShareDeck = { onOpenDeck(it) },
-                        onDeleteDeck = { viewModel.deleteDeck(it) },
-                    )
-                }
-            }
-            val other = state.ownedDecks.filter { it.clusterId == null }
-            if (other.isNotEmpty()) {
-                item {
-                    ClusterSection(
-                        cluster = Cluster(id = -1, name = "Other", emoji = "📋"),
-                        decks = other,
-                        showActions = false,
-                        onOpenDeck = onOpenDeck,
-                        onStudyDeck = onStudyDeck,
-                        onAddDeck = {},
-                        onEditCluster = {},
-                        onDeleteCluster = {},
-                        onShareDeck = { onOpenDeck(it) },
-                        onDeleteDeck = { viewModel.deleteDeck(it) },
-                    )
-                }
-            }
-            if (state.sharedDecks.isNotEmpty()) {
-                item {
-                    ClusterSection(
-                        cluster = Cluster(id = -2, name = "Shared with me", emoji = "🤝"),
-                        decks = state.sharedDecks,
-                        showActions = false,
-                        onOpenDeck = onOpenDeck,
-                        onStudyDeck = onStudyDeck,
-                        onAddDeck = {},
-                        onEditCluster = {},
-                        onDeleteCluster = {},
-                        onShareDeck = {},
-                        onDeleteDeck = { viewModel.leaveDeck(it) },
-                        deleteLabel = "Leave",
-                    )
-                }
-            }
+        }
+        state.clusters.forEach { cluster ->
+            val decks = state.ownedDecks.filter { it.clusterId == cluster.id }
             item {
-                TextButton(onClick = { showClusterDialog = true }) { Text("+ New cluster") }
+                ClusterSection(
+                    cluster = cluster,
+                    decks = decks,
+                    onOpenDeck = onOpenDeck,
+                    onStudyDeck = onStudyDeck,
+                    onAddDeck = { onAddDeckToCluster(cluster.id) },
+                    onEditCluster = { editCluster = cluster },
+                    onDeleteCluster = { viewModel.deleteCluster(cluster) },
+                    onShareDeck = { onOpenDeck(it) },
+                    onDeleteDeck = { viewModel.deleteDeck(it) },
+                )
             }
+        }
+        val other = state.ownedDecks.filter { it.clusterId == null }
+        if (other.isNotEmpty()) {
+            item {
+                ClusterSection(
+                    cluster = Cluster(id = -1, name = "Other", emoji = "📋"),
+                    decks = other,
+                    showActions = false,
+                    onOpenDeck = onOpenDeck,
+                    onStudyDeck = onStudyDeck,
+                    onAddDeck = {},
+                    onEditCluster = {},
+                    onDeleteCluster = {},
+                    onShareDeck = { onOpenDeck(it) },
+                    onDeleteDeck = { viewModel.deleteDeck(it) },
+                )
+            }
+        }
+        if (state.sharedDecks.isNotEmpty()) {
+            item {
+                ClusterSection(
+                    cluster = Cluster(id = -2, name = "Shared with me", emoji = "🤝"),
+                    decks = state.sharedDecks,
+                    showActions = false,
+                    onOpenDeck = onOpenDeck,
+                    onStudyDeck = onStudyDeck,
+                    onAddDeck = {},
+                    onEditCluster = {},
+                    onDeleteCluster = {},
+                    onShareDeck = {},
+                    onDeleteDeck = { viewModel.leaveDeck(it) },
+                    deleteLabel = "Leave",
+                )
+            }
+        }
+        item {
+            TextButton(onClick = { showClusterDialog = true }) { Text("+ New cluster") }
         }
     }
 
@@ -155,8 +132,8 @@ fun HomeScreen(
         DeckDialog(
             title = "New Deck",
             confirmLabel = "Create",
-            onDismiss = { showDeckDialog = null },
-            onConfirm = { name, desc -> viewModel.createDeck(name, desc, clusterId) { showDeckDialog = null } },
+            onDismiss = onDismissDeckDialog,
+            onConfirm = { name, desc -> viewModel.createDeck(name, desc, clusterId) { onDismissDeckDialog() } },
         )
     }
     if (showClusterDialog || editCluster != null) {
@@ -202,7 +179,7 @@ private fun ClusterSection(
     Card {
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("${cluster.emoji} ${cluster.name}", fontWeight = FontWeight.Bold)
+                Text("${cluster.emoji} ${cluster.name}", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 if (showActions && cluster.id > 0) {
                     Row {
                         IconButton(onClick = onAddDeck) { Icon(Icons.Default.Add, null) }

@@ -12,19 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,7 +32,6 @@ import com.flashcards.app.viewmodel.CalendarViewModel
 import java.time.format.TextStyle
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel,
@@ -56,49 +48,43 @@ fun CalendarScreen(
         repeat(firstDay) { add(null) }
         for (d in 1..days) add(d)
     }
+    val paddedCells = dayCells.toMutableList()
+    while (paddedCells.size % 7 != 0) paddedCells.add(null)
 
-    Scaffold(
+    LazyColumn(
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Study Calendar") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            )
-        },
-    ) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.overloadDays.isNotEmpty()) {
-                item {
-                    Card {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("⚠ ${state.overloadDays.size} busy day(s)", fontWeight = FontWeight.Bold)
-                            Text("More than ${state.settings.globalMaxSessionsPerDay} sessions on one day", style = MaterialTheme.typography.bodySmall)
-                            Button(onClick = { viewModel.spreadOverload() }, modifier = Modifier.padding(top = 8.dp)) { Text("Spread sessions out") }
-                        }
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+    ) {
+        if (state.overloadDays.isNotEmpty()) {
+            item {
+                Card {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("⚠ ${state.overloadDays.size} busy day(s)", fontWeight = FontWeight.Bold)
+                        Text("More than ${state.settings.globalMaxSessionsPerDay} sessions on one day", style = MaterialTheme.typography.bodySmall)
+                        Button(onClick = { viewModel.spreadOverload() }, modifier = Modifier.padding(top = 8.dp)) { Text("Spread sessions out") }
                     }
                 }
             }
-            item {
-                Card {
-                    Column(Modifier.padding(12.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = { viewModel.prevMonth() }) { Text("‹") }
-                            Text(monthLabel, fontWeight = FontWeight.Bold)
-                            TextButton(onClick = { viewModel.nextMonth() }) { Text("›") }
+        }
+        item {
+            Card {
+                Column(Modifier.padding(12.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { viewModel.prevMonth() }) { Text("‹") }
+                        Text(monthLabel, fontWeight = FontWeight.Bold)
+                        TextButton(onClick = { viewModel.nextMonth() }) { Text("›") }
+                    }
+                    Row(Modifier.fillMaxWidth()) {
+                        listOf("S", "M", "T", "W", "T", "F", "S").forEach {
+                            Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall)
                         }
+                    }
+                    paddedCells.chunked(7).forEach { week ->
                         Row(Modifier.fillMaxWidth()) {
-                            listOf("S", "M", "T", "W", "T", "F", "S").forEach {
-                                Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                        LazyVerticalGrid(columns = GridCells.Fixed(7), modifier = Modifier.fillMaxWidth()) {
-                            items(dayCells.size) { i ->
-                                val day = dayCells[i]
+                            week.forEach { day ->
                                 if (day == null) {
-                                    Box(Modifier.aspectRatio(1f))
+                                    Box(Modifier.weight(1f).aspectRatio(1f))
                                 } else {
                                     val ds = String.format("%04d-%02d-%02d", year, month, day)
                                     val count = state.sessionsOn(ds).size
@@ -106,7 +92,10 @@ fun CalendarScreen(
                                     val isToday = ds == DateUtils.todayStr()
                                     val selected = ds == state.selectedDate
                                     Box(
-                                        Modifier.aspectRatio(1f).padding(2.dp)
+                                        Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                            .padding(2.dp)
                                             .background(
                                                 when {
                                                     selected -> MaterialTheme.colorScheme.primaryContainer
@@ -121,7 +110,9 @@ fun CalendarScreen(
                                     ) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Text("$day", style = MaterialTheme.typography.labelMedium)
-                                            if (count > 0) Text("$count", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                            if (count > 0) {
+                                                Text("$count", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                            }
                                         }
                                     }
                                 }
@@ -130,45 +121,45 @@ fun CalendarScreen(
                     }
                 }
             }
-            item {
-                Card {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(DateUtils.formatDate(state.selectedDate), fontWeight = FontWeight.Bold)
-                        val sessions = state.sessionsOn(state.selectedDate)
-                        if (sessions.isEmpty()) Text("Nothing scheduled", style = MaterialTheme.typography.bodySmall)
-                        sessions.forEach { (deck, session) ->
-                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(deck.name)
-                                Row {
-                                    if (state.selectedDate <= DateUtils.todayStr()) {
-                                        TextButton(onClick = { onStudyDeck(deck.id) }) { Text("Study") }
-                                    }
-                                    TextButton(onClick = { viewModel.removeSession(deck.id, session.id) }) { Text("Remove") }
+        }
+        item {
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    Text(DateUtils.formatDate(state.selectedDate), fontWeight = FontWeight.Bold)
+                    val sessions = state.sessionsOn(state.selectedDate)
+                    if (sessions.isEmpty()) Text("Nothing scheduled", style = MaterialTheme.typography.bodySmall)
+                    sessions.forEach { (deck, session) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(deck.name, modifier = Modifier.weight(1f))
+                            Row {
+                                if (state.selectedDate <= DateUtils.todayStr()) {
+                                    TextButton(onClick = { onStudyDeck(deck.id) }) { Text("Study") }
                                 }
+                                TextButton(onClick = { viewModel.removeSession(deck.id, session.id) }) { Text("Remove") }
                             }
                         }
-                        val deckId = state.scheduleDeckId
-                        if (deckId != null && state.decks.isNotEmpty()) {
-                            Button(
-                                onClick = { viewModel.addSession(state.selectedDate, deckId) },
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            ) { Text("Add session for ${state.decks.find { it.id == deckId }?.name ?: "deck"}") }
-                        }
-                        if (sessions.isNotEmpty()) {
-                            OutlinedButton(
-                                onClick = { viewModel.clearDay(state.selectedDate) },
-                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                            ) { Text("Clear this day") }
-                        }
+                    }
+                    val deckId = state.scheduleDeckId
+                    if (deckId != null && state.decks.isNotEmpty()) {
+                        Button(
+                            onClick = { viewModel.addSession(state.selectedDate, deckId) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) { Text("Add session for ${state.decks.find { it.id == deckId }?.name ?: "deck"}") }
+                    }
+                    if (sessions.isNotEmpty()) {
+                        OutlinedButton(
+                            onClick = { viewModel.clearDay(state.selectedDate) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        ) { Text("Clear this day") }
                     }
                 }
             }
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Busy-day limit: ${state.settings.globalMaxSessionsPerDay}")
-                    TextButton(onClick = { viewModel.setMaxSessionsPerDay(state.settings.globalMaxSessionsPerDay - 1) }) { Text("−") }
-                    TextButton(onClick = { viewModel.setMaxSessionsPerDay(state.settings.globalMaxSessionsPerDay + 1) }) { Text("+") }
-                }
+        }
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Busy-day limit: ${state.settings.globalMaxSessionsPerDay}")
+                TextButton(onClick = { viewModel.setMaxSessionsPerDay(state.settings.globalMaxSessionsPerDay - 1) }) { Text("−") }
+                TextButton(onClick = { viewModel.setMaxSessionsPerDay(state.settings.globalMaxSessionsPerDay + 1) }) { Text("+") }
             }
         }
     }

@@ -13,17 +13,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,16 +33,15 @@ import androidx.compose.ui.unit.dp
 import com.flashcards.app.viewmodel.AccountViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
     viewModel: AccountViewModel,
+    snackbar: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbar = remember { SnackbarHostState() }
     var importText by remember { mutableStateOf("") }
     var showImportPaste by remember { mutableStateOf(false) }
 
@@ -76,90 +70,80 @@ fun AccountScreen(
         }
     }
 
-    Scaffold(
+    LazyColumn(
         modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbar) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Account") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            )
-        },
-    ) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item {
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+    ) {
+        item {
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Your profile", fontWeight = FontWeight.Bold)
+                    OutlinedTextField(
+                        value = state.settings.userName,
+                        onValueChange = { viewModel.updateUserName(it) },
+                        label = { Text("Display name") },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        singleLine = true,
+                    )
+                    Text(
+                        "${state.clusterCount} clusters · ${state.deckCount} decks on this device",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+        }
+        if (state.inbox.isNotEmpty()) {
+            item { Text("Inbox", fontWeight = FontWeight.Bold) }
+            items(state.inbox) { item ->
                 Card {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Your profile", fontWeight = FontWeight.Bold)
+                    Column(Modifier.padding(12.dp)) {
+                        Text("Shared deck from ${item.fromName ?: item.fromEmail ?: "someone"}")
+                        Row {
+                            Button(onClick = {
+                                viewModel.acceptInbox(item, null, onDone = { scope.launch { snackbar.showSnackbar("Deck added") } }, onError = { scope.launch { snackbar.showSnackbar("Import failed") } })
+                            }) { Text("Accept") }
+                            TextButton(onClick = { viewModel.dismissInbox(item.id) }) { Text("Dismiss") }
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Backup", fontWeight = FontWeight.Bold)
+                    Text("Export or import your full library as JSON", style = MaterialTheme.typography.bodySmall)
+                    Button(
+                        onClick = { exportLauncher.launch("shine-backup.json") },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) { Text("Export backup") }
+                    OutlinedButton(
+                        onClick = { importLauncher.launch(arrayOf("application/json", "text/*")) },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) { Text("Import backup file") }
+                    OutlinedButton(
+                        onClick = { showImportPaste = !showImportPaste },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    ) { Text("Import shared deck JSON") }
+                    if (showImportPaste) {
                         OutlinedTextField(
-                            value = state.settings.userName,
-                            onValueChange = { viewModel.updateUserName(it) },
-                            label = { Text("Display name") },
+                            value = importText,
+                            onValueChange = { importText = it },
+                            label = { Text("Paste share JSON") },
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            singleLine = true,
+                            minLines = 3,
                         )
-                        Text(
-                            "${state.clusterCount} clusters · ${state.deckCount} decks on this device",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
-                }
-            }
-            if (state.inbox.isNotEmpty()) {
-                item { Text("Inbox", fontWeight = FontWeight.Bold) }
-                items(state.inbox) { item ->
-                    Card {
-                        Column(Modifier.padding(12.dp)) {
-                            Text("Shared deck from ${item.fromName ?: item.fromEmail ?: "someone"}")
-                            Row {
-                                Button(onClick = {
-                                    viewModel.acceptInbox(item, null, onDone = { scope.launch { snackbar.showSnackbar("Deck added") } }, onError = { scope.launch { snackbar.showSnackbar("Import failed") } })
-                                }) { Text("Accept") }
-                                TextButton(onClick = { viewModel.dismissInbox(item.id) }) { Text("Dismiss") }
-                            }
-                        }
-                    }
-                }
-            }
-            item {
-                Card {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Backup", fontWeight = FontWeight.Bold)
-                        Text("Export or import your full library as JSON", style = MaterialTheme.typography.bodySmall)
                         Button(
-                            onClick = { exportLauncher.launch("shine-backup.json") },
+                            onClick = {
+                                viewModel.importShare(importText, null,
+                                    onDone = { importText = ""; showImportPaste = false; scope.launch { snackbar.showSnackbar("Deck imported") } },
+                                    onError = { scope.launch { snackbar.showSnackbar("Invalid share data") } },
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        ) { Text("Export backup") }
-                        OutlinedButton(
-                            onClick = { importLauncher.launch(arrayOf("application/json", "text/*")) },
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        ) { Text("Import backup file") }
-                        OutlinedButton(
-                            onClick = { showImportPaste = !showImportPaste },
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        ) { Text("Import shared deck JSON") }
-                        if (showImportPaste) {
-                            OutlinedTextField(
-                                value = importText,
-                                onValueChange = { importText = it },
-                                label = { Text("Paste share JSON") },
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                minLines = 3,
-                            )
-                            Button(
-                                onClick = {
-                                    viewModel.importShare(importText, null,
-                                        onDone = { importText = ""; showImportPaste = false; scope.launch { snackbar.showSnackbar("Deck imported") } },
-                                        onError = { scope.launch { snackbar.showSnackbar("Invalid share data") } },
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            ) { Text("Import deck") }
-                        }
+                        ) { Text("Import deck") }
                     }
                 }
             }

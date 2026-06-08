@@ -43,6 +43,7 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = { Text(state.deck?.name ?: "Study") },

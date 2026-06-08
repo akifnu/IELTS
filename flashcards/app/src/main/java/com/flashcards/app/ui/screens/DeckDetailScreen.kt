@@ -1,5 +1,6 @@
 package com.flashcards.app.ui.screens
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -75,7 +77,10 @@ fun DeckDetailScreen(
         androidx.compose.material3.ModalBottomSheet(onDismissRequest = { showShare = false }, sheetState = sheetState) {
             Column(Modifier.padding(16.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Share ${deck.name}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                ) {
                     FilterChip(selected = inviteRole == "viewer", onClick = { inviteRole = "viewer" }, label = { Text("Viewer") })
                     FilterChip(selected = inviteRole == "editor", onClick = { inviteRole = "editor" }, label = { Text("Editor") })
                 }
@@ -115,6 +120,7 @@ fun DeckDetailScreen(
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = { Text(deck?.name ?: "Deck") },
@@ -174,7 +180,10 @@ fun DeckDetailScreen(
                             }
                             if (state.smartScheduleOn) {
                                 Text("Algorithm", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                ) {
                                     ShineConstants.ALGORITHMS.keys.forEach { key ->
                                         FilterChip(
                                             selected = deck.algo.algorithm == key,
@@ -184,7 +193,10 @@ fun DeckDetailScreen(
                                     }
                                 }
                                 Text("Preset", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                ) {
                                     listOf("relaxed", "normal", "intensive").forEach { p ->
                                         FilterChip(
                                             selected = deck.algo.preset == p,

@@ -13,8 +13,8 @@ android {
         applicationId = "com.flashcards.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "2.3.0"
+        versionCode = 11
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -52,32 +52,6 @@ android {
     buildFeatures {
         compose = true
     }
-}
-
-val copyWebAssets = tasks.register<Copy>("copyWebAssets") {
-    from("${rootProject.projectDir}/web") {
-        exclude(
-            "share-relay/**",
-            "serve.sh",
-            "netlify.toml",
-            "README.md",
-            ".gitignore",
-            ".netlify/**",
-            "auth-config.js",
-        )
-    }
-    into(layout.projectDirectory.dir("src/main/assets/www"))
-    doLast {
-        copy {
-            from("${rootProject.projectDir}/web/auth-config.example.js")
-            into(layout.projectDirectory.dir("src/main/assets/www"))
-            rename { "auth-config.js" }
-        }
-    }
-}
-
-tasks.named("preBuild") {
-    dependsOn(copyWebAssets)
 }
 
 dependencies {
