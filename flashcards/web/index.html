@@ -61,31 +61,67 @@
     @keyframes splashKen{to{transform:scale(1)}}
     .splash-scrim{
       position:absolute;inset:0;z-index:1;
-      background:linear-gradient(180deg,rgba(8,10,20,.15) 0%,rgba(8,10,20,.45) 38%,rgba(8,10,20,.88) 72%,rgba(8,10,20,.96) 100%);
+      background:linear-gradient(180deg,rgba(6,8,18,.72) 0%,rgba(8,10,20,.35) 22%,rgba(8,10,20,.2) 42%,rgba(8,10,20,.82) 70%,rgba(8,10,20,.96) 100%);
+    }
+    .splash-topbar{
+      position:absolute;top:0;left:0;right:0;z-index:3;
+      display:flex;align-items:center;gap:12px;
+      padding:calc(14px + env(safe-area-inset-top)) 20px 14px;
+      background:linear-gradient(180deg,rgba(8,10,20,.72),rgba(8,10,20,0));
+    }
+    .splash-mark{
+      width:46px;height:46px;border-radius:14px;flex-shrink:0;
+      background:linear-gradient(135deg,var(--primary),var(--accent));
+      display:flex;align-items:center;justify-content:center;font-size:1.25rem;
+      box-shadow:0 8px 24px rgba(91,94,247,.45);border:1px solid rgba(255,255,255,.25);
+    }
+    .splash-wordmark{font-size:1.55rem;font-weight:800;letter-spacing:-.03em;line-height:1;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.35)}
+    .splash-apptag{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.78);margin-top:2px}
+    .splash-hero{
+      position:absolute;left:0;right:0;top:22%;z-index:2;text-align:center;
+      padding:0 20px;pointer-events:none;
+    }
+    .splash-hero.splash-in .splash-hero-stamp{animation:stampIn .55s var(--ease) backwards}
+    .splash-hero.splash-in .splash-hero-moment{animation:splashLine .5s var(--ease) .12s backwards}
+    @keyframes stampIn{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:none}}
+    .splash-hero-stamp{
+      font-size:clamp(2.6rem,13vw,3.6rem);font-weight:900;line-height:.92;
+      letter-spacing:.04em;text-transform:uppercase;color:#fff;
+      text-shadow:0 4px 28px rgba(0,0,0,.5),0 0 40px rgba(91,94,247,.35);
+    }
+    .splash-hero-stamp span{
+      display:block;font-size:.42em;font-weight:800;letter-spacing:.28em;
+      color:rgba(255,255,255,.82);margin-bottom:.35em;
+    }
+    .splash-hero-moment{
+      display:inline-block;margin-top:12px;padding:8px 16px;border-radius:var(--radius-pill);
+      font-size:.82rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+      background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);
+      backdrop-filter:blur(10px);color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.3);
     }
     .splash-content{
       position:relative;z-index:2;width:100%;max-width:480px;color:#fff;
       padding:0 24px calc(28px + env(safe-area-inset-bottom));text-align:left;
     }
-    .splash-content.splash-in .splash-brand,.splash-content.splash-in .splash-essence,.splash-content.splash-in .splash-headline,
+    .splash-content.splash-in .splash-essence,.splash-content.splash-in .splash-headline,
     .splash-content.splash-in .splash-subline,.splash-content.splash-in .splash-personal,.splash-content.splash-in .splash-actions,
     .splash-content.splash-in .splash-auth,.splash-content.splash-in .splash-refresh,.splash-content.splash-in .splash-credit{
       animation:splashLine .85s var(--ease) backwards;
     }
-    .splash-content.splash-in .splash-essence{animation-delay:.08s}
-    .splash-content.splash-in .splash-headline{animation-delay:.18s}
-    .splash-content.splash-in .splash-subline{animation-delay:.3s}
-    .splash-content.splash-in .splash-personal{animation-delay:.42s}
-    .splash-content.splash-in .splash-actions{animation-delay:.54s}
-    .splash-content.splash-in .splash-auth{animation-delay:.64s}
-    .splash-content.splash-in .splash-refresh{animation-delay:.74s}
-    .splash-content.splash-in .splash-credit{animation-delay:.82s}
+    .splash-content.splash-in .splash-essence{animation-delay:.2s}
+    .splash-content.splash-in .splash-headline{animation-delay:.28s}
+    .splash-content.splash-in .splash-subline{animation-delay:.38s}
+    .splash-content.splash-in .splash-personal{animation-delay:.48s}
+    .splash-content.splash-in .splash-actions{animation-delay:.58s}
+    .splash-content.splash-in .splash-auth{animation-delay:.68s}
+    .splash-content.splash-in .splash-refresh{animation-delay:.78s}
+    .splash-content.splash-in .splash-credit{animation-delay:.86s}
     @keyframes splashLine{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-    .splash-brand{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:14px}
     .splash-essence{
-      display:inline-block;padding:6px 14px;border-radius:var(--radius-pill);
-      font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-      background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(8px);
+      display:inline-block;padding:5px 12px;border-radius:var(--radius-pill);
+      font-size:.65rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+      background:rgba(91,94,247,.35);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(8px);
+      color:rgba(255,255,255,.95);
     }
     .splash-headline{
       font-size:clamp(1.85rem,7vw,2.35rem);font-weight:800;line-height:1.12;
@@ -484,14 +520,24 @@
   <div id="splash" aria-label="Welcome to Shine">
     <div class="splash-photo is-loading" id="splash-photo" role="img" aria-hidden="true"></div>
     <div class="splash-scrim"></div>
+    <header class="splash-topbar">
+      <div class="splash-mark" aria-hidden="true">✨</div>
+      <div>
+        <div class="splash-wordmark">Shine</div>
+        <div class="splash-apptag">Lifestyle flashcards</div>
+      </div>
+    </header>
+    <div class="splash-hero splash-in" id="splash-hero" aria-live="polite">
+      <div class="splash-hero-stamp"><span>A</span>NEW<br>BEGINNING</div>
+      <div class="splash-hero-moment" id="splash-moment">Sunrise — start again</div>
+    </div>
     <div class="splash-content splash-in" id="splash-content">
-      <div class="splash-brand">Shine</div>
       <span class="splash-essence" id="splash-essence">New beginning</span>
       <h1 class="splash-headline" id="splash-headline">Every ending is a door opening.</h1>
       <p class="splash-subline" id="splash-subline">What you choose to learn today becomes part of who you are tomorrow.</p>
       <p class="splash-personal" id="splash-personal">This moment is yours.</p>
       <div class="splash-actions">
-        <button type="button" class="splash-begin" id="splash-begin">Begin anew</button>
+        <button type="button" class="splash-begin" id="splash-begin">Start with Shine</button>
       </div>
       <div class="splash-auth">
         <button type="button" class="btn-google-oneclick splash-google" data-google-oneclick aria-label="Continue with Google">
@@ -522,58 +568,66 @@
       {
         image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=85',
         credit: 'Sunrise over the Alps · Unsplash',
-        essence: 'New beginning',
+        moment: '☀️ Sunrise — today starts now',
+        essence: 'Day one',
         headline: 'Rise into who you\'re becoming.',
-        subline: 'The mountain doesn\'t ask who you were yesterday. It only asks if you\'re willing to climb again today.',
+        subline: 'Yesterday is done. Today you climb again — one card at a time.',
       },
       {
         image: 'https://images.unsplash.com/photo-1470252649378-783c8edf5f68?auto=format&fit=crop&w=1200&q=85',
         credit: 'Golden field at dawn · Unsplash',
+        moment: '🌅 Dawn — light after the dark',
         essence: 'Fresh start',
-        headline: 'Light finds you, even after the longest night.',
-        subline: 'Every sunrise is proof that nothing stays finished forever — including the person you\'re allowed to become.',
+        headline: 'A new day has arrived.',
+        subline: 'What felt finished isn\'t. You get another chance to grow.',
       },
       {
         image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1200&q=85',
         credit: 'Seedling in morning light · Unsplash',
-        essence: 'Quiet growth',
-        headline: 'Small beginnings change everything.',
-        subline: 'A single seed doesn\'t rush. It roots, then rises. Your knowledge grows the same way — one card, one day.',
+        moment: '🌱 Sprout — life begins small',
+        essence: 'Start tiny',
+        headline: 'Every great tree was once a seed.',
+        subline: 'Plant one idea today. Watch it root, then rise.',
       },
       {
         image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=85',
         credit: 'Road beside still water · Unsplash',
-        essence: 'Open path',
-        headline: 'The road ahead doesn\'t know your past.',
-        subline: 'You don\'t need permission to turn the page. You only need the courage to take the first step forward.',
+        moment: '🛤️ Open road — leave the past behind',
+        essence: 'First step',
+        headline: 'The path ahead is yours.',
+        subline: 'You don\'t need permission. Just take the first step forward.',
       },
       {
         image: 'https://images.unsplash.com/photo-1499203537755-bb8324afdb45?auto=format&fit=crop&w=1200&q=85',
         credit: 'Ocean at first light · Unsplash',
-        essence: 'Horizon calling',
-        headline: 'The horizon is an invitation, not a limit.',
-        subline: 'Waves erase the shore and draw it anew. You can let go of what didn\'t stick — and begin again.',
+        moment: '🌊 Ocean dawn — wipe the slate clean',
+        essence: 'Let go',
+        headline: 'Let the old wash away.',
+        subline: 'Like the tide, you can erase what didn\'t stick — and begin again.',
       },
       {
         image: 'https://images.unsplash.com/photo-1518173946687-a4c036bc3f6a?auto=format&fit=crop&w=1200&q=85',
         credit: 'Butterfly on a flower · Unsplash',
-        essence: 'Transformation',
-        headline: 'Change doesn\'t have to be loud to be real.',
-        subline: 'What feels like starting over is often becoming. Every review is you choosing growth over forgetting.',
+        moment: '🦋 Butterfly — become someone new',
+        essence: 'Transform',
+        headline: 'Change is already inside you.',
+        subline: 'Starting over isn\'t failure. It\'s becoming.',
       },
       {
         image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1200&q=85',
         credit: 'Pages waiting to be read · Unsplash',
-        essence: 'Turn the page',
-        headline: 'Today you write a new chapter.',
-        subline: 'The stories you carry don\'t end where you left off. Pick up the pen. Your future self is reading along.',
+        moment: '📖 Blank page — write your story',
+        essence: 'Chapter one',
+        headline: 'Turn the page. Start fresh.',
+        subline: 'Your story doesn\'t end where you left off. Pick up the pen.',
       },
       {
         image: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=85',
         credit: 'Forest path in morning mist · Unsplash',
+        moment: '🌲 Clear path — mist lifts, you walk',
         essence: 'Second chance',
-        headline: 'Mist clears. The path appears.',
-        subline: 'When you can\'t see far ahead, you only need to see the next step. That\'s enough to begin again.',
+        headline: 'When the fog clears, walk.',
+        subline: 'You only need to see the next step. That\'s enough to begin.',
       },
     ];
 
@@ -1508,22 +1562,26 @@
         img.src = scene.image;
       }
 
+      const hero = document.getElementById('splash-hero');
+      const moment = document.getElementById('splash-moment');
       const essence = document.getElementById('splash-essence');
       const headline = document.getElementById('splash-headline');
       const subline = document.getElementById('splash-subline');
       const personal = document.getElementById('splash-personal');
       const credit = document.getElementById('splash-credit');
+      if (moment) moment.textContent = scene.moment || scene.essence;
       if (essence) essence.textContent = scene.essence;
       if (headline) headline.textContent = scene.headline;
       if (subline) subline.textContent = scene.subline;
       if (personal) personal.textContent = splashPersonalLine();
       if (credit) credit.textContent = scene.credit;
 
-      if (content) {
-        content.classList.remove('splash-in');
-        void content.offsetWidth;
-        content.classList.add('splash-in');
-      }
+      [hero, content].forEach((el) => {
+        if (!el) return;
+        el.classList.remove('splash-in');
+        void el.offsetWidth;
+        el.classList.add('splash-in');
+      });
     }
 
     function cycleSplashScene() {
