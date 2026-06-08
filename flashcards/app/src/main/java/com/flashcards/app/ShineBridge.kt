@@ -8,6 +8,18 @@ import java.io.File
 class ShineBridge(private val activity: MainActivity) {
 
     @android.webkit.JavascriptInterface
+    fun getViewport(): String {
+        val view = activity.webView ?: return "{}"
+        val density = activity.resources.displayMetrics.density
+        val width = (view.width / density).toInt().coerceAtLeast(1)
+        val height = (view.height / density).toInt().coerceAtLeast(1)
+        return JSONObject()
+            .put("width", width)
+            .put("height", height)
+            .toString()
+    }
+
+    @android.webkit.JavascriptInterface
     fun getInsets(): String {
         val insets = activity.windowInsetsCss
         return JSONObject()

@@ -38,7 +38,7 @@ import androidx.core.view.WindowInsetsCompat
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
-    private var webView: WebView? = null
+    internal var webView: WebView? = null
     private var pageLoaded by mutableStateOf(false)
 
     var windowInsetsCss: IntArray = intArrayOf(0, 0, 0, 0)
@@ -54,6 +54,12 @@ class MainActivity : ComponentActivity() {
         val insets = windowInsetsCss
         val js = "window.applyShineInsets&&window.applyShineInsets(${insets[0]},${insets[1]},${insets[2]},${insets[3]})"
         view.evaluateJavascript(js, null)
+        pushViewportToWebView()
+    }
+
+    fun pushViewportToWebView() {
+        val view = webView ?: return
+        view.evaluateJavascript("window.applyShineViewport&&window.applyShineViewport()", null)
     }
 
     private fun applyWindowInsets(insets: WindowInsetsCompat) {
@@ -116,16 +122,24 @@ class MainActivity : ComponentActivity() {
                             settings.textZoom = 100
                             settings.mixedContentMode =
                                 android.webkit.WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                            settings.layoutAlgorithm =
+                                android.webkit.WebSettings.LayoutAlgorithm.NORMAL
+                            isHorizontalScrollBarEnabled = false
+                            overScrollMode = android.view.View.OVER_SCROLL_NEVER
                             addJavascriptInterface(ShineBridge(this@MainActivity), "ShineAndroid")
                             ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
                                 applyWindowInsets(insets)
                                 insets
+                            }
+                            addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                                pushViewportToWebView()
                             }
                             webChromeClient = WebChromeClient()
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     pageLoaded = true
                                     pushInsetsToWebView()
+                                    pushViewportToWebView()
                                 }
 
                                 override fun shouldOverrideUrlLoading(
