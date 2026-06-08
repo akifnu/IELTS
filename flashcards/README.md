@@ -4,16 +4,7 @@ A native Android flashcard app built with **Kotlin**, **Jetpack Compose**, and *
 
 ## Features
 
-- **Clusters** — organize decks into groups (Languages, Wellness, etc.)
-- **Deck management** — create, edit, delete, share decks
-- **Card editor** — add, edit, delete flashcards
-- **Spaced repetition** — Ebbinghaus, Leitner, and SM-2 algorithms with presets
-- **Study mode** — flip cards, Got it / Missed, auto-schedule next review
-- **Calendar** — plan sessions across decks, overload detection, spread busy days
-- **Sharing** — invite collaborators, export deck JSON, import shared decks
-- **Account** — display name, full library backup export/import
-- **Native UI** — Jetpack Compose with proper edge-to-edge layout on all screen sizes
-- **Offline** — Room SQLite, sample decks on first launch
+Identical to the [live web app](https://cdn.jsdelivr.net/gh/akifnu/IELTS@gh-pages/index.html): clusters, decks, cards, study modes, Ebbinghaus / Leitner / SM-2, calendar, sharing, account, splash, and backup. Built from the same `flashcards/web/` source on every APK release.
 
 ## Screenshots (flow)
 
@@ -45,13 +36,13 @@ The release APK will be at `app/build/outputs/apk/release/app-release.apk`.
 
 ### Install on your phone
 
-Download the latest **Shine** APK from [GitHub Releases](https://github.com/akifnu/IELTS/releases/latest) (`Shine-Flashcards.apk`, currently **v2.0.0**).
+Download the latest **Shine** APK from [GitHub Releases](https://github.com/akifnu/IELTS/releases/latest) (`Shine-Flashcards.apk`, currently **v2.2.0**).
 
 1. Transfer the file to your phone (download link, email, USB, etc.)
 2. Open the APK and allow **Install unknown apps** when prompted
 3. Tap **Install**
 
-The Android app is **fully native** (Jetpack Compose + Room) with clusters, spaced repetition (Ebbinghaus / Leitner / SM-2), calendar, sharing, and backup. No WebView.
+The Android APK bundles the **same Shine web app** as the website (`flashcards/web/`) for **1:1 feature parity** — clusters, spaced repetition, calendar, sharing, Google Sign-In, splash, and all UI. A native shell handles screen insets and file sharing.
 
 Build locally:
 
