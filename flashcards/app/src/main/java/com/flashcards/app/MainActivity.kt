@@ -3,6 +3,7 @@ package com.flashcards.app
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
@@ -12,15 +13,14 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import kotlin.math.max
 
 /**
- * Ships the exact Shine website (bundled assets) for 1:1 feature parity.
- * Insets are injected as CSS variables (Capacitor / Ionic pattern) so layout fits every screen.
+ * Hosts the bundled Shine web app with a native viewport bridge.
+ * Android lays out the WebView in the safe visible rect; exact pixel dimensions
+ * are pushed to CSS so the shell always fits — no vh/dvh guessing.
  */
 class MainActivity : ComponentActivity() {
 
@@ -30,24 +30,23 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
 
         val root = FrameLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
+            fitsSystemWindows = true
         }
         container = root
         root.addView(buildWebView())
         setContentView(root)
 
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
-            applyInsets(insets)
-            WindowInsetsCompat.CONSUMED
+            syncViewport()
+            insets
         }
-        ViewCompat.requestApplyInsets(root)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -61,7 +60,6 @@ class MainActivity : ComponentActivity() {
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
-                databaseEnabled = true
                 allowFileAccess = true
                 allowContentAccess = true
                 useWideViewPort = true
@@ -80,38 +78,33 @@ class MainActivity : ComponentActivity() {
             addJavascriptInterface(ShineBridge(this@MainActivity), "ShineAndroid")
             webViewClient = ShineWebViewClient()
             webChromeClient = WebChromeClient()
+            addOnLayoutChangeListener(layoutChangeListener)
             loadUrl("file:///android_asset/www/index.html")
         }
         return view
     }
 
-    private fun applyInsets(insets: WindowInsetsCompat) {
-        val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-        val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-        val top = bars.top
-        val left = bars.left
-        val right = bars.right
-        val bottom = max(bars.bottom, ime.bottom)
-        val js = """
-            (function(){
-              var r=document.documentElement;
-              r.style.setProperty('--sat','${top}px');
-              r.style.setProperty('--sal','${left}px');
-              r.style.setProperty('--sar','${right}px');
-              r.style.setProperty('--sab','${bottom}px');
-              r.classList.add('shine-android');
-            })();
-        """.trimIndent()
-        webView?.evaluateJavascript(js, null)
+    private val layoutChangeListener =
+        View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> syncViewport() }
+
+    fun syncViewport() {
+        val wv = webView ?: return
+        val w = wv.width
+        val h = wv.height
+        if (w <= 0 || h <= 0) return
+        // WebView is already laid out inside the safe area (decorFitsSystemWindows).
+        val js = "window.__shineViewport&&window.__shineViewport.set($w,$h,0,0,0,0);"
+        wv.evaluateJavascript(js, null)
     }
 
     fun reloadWebApp() {
         val root = container ?: return
+        webView?.removeOnLayoutChangeListener(layoutChangeListener)
         webView?.destroy()
         webView = null
         root.removeAllViews()
         root.addView(buildWebView())
-        ViewCompat.requestApplyInsets(root)
+        syncViewport()
     }
 
     @Deprecated("Deprecated in Java")
@@ -143,7 +136,7 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
-            ViewCompat.requestApplyInsets(container ?: return)
+            syncViewport()
         }
 
         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {

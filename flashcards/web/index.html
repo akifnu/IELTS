@@ -19,6 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="shine-viewport.js"></script>
   <style>
     :root {
       --primary:#5b5ef7; --primary-dark:#4346e8; --primary-light:#ededff;
@@ -39,31 +40,46 @@
       --space-sm:clamp(0.5rem,2vw,0.75rem);
       --space-md:clamp(0.75rem,3vw,1rem);
       --space-lg:clamp(1rem,4vw,1.25rem);
+      --app-w:100%;
+      --app-h:100%;
       --sat:env(safe-area-inset-top,0px);
       --sal:env(safe-area-inset-left,0px);
       --sar:env(safe-area-inset-right,0px);
       --sab:env(safe-area-inset-bottom,0px);
     }
-    html.shine-android,html.shine-android body{height:100%;overflow:hidden}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{
       -webkit-tap-highlight-color:transparent;
       font-size:clamp(15px,2.8vw,17px);
-      height:100%;width:100%;
+      width:100%;height:100%;overflow:hidden;
+    }
+    html.shine-viewport-ready{
+      width:var(--app-w,100%);height:var(--app-h,100%);
+      max-width:var(--app-w,100%);max-height:var(--app-h,100%);
+      overflow:hidden;
     }
     body{
       font-family:'Plus Jakarta Sans',system-ui,sans-serif;
       background:linear-gradient(165deg,#e8eaff 0%,#f4f6fb 38%,#faf8ff 100%);
       color:var(--text);width:100%;height:100%;margin:0;
       overflow:hidden;-webkit-font-smoothing:antialiased;
+      position:relative;
+    }
+    html.shine-viewport-ready body{
+      width:var(--app-w,100%);height:var(--app-h,100%);
+      max-height:var(--app-h,100%);overflow:hidden;
     }
     #shine-app{
-      container-type:size;container-name:shine;
       display:flex;flex-direction:column;
-      width:100%;height:100%;max-height:100%;
-      max-width:100%;margin:0 auto;position:relative;overflow:hidden;
-      padding:var(--sat) var(--sar) var(--sab) var(--sal);
-      box-sizing:border-box;
+      width:100%;height:100%;max-width:100%;max-height:100%;
+      margin:0 auto;overflow:hidden;min-height:0;
+      position:relative;
+      padding:var(--sat,0px) var(--sar,0px) var(--sab,0px) var(--sal,0px);
+    }
+    html.shine-viewport-ready #shine-app{
+      position:absolute;top:0;left:0;right:0;bottom:0;
+      width:auto;height:auto;max-width:none;max-height:none;
+      padding:0;
     }
     #app-shell{
       flex:1 1 auto;min-height:0;width:100%;
@@ -86,8 +102,8 @@
     body.modal-open #app-shell{overflow:hidden}
     body.modal-open #app{overflow:hidden}
     #modal-root{
-      container-type:size;container-name:modal;
-      position:absolute;inset:0;z-index:300;pointer-events:none;overflow:hidden;
+      position:absolute;inset:0;z-index:300;pointer-events:none;
+      overflow:hidden;height:100%;max-height:100%;
     }
     #modal-root:not(:empty){pointer-events:auto}
     #toast-root{
@@ -108,7 +124,7 @@
     }
     .splash-content{
       position:relative;z-index:2;width:100%;max-width:var(--shell-max);color:#fff;
-      padding:var(--space-md) var(--space-lg) calc(var(--space-lg) + env(safe-area-inset-bottom,0px));text-align:left;
+      padding:var(--space-md) var(--space-lg) var(--space-lg);text-align:left;
     }
     .splash-content.splash-in .splash-brand,.splash-content.splash-in .splash-essence,.splash-content.splash-in .splash-headline,
     .splash-content.splash-in .splash-subline,.splash-content.splash-in .splash-personal,.splash-content.splash-in .splash-actions,
@@ -212,29 +228,33 @@
     .access-banner strong{color:var(--text)}
     body.modal-open{touch-action:none}
     .modal-bg{
-      position:absolute;inset:0;max-height:100%;
-      display:flex;flex-direction:column;justify-content:flex-end;min-height:0;
+      position:absolute;inset:0;height:100%;max-height:100%;
+      display:flex;flex-direction:column;min-height:0;
       background:rgba(15,23,42,.4);backdrop-filter:blur(6px);overflow:hidden;
       animation:fadeIn .25s ease;
     }
     .modal-bg-sheet{justify-content:flex-end}
-    .modal-bg:not(.modal-bg-sheet){justify-content:center;padding:var(--space-md)}
+    .modal-bg-sheet::before{content:'';flex:1 1 auto;min-height:0}
+    .modal-bg:not(.modal-bg-sheet){
+      justify-content:center;align-items:center;padding:var(--space-md);
+    }
+    .modal-bg:not(.modal-bg-sheet)::before{display:none}
     .modal-share{
       display:flex;flex-direction:column;width:100%;max-width:100%;
-      max-height:92%;max-height:92cqh;overflow:hidden;padding:0;position:relative;
-      min-height:0;flex-shrink:1;border-radius:1.25rem 1.25rem 0 0;
+      flex:0 1 auto;max-height:88%;overflow:hidden;padding:0;position:relative;
+      min-height:0;border-radius:1.25rem 1.25rem 0 0;
     }
     .share-sheet-handle{width:2.5rem;height:0.25rem;border-radius:99px;background:rgba(15,23,42,.14);margin:0.6rem auto 0.4rem;flex-shrink:0}
     .share-sheet-body{
       flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
       overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-      padding:0 var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom,0px));
+      padding:0 var(--space-md) var(--space-md);
     }
     .share-header{flex-shrink:0;padding:0 var(--space-md);padding-right:3rem;margin-bottom:var(--space-sm)}
     .modal:not(.modal-share){
       width:100%;max-width:min(var(--shell-max),100%);
-      max-height:90%;max-height:90cqh;overflow-y:auto;overflow-x:hidden;
-      border-radius:var(--radius);
+      max-height:90%;overflow-y:auto;overflow-x:hidden;
+      border-radius:var(--radius);flex-shrink:1;min-height:0;
     }
     .modal-bg:not(.modal-bg-sheet) .modal:not(.modal-share){border-radius:var(--radius)}
     @media (min-width:36rem){
@@ -281,7 +301,7 @@
     .share-more-toggle::after{content:'▾';font-size:.85rem;transition:transform .2s var(--ease);flex-shrink:0}
     .share-more-toggle[aria-expanded="true"]::after{transform:rotate(180deg)}
     .share-more-panel{max-height:0;overflow:hidden;transition:max-height .28s var(--ease);pointer-events:none}
-    .share-more-panel.open{max-height:40%;max-height:40cqh;pointer-events:auto}
+    .share-more-panel.open{max-height:11rem;pointer-events:auto}
     .share-more-body{padding:2px 0 8px;display:flex;flex-direction:column;gap:8px}
     .share-more .btn-outline{width:100%;margin-bottom:0;padding:11px 14px;font-size:.84rem}
     .share-more .share-note{font-size:.72rem;color:var(--muted);line-height:1.45;margin:0}
@@ -411,7 +431,7 @@
     .confirm{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 6px 16px rgba(91,94,247,.3)}
     .bottom-nav{
       flex-shrink:0;width:calc(100% - 1.75rem);max-width:var(--shell-max);
-      margin:var(--space-sm) auto calc(var(--space-sm) + env(safe-area-inset-bottom,0px));
+      margin:var(--space-sm) auto var(--space-sm);
       background:rgba(255,255,255,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
       border:1px solid rgba(255,255,255,.9);border-radius:1.6rem;
       display:flex;padding:0.5rem 0.65rem;z-index:20;
@@ -3111,11 +3131,16 @@
           drag.placeholder = placeholder;
           list.classList.add('is-dragging');
           item.classList.add('drag-lifted');
-          document.body.appendChild(item);
+          const shell = document.getElementById('shine-app');
+          const shellRect = shell ? shell.getBoundingClientRect() : { left: 0, top: 0 };
+          drag.shell = shell;
+          drag.shellLeft = shellRect.left;
+          drag.shellTop = shellRect.top;
+          (shell || document.body).appendChild(item);
           Object.assign(item.style, {
-            position: 'fixed',
-            left: `${rect.left}px`,
-            top: `${rect.top}px`,
+            position: 'absolute',
+            left: `${rect.left - shellRect.left}px`,
+            top: `${rect.top - shellRect.top}px`,
             width: `${rect.width}px`,
             margin: '0',
             zIndex: '1000',
@@ -3123,7 +3148,8 @@
         }
 
         e.preventDefault();
-        drag.item.style.top = `${e.clientY - drag.offsetY}px`;
+        const shellTop = drag.shellTop || 0;
+        drag.item.style.top = `${e.clientY - drag.offsetY - shellTop}px`;
         movePlaceholder(drag.list, drag.placeholder, e.clientY);
       };
 
@@ -3724,7 +3750,7 @@
     if ('serviceWorker' in navigator && typeof window.ShineAndroid === 'undefined') {
       navigator.serviceWorker.getRegistrations()
         .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-        .then(() => navigator.serviceWorker.register('sw.js?v=13'))
+        .then(() => navigator.serviceWorker.register('sw.js?v=14'))
         .catch(() => {});
     }
 
