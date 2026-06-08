@@ -28,6 +28,8 @@ jobs:
       - name: Prepare web config
         run: cp flashcards/web/auth-config.example.js flashcards/web/auth-config.js
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: flashcards/web
