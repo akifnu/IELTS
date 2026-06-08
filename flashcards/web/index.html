@@ -75,8 +75,7 @@
       display:flex;align-items:center;justify-content:center;font-size:1.25rem;
       box-shadow:0 8px 24px rgba(91,94,247,.45);border:1px solid rgba(255,255,255,.25);
     }
-    .splash-wordmark{font-size:1.55rem;font-weight:800;letter-spacing:-.03em;line-height:1;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.35)}
-    .splash-apptag{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.78);margin-top:2px}
+    .splash-wordmark{font-size:1.65rem;font-weight:800;letter-spacing:-.03em;line-height:1;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.35)}
     .splash-hero{
       position:absolute;left:0;right:0;top:22%;z-index:2;text-align:center;
       padding:0 20px;pointer-events:none;
@@ -89,67 +88,35 @@
       letter-spacing:.04em;text-transform:uppercase;color:#fff;
       text-shadow:0 4px 28px rgba(0,0,0,.5),0 0 40px rgba(91,94,247,.35);
     }
-    .splash-hero-stamp span{
-      display:block;font-size:.42em;font-weight:800;letter-spacing:.28em;
-      color:rgba(255,255,255,.82);margin-bottom:.35em;
-    }
     .splash-hero-moment{
-      display:inline-block;margin-top:12px;padding:8px 16px;border-radius:var(--radius-pill);
-      font-size:.82rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-      background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);
-      backdrop-filter:blur(10px);color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.3);
+      margin-top:10px;font-size:1rem;font-weight:700;letter-spacing:.08em;
+      text-transform:uppercase;color:rgba(255,255,255,.88);text-shadow:0 2px 16px rgba(0,0,0,.4);
     }
     .splash-content{
       position:relative;z-index:2;width:100%;max-width:480px;color:#fff;
-      padding:0 24px calc(28px + env(safe-area-inset-bottom));text-align:left;
+      padding:0 24px calc(24px + env(safe-area-inset-bottom));text-align:center;
     }
-    .splash-content.splash-in .splash-essence,.splash-content.splash-in .splash-headline,
-    .splash-content.splash-in .splash-subline,.splash-content.splash-in .splash-personal,.splash-content.splash-in .splash-actions,
-    .splash-content.splash-in .splash-auth,.splash-content.splash-in .splash-refresh,.splash-content.splash-in .splash-credit{
-      animation:splashLine .85s var(--ease) backwards;
+    .splash-content.splash-in .splash-actions,.splash-content.splash-in .splash-auth,.splash-content.splash-in .splash-foot{
+      animation:splashLine .6s var(--ease) backwards;
     }
-    .splash-content.splash-in .splash-essence{animation-delay:.2s}
-    .splash-content.splash-in .splash-headline{animation-delay:.28s}
-    .splash-content.splash-in .splash-subline{animation-delay:.38s}
-    .splash-content.splash-in .splash-personal{animation-delay:.48s}
-    .splash-content.splash-in .splash-actions{animation-delay:.58s}
-    .splash-content.splash-in .splash-auth{animation-delay:.68s}
-    .splash-content.splash-in .splash-refresh{animation-delay:.78s}
-    .splash-content.splash-in .splash-credit{animation-delay:.86s}
+    .splash-content.splash-in .splash-actions{animation-delay:.35s}
+    .splash-content.splash-in .splash-auth{animation-delay:.45s}
+    .splash-content.splash-in .splash-foot{animation-delay:.52s}
     @keyframes splashLine{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-    .splash-essence{
-      display:inline-block;padding:5px 12px;border-radius:var(--radius-pill);
-      font-size:.65rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
-      background:rgba(91,94,247,.35);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(8px);
-      color:rgba(255,255,255,.95);
-    }
-    .splash-headline{
-      font-size:clamp(1.85rem,7vw,2.35rem);font-weight:800;line-height:1.12;
-      letter-spacing:-.03em;margin:14px 0 12px;text-shadow:0 2px 24px rgba(0,0,0,.35);
-    }
-    .splash-subline{font-size:.98rem;line-height:1.55;opacity:.9;max-width:34ch;text-shadow:0 1px 12px rgba(0,0,0,.3)}
-    .splash-personal{margin-top:12px;font-size:.86rem;font-weight:600;opacity:.78;font-style:italic}
-    .splash-actions{margin-top:22px}
+    .splash-actions{margin-top:0}
     .splash-begin{
       width:100%;padding:16px 20px;border:none;border-radius:var(--radius-sm);
       background:#fff;color:#1e1b4b;font-weight:800;font-size:1rem;font-family:inherit;
       cursor:pointer;box-shadow:0 12px 36px rgba(0,0,0,.28);transition:transform .15s var(--ease);
     }
     .splash-begin:active{transform:scale(.98)}
-    .splash-auth{margin-top:14px;display:flex;flex-direction:column;gap:10px}
-    .splash-skip{
-      width:100%;padding:12px 18px;font-size:.82rem;font-weight:600;color:rgba(255,255,255,.88);
-      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:var(--radius-pill);
-      cursor:pointer;backdrop-filter:blur(8px);transition:background .2s var(--ease);
+    .splash-auth{margin-top:12px}
+    .splash-foot{margin-top:14px;display:flex;justify-content:center;gap:16px}
+    .splash-link{
+      padding:0;background:none;border:none;color:rgba(255,255,255,.55);
+      font-size:.76rem;font-weight:600;font-family:inherit;cursor:pointer;
     }
-    .splash-skip:hover{background:rgba(255,255,255,.14)}
-    .splash-refresh{
-      display:block;width:100%;margin-top:16px;padding:8px;background:none;border:none;
-      color:rgba(255,255,255,.65);font-size:.78rem;font-weight:600;font-family:inherit;
-      cursor:pointer;text-decoration:underline;text-underline-offset:3px;
-    }
-    .splash-refresh:hover{color:rgba(255,255,255,.9)}
-    .splash-credit{margin-top:10px;font-size:.62rem;color:rgba(255,255,255,.4);text-align:center}
+    .splash-link:hover{color:rgba(255,255,255,.9)}
     @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
     header.app-header{
       background:rgba(255,255,255,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -522,33 +489,27 @@
     <div class="splash-scrim"></div>
     <header class="splash-topbar">
       <div class="splash-mark" aria-hidden="true">✨</div>
-      <div>
-        <div class="splash-wordmark">Shine</div>
-        <div class="splash-apptag">Lifestyle flashcards</div>
-      </div>
+      <div class="splash-wordmark">Shine</div>
     </header>
     <div class="splash-hero splash-in" id="splash-hero" aria-live="polite">
-      <div class="splash-hero-stamp"><span>A</span>NEW<br>BEGINNING</div>
-      <div class="splash-hero-moment" id="splash-moment">Sunrise — start again</div>
+      <div class="splash-hero-stamp">NEW<br>BEGINNING</div>
+      <div class="splash-hero-moment" id="splash-moment">Sunrise</div>
     </div>
     <div class="splash-content splash-in" id="splash-content">
-      <span class="splash-essence" id="splash-essence">New beginning</span>
-      <h1 class="splash-headline" id="splash-headline">Every ending is a door opening.</h1>
-      <p class="splash-subline" id="splash-subline">What you choose to learn today becomes part of who you are tomorrow.</p>
-      <p class="splash-personal" id="splash-personal">This moment is yours.</p>
       <div class="splash-actions">
         <button type="button" class="splash-begin" id="splash-begin">Start with Shine</button>
       </div>
       <div class="splash-auth">
         <button type="button" class="btn-google-oneclick splash-google" data-google-oneclick aria-label="Continue with Google">
           <svg class="g-logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          <span>Continue with Google</span>
+          <span>Google</span>
         </button>
         <div id="google-signin-fallback-splash" class="google-fallback-host"></div>
-        <button type="button" class="splash-skip" id="splash-continue">Continue as guest</button>
       </div>
-      <button type="button" class="splash-refresh" id="splash-refresh">See another beginning →</button>
-      <p class="splash-credit" id="splash-credit"></p>
+      <div class="splash-foot">
+        <button type="button" class="splash-link" id="splash-continue">Guest</button>
+        <button type="button" class="splash-link" id="splash-refresh">Another</button>
+      </div>
     </div>
   </div>
   <div id="app"></div>
@@ -565,70 +526,14 @@
     const GOOGLE_CLIENT_ID_DEFAULT = '';
 
     const SPLASH_SCENES = [
-      {
-        image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Sunrise over the Alps · Unsplash',
-        moment: '☀️ Sunrise — today starts now',
-        essence: 'Day one',
-        headline: 'Rise into who you\'re becoming.',
-        subline: 'Yesterday is done. Today you climb again — one card at a time.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1470252649378-783c8edf5f68?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Golden field at dawn · Unsplash',
-        moment: '🌅 Dawn — light after the dark',
-        essence: 'Fresh start',
-        headline: 'A new day has arrived.',
-        subline: 'What felt finished isn\'t. You get another chance to grow.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Seedling in morning light · Unsplash',
-        moment: '🌱 Sprout — life begins small',
-        essence: 'Start tiny',
-        headline: 'Every great tree was once a seed.',
-        subline: 'Plant one idea today. Watch it root, then rise.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Road beside still water · Unsplash',
-        moment: '🛤️ Open road — leave the past behind',
-        essence: 'First step',
-        headline: 'The path ahead is yours.',
-        subline: 'You don\'t need permission. Just take the first step forward.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1499203537755-bb8324afdb45?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Ocean at first light · Unsplash',
-        moment: '🌊 Ocean dawn — wipe the slate clean',
-        essence: 'Let go',
-        headline: 'Let the old wash away.',
-        subline: 'Like the tide, you can erase what didn\'t stick — and begin again.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1518173946687-a4c036bc3f6a?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Butterfly on a flower · Unsplash',
-        moment: '🦋 Butterfly — become someone new',
-        essence: 'Transform',
-        headline: 'Change is already inside you.',
-        subline: 'Starting over isn\'t failure. It\'s becoming.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Pages waiting to be read · Unsplash',
-        moment: '📖 Blank page — write your story',
-        essence: 'Chapter one',
-        headline: 'Turn the page. Start fresh.',
-        subline: 'Your story doesn\'t end where you left off. Pick up the pen.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=85',
-        credit: 'Forest path in morning mist · Unsplash',
-        moment: '🌲 Clear path — mist lifts, you walk',
-        essence: 'Second chance',
-        headline: 'When the fog clears, walk.',
-        subline: 'You only need to see the next step. That\'s enough to begin.',
-      },
+      { image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=85', moment: 'Sunrise' },
+      { image: 'https://images.unsplash.com/photo-1470252649378-783c8edf5f68?auto=format&fit=crop&w=1200&q=85', moment: 'First light' },
+      { image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1200&q=85', moment: 'New growth' },
+      { image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=85', moment: 'Open road' },
+      { image: 'https://images.unsplash.com/photo-1499203537755-bb8324afdb45?auto=format&fit=crop&w=1200&q=85', moment: 'Clean slate' },
+      { image: 'https://images.unsplash.com/photo-1518173946687-a4c036bc3f6a?auto=format&fit=crop&w=1200&q=85', moment: 'Transform' },
+      { image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1200&q=85', moment: 'Blank page' },
+      { image: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=85', moment: 'Clear path' },
     ];
 
     function getGoogleClientId() {
@@ -1523,12 +1428,6 @@
       return i;
     }
 
-    function splashPersonalLine() {
-      return state.userName
-        ? `${state.userName}, this moment is yours.`
-        : 'This moment is yours.';
-    }
-
     function preloadSplashImage(url) {
       const img = new Image();
       img.src = url;
@@ -1564,17 +1463,9 @@
 
       const hero = document.getElementById('splash-hero');
       const moment = document.getElementById('splash-moment');
-      const essence = document.getElementById('splash-essence');
-      const headline = document.getElementById('splash-headline');
-      const subline = document.getElementById('splash-subline');
-      const personal = document.getElementById('splash-personal');
-      const credit = document.getElementById('splash-credit');
-      if (moment) moment.textContent = scene.moment || scene.essence;
-      if (essence) essence.textContent = scene.essence;
-      if (headline) headline.textContent = scene.headline;
-      if (subline) subline.textContent = scene.subline;
-      if (personal) personal.textContent = splashPersonalLine();
-      if (credit) credit.textContent = scene.credit;
+      const photoEl = document.getElementById('splash-photo');
+      if (moment) moment.textContent = scene.moment;
+      if (photoEl) photoEl.setAttribute('aria-label', `${scene.moment} — new beginning`);
 
       [hero, content].forEach((el) => {
         if (!el) return;
