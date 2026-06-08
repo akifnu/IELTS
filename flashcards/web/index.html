@@ -14,7 +14,9 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto}
     #splash{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden;transition:opacity .6s,visibility .6s}
-    #splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+    #splash.hide{opacity:0;visibility:hidden;pointer-events:none;display:none}
+    #splash{cursor:pointer}
+    .splash-skip{position:relative;z-index:1;margin-top:28px;font-size:.85rem;opacity:.75;text-decoration:underline}
     #splash .bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=1200&q=80') center/cover;animation:kenburns 2s ease forwards}
     #splash .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,71,161,.5),rgba(21,101,192,.8))}
     @keyframes kenburns{to{transform:scale(1.02)}}
@@ -89,7 +91,7 @@
     .got-it{background:var(--blue);color:#fff}
     .show-answer{width:100%;padding:14px;background:var(--white);border:2px solid var(--blue);color:var(--blue);border-radius:14px;font-weight:600;cursor:pointer}
     .empty{text-align:center;padding:40px 20px;color:var(--muted)}
-    .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:150}
+    .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:300}
     .modal{background:var(--white);border-radius:var(--radius);padding:22px;width:100%;max-width:400px}
     .modal h2{margin-bottom:14px;color:var(--blue-dark)}
     .modal input,.modal textarea{width:100%;padding:11px;margin-bottom:10px;border:1px solid var(--border);border-radius:10px;font:inherit}
@@ -148,6 +150,7 @@
       <div class="greeting">Guten Tag</div>
       <h1 id="splash-name">Friend</h1>
       <p>German flashcards · Ebbinghaus spaced repetition</p>
+      <p class="splash-skip">Tap to continue</p>
     </div>
   </div>
   <div id="app"></div>
@@ -223,9 +226,12 @@
       globalMaxSessionsPerDay: 3,
       deckScheduleOpen: false,
       calSettingsOpen: false,
-      userName: localStorage.getItem('flashcards_user') || '',
+      userName: '',
       ready: false,
+      splashDone: false,
     };
+
+    try { state.userName = localStorage.getItem('flashcards_user') || ''; } catch (e) {}
 
     // ── Date helpers ──
     function todayStr() {
@@ -264,20 +270,29 @@
     }
 
     function load() {
-      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      if (raw) {
-        state.decks = raw.decks.map(initDeck);
-        state.algo = { ...DEFAULT_ALGO, ...raw.algo };
-        state.globalMaxSessionsPerDay = raw.globalMaxSessionsPerDay ?? 3;
-      } else {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (raw && Array.isArray(raw.decks)) {
+          state.decks = raw.decks.map(initDeck);
+          state.algo = { ...DEFAULT_ALGO, ...raw.algo };
+          state.globalMaxSessionsPerDay = raw.globalMaxSessionsPerDay ?? 3;
+        } else {
+          state.decks = GERMAN_DECKS.map(initDeck);
+        }
+        save();
+      } catch (e) {
+        console.warn('Load failed, using defaults', e);
         state.decks = GERMAN_DECKS.map(initDeck);
       }
-      save();
     }
     function save() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        decks: state.decks, algo: state.algo, globalMaxSessionsPerDay: state.globalMaxSessionsPerDay
-      }));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          decks: state.decks, algo: state.algo, globalMaxSessionsPerDay: state.globalMaxSessionsPerDay
+        }));
+      } catch (e) {
+        console.warn('Save failed', e);
+      }
     }
     function deck() { return state.decks.find(d => d.id === state.deckId); }
     function deckAlgo(d) { return { ...state.algo, ...(d.algo || {}) }; }
@@ -445,7 +460,8 @@
     function applyPreset(d, key) {
       const p = PRESETS[key];
       if (!p) return;
-      d.algo = { ...deckAlgo(d), ...p, preset: key, enabled: isEbbinghausOn(d) };
+      const { label, desc, ...algoFields } = p;
+      d.algo = { ...deckAlgo(d), ...algoFields, preset: key, enabled: isEbbinghausOn(d) };
       save();
     }
 
@@ -458,27 +474,40 @@
     }
 
     // ── Splash ──
+    function finishSplash() {
+      if (state.splashDone) return;
+      state.splashDone = true;
+      const splash = document.getElementById('splash');
+      if (splash) splash.classList.add('hide');
+      state.ready = true;
+      try { render(); } catch (e) {
+        console.error(e);
+        document.getElementById('app').innerHTML = '<main style="padding:24px"><h2>Something went wrong</h2><p>Please refresh the page.</p></main>';
+      }
+    }
+
     function startSplash() {
       document.getElementById('splash-name').textContent = state.userName || 'Friend';
-      setTimeout(() => {
-        document.getElementById('splash').classList.add('hide');
-        state.ready = true;
-        if (!state.userName) state.modal = { type: 'welcome' };
-        render();
-      }, 2000);
+      document.getElementById('splash')?.addEventListener('click', finishSplash);
+      setTimeout(finishSplash, 2000);
     }
 
     // ── Render ──
     function render() {
       if (!state.ready) return;
       const app = document.getElementById('app');
-      if (state.view === 'study') app.innerHTML = renderStudy();
-      else if (state.view === 'deck') app.innerHTML = renderDeck();
-      else if (state.tab === 'calendar') app.innerHTML = renderGlobalCalendar();
-      else app.innerHTML = renderHome();
-      if (state.modal) app.innerHTML += renderModal();
-      if (state.view === 'home') app.innerHTML += renderBottomNav();
-      bind();
+      try {
+        if (state.view === 'study') app.innerHTML = renderStudy();
+        else if (state.view === 'deck') app.innerHTML = renderDeck();
+        else if (state.tab === 'calendar') app.innerHTML = renderGlobalCalendar();
+        else app.innerHTML = renderHome();
+        if (state.modal) app.innerHTML += renderModal();
+        if (state.view === 'home') app.innerHTML += renderBottomNav();
+        bind();
+      } catch (e) {
+        console.error('Render error', e);
+        app.innerHTML = '<main style="padding:24px"><h2>Something went wrong</h2><p>Please refresh the page.</p></main>';
+      }
     }
 
     function renderBottomNav() {
@@ -919,8 +948,8 @@
       }));
     }
 
-    load();
     startSplash();
+    load();
   </script>
 </body>
 </html>
