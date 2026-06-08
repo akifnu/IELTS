@@ -11,3 +11,5 @@
 *.ap_
 *.aab
 app/build/
+app/src/main/assets/www/
+Shine-Flashcards.apk

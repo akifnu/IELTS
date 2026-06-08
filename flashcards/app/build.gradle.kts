@@ -19,9 +19,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val home = System.getProperty("user.home")
+            storeFile = file("$home/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -41,6 +52,32 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+val copyWebAssets = tasks.register<Copy>("copyWebAssets") {
+    from("${rootProject.projectDir}/web") {
+        exclude(
+            "share-relay/**",
+            "serve.sh",
+            "netlify.toml",
+            "README.md",
+            ".gitignore",
+            ".netlify/**",
+            "auth-config.js"
+        )
+    }
+    into(layout.projectDirectory.dir("src/main/assets/www"))
+    doLast {
+        copy {
+            from("${rootProject.projectDir}/web/auth-config.example.js")
+            into(layout.projectDirectory.dir("src/main/assets/www"))
+            rename { "auth-config.js" }
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn(copyWebAssets)
 }
 
 dependencies {

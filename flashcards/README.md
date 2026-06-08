@@ -36,7 +36,25 @@ cd flashcards
 ./gradlew assembleDebug
 ```
 
-The debug APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
+The release APK will be at `app/build/outputs/apk/release/app-release.apk`.
+
+### Install on your phone
+
+Download the latest **Shine** APK from [GitHub Releases](https://github.com/akifnu/IELTS/releases/latest) (`Shine-Flashcards.apk`).
+
+1. Transfer the file to your phone (download link, email, USB, etc.)
+2. Open the APK and allow **Install unknown apps** when prompted
+3. Tap **Install**
+
+The Android build bundles the full Shine web app (clusters, decks, study modes, sharing UI) and works offline. Google Sign-In needs internet.
+
+Build locally:
+
+```bash
+cd flashcards
+./gradlew assembleRelease
+cp app/build/outputs/apk/release/app-release.apk Shine-Flashcards.apk
+```
 
 ## Test in this cloud workspace
 
