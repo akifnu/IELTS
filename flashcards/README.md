@@ -38,6 +38,41 @@ cd flashcards
 
 The debug APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
 
+## Test in this cloud workspace
+
+This environment has no display and no hardware virtualization (KVM), so the emulator runs in **software mode** and is slow (~5–8 min to boot). It works, but expect occasional "System isn't responding" dialogs — tap **Wait**.
+
+**One-command test** (installs SDK on first run, builds, boots emulator, launches app):
+
+```bash
+cd flashcards
+./test-here.sh
+```
+
+**If the emulator is already running** (faster relaunch):
+
+```bash
+export ANDROID_HOME="$HOME/android-sdk"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+
+cd flashcards
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.flashcards.app/.MainActivity
+
+# Wait ~45s for Compose to render on the slow emulator, then screenshot:
+sleep 45
+adb exec-out screencap -p > screenshots/latest.png
+```
+
+**Interact via adb** (1080×2400 screen):
+
+```bash
+adb shell input tap 540 1050   # open Spanish Basics deck
+adb shell input tap 540 350    # tap Study button
+adb exec-out screencap -p > screenshots/screen.png
+```
+
 ## Tech Stack
 
 | Layer | Technology |
