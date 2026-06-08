@@ -1,4 +1,4 @@
-// Optional Cloudflare Worker for cross-device deck delivery.
+// Optional Cloudflare Worker for cross-device deck delivery and live grants.
 // Deploy with: npx wrangler kv namespace create SHINE_SHARE_KV
 // Bind KV as SHARE_KV, then: npx wrangler deploy
 // Set window.SHINE_SHARE_API to your worker URL in auth-config.js
@@ -41,7 +41,11 @@ export default {
         id: body.id || `${Date.now()}`,
         fromEmail: body.fromEmail || null,
         fromName: body.fromName || 'Someone',
+        fromUserId: body.fromUserId || null,
         deckName: body.deckName || 'Shared deck',
+        role: body.role || 'viewer',
+        grantId: body.grantId || null,
+        accessType: body.accessType || 'granted',
         payload: body.payload,
         createdAt: body.createdAt || new Date().toISOString(),
       };
@@ -49,6 +53,15 @@ export default {
       const inbox = await readInbox(kv, to);
       if (!inbox.some((i) => i.id === entry.id)) inbox.push(entry);
       await writeInbox(kv, to, inbox);
+      if (entry.grantId) {
+        await kv.put(`grant:${entry.grantId}`, JSON.stringify({
+          grantId: entry.grantId,
+          role: entry.role,
+          payload: entry.payload,
+          ownerEmail: body.fromEmail || body.ownerEmail || null,
+          updatedAt: entry.createdAt,
+        }));
+      }
       return json({ ok: true });
     }
 
@@ -66,6 +79,28 @@ export default {
       const inbox = (await readInbox(kv, to)).filter((i) => i.id !== id);
       await writeInbox(kv, to, inbox);
       return json({ ok: true });
+    }
+
+    if (request.method === 'POST' && url.pathname === '/grant') {
+      const body = await request.json();
+      const grantId = body.grantId;
+      if (!grantId || !body.payload) return json({ error: 'Invalid grant' }, 400);
+      await kv.put(`grant:${grantId}`, JSON.stringify({
+        grantId,
+        role: body.role || 'viewer',
+        payload: body.payload,
+        ownerEmail: body.ownerEmail || null,
+        updatedAt: body.updatedAt || new Date().toISOString(),
+      }));
+      return json({ ok: true });
+    }
+
+    if (request.method === 'GET' && url.pathname === '/grant') {
+      const grantId = url.searchParams.get('id');
+      if (!grantId) return json({ error: 'Missing id' }, 400);
+      const raw = await kv.get(`grant:${grantId}`);
+      if (!raw) return json({ error: 'Not found' }, 404);
+      return new Response(raw, { headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
     return json({ error: 'Not found' }, 404);

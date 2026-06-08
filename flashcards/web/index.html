@@ -168,6 +168,21 @@
     .btn-sm{padding:8px 12px;font-size:.78rem}
     .share-advanced{margin-top:14px}
     .share-advanced summary{font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer}
+    .badge-access{font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;letter-spacing:.02em}
+    .badge-viewer{background:#e0e7ff;color:#4338ca}
+    .badge-editor{background:#dbeafe;color:#1d4ed8}
+    .badge-shared{background:#f3e8ff;color:#7c3aed}
+    .role-pick{display:flex;gap:8px;margin-bottom:12px}
+    .role-pick button{flex:1;padding:10px 8px;border:1px solid var(--border);border-radius:10px;background:var(--white);cursor:pointer;font-size:.76rem;font-weight:600;color:var(--muted);line-height:1.3}
+    .role-pick button.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+    .role-pick button span{display:block;font-size:.68rem;font-weight:500;margin-top:2px;opacity:.85}
+    .collab-list{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+    .collab-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0}
+    .collab-item select{padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.78rem;background:var(--white)}
+    .collab-item .collab-email{font-size:.82rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
+    .access-banner{padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:14px;font-size:.8rem;color:var(--muted);line-height:1.45}
+    .access-banner strong{color:var(--text)}
+    .commerce-stub{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)}
     .fab{
       position:fixed;right:20px;bottom:92px;width:58px;height:58px;border-radius:18px;
       background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;
@@ -894,14 +909,24 @@
       }
     }
 
-    function buildDeckSharePayload(d) {
+    function buildDeckSharePayload(d, opts = {}) {
       const cl = clusterById(d.clusterId);
       const algo = deckAlgo(d);
+      const role = opts.role || 'viewer';
+      const grantId = opts.grantId || null;
       return {
         shine: 1,
         kind: 'deck',
-        v: 1,
+        v: 2,
         sharedAt: todayStr(),
+        access: {
+          role,
+          grantId,
+          accessType: opts.accessType || 'granted',
+          ownerEmail: d.ownership?.email || state.auth.user?.email || null,
+          ownerId: d.ownership?.userId || state.auth.user?.id || null,
+          ownerName: d.ownership?.name || state.auth.user?.name || state.userName || null,
+        },
         cluster: cl ? { name: cl.name, emoji: cl.emoji } : null,
         deck: {
           name: d.name,
@@ -972,10 +997,17 @@
       return state.clusters[0]?.id ?? null;
     }
 
-    function importSharedDeck(payload, options = {}) {
+    function acceptSharedDeck(delivery, options = {}) {
+      const payload = delivery.payload || delivery;
       const parsed = parseDeckSharePayload(payload);
       if (!parsed?.deck) throw new Error('Invalid shared deck');
       const src = parsed.deck;
+      const accessMeta = parsed.access || {};
+      const role = delivery.role || accessMeta.role || 'viewer';
+      const grantId = delivery.grantId || accessMeta.grantId || null;
+      if (grantId && state.decks.some(d => d.access?.grantId === grantId)) {
+        throw new Error('You already have access to this deck');
+      }
       const clusterId = resolveClusterForShare(parsed.cluster, options.clusterId);
       let cardId = Date.now();
       const cards = (src.cards || []).map(c => initCard({
@@ -986,17 +1018,138 @@
       }));
       const newDeck = initDeck({
         id: nextId(state.decks),
-        name: uniqueDeckName(src.name),
+        name: src.name || 'Shared deck',
         description: src.description || '',
         clusterId,
         ebbinghaus: src.ebbinghaus,
         algo: src.algo || {},
         cards,
+        access: {
+          role,
+          grantId,
+          ownerEmail: delivery.fromEmail || accessMeta.ownerEmail || null,
+          ownerName: delivery.fromName || accessMeta.ownerName || 'Someone',
+          ownerId: delivery.fromUserId || accessMeta.ownerId || null,
+          acceptedAt: new Date().toISOString(),
+          accessType: delivery.accessType || accessMeta.accessType || 'granted',
+          lastSyncedAt: parsed.sharedAt || todayStr(),
+        },
       });
       state.decks.unshift(newDeck);
       markOnboarded();
       save();
       return newDeck.id;
+    }
+
+    function importSharedDeck(payload, options = {}) {
+      return acceptSharedDeck({ payload, role: payload?.access?.role || 'viewer' }, options);
+    }
+
+    function leaveSharedDeck(deckId) {
+      const d = deckById(deckId);
+      if (!d || !canLeaveDeck(d)) return;
+      state.decks = state.decks.filter(x => x.id !== deckId);
+      save();
+    }
+
+    function ensureCollaborator(deckId, recipientEmail, role) {
+      const d = deckById(deckId);
+      if (!d || !canShareDeck(d)) throw new Error('Only the owner can change access');
+      const em = normalizeEmail(recipientEmail);
+      if (!d.sharing) d.sharing = { collaborators: [] };
+      let collab = d.sharing.collaborators.find(c => normalizeEmail(c.email) === em);
+      if (collab) {
+        collab.role = role;
+        collab.updatedAt = new Date().toISOString();
+      } else {
+        collab = {
+          email: em,
+          role,
+          grantId: `grant_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          addedAt: new Date().toISOString(),
+          addedBy: state.auth.user?.email || null,
+          accessType: 'granted',
+        };
+        d.sharing.collaborators.push(collab);
+      }
+      save();
+      pushGrantToCloud(collab.grantId, d, collab.role);
+      return collab;
+    }
+
+    function revokeCollaborator(deckId, email) {
+      const d = deckById(deckId);
+      if (!d || !canShareDeck(d)) return;
+      const em = normalizeEmail(email);
+      d.sharing.collaborators = (d.sharing.collaborators || []).filter(c => normalizeEmail(c.email) !== em);
+      save();
+    }
+
+    async function pushGrantToCloud(grantId, deck, role) {
+      const api = getShareApiUrl();
+      if (!api || !grantId) return;
+      try {
+        await fetch(`${api}/grant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            grantId,
+            role,
+            payload: buildDeckSharePayload(deck, { role, grantId }),
+            updatedAt: new Date().toISOString(),
+            ownerEmail: deck.ownership?.email,
+          }),
+        });
+      } catch (e) {}
+    }
+
+    function applyRemoteDeckContent(d, payload) {
+      const src = payload.deck || payload;
+      const schedule = d.schedule;
+      const sr = d.sr;
+      const cardMeta = new Map(d.cards.map(c => [cardFront(c) + '\0' + cardBack(c), c]));
+      let cardId = Date.now();
+      d.name = src.name || d.name;
+      d.description = src.description ?? d.description;
+      if (canChangeDeckSettings(d)) {
+        d.ebbinghaus = src.ebbinghaus;
+        d.algo = { ...DEFAULT_ALGO, ...(src.algo || {}), enabled: src.ebbinghaus === true || (src.algo && src.algo.enabled === true) };
+      }
+      d.cards = (src.cards || []).map(c => {
+        const key = cardFront(c) + '\0' + cardBack(c);
+        const prev = cardMeta.get(key);
+        return initCard({
+          id: prev?.id || cardId++,
+          front: cardFront(c),
+          back: cardBack(c),
+          color: c.color || null,
+          leitnerBox: prev?.leitnerBox,
+          sm2: prev?.sm2,
+        });
+      });
+      d.schedule = schedule;
+      d.sr = sr;
+    }
+
+    async function syncSharedDeckFromGrant(d) {
+      if (!d?.access?.grantId) return;
+      const api = getShareApiUrl();
+      if (!api) return;
+      try {
+        const res = await fetch(`${api}/grant?id=${encodeURIComponent(d.access.grantId)}`);
+        if (!res.ok) return;
+        const remote = await res.json();
+        if (!remote?.payload || !remote.updatedAt) return;
+        if (d.access.lastSyncedAt && remote.updatedAt <= d.access.lastSyncedAt) return;
+        applyRemoteDeckContent(d, remote.payload);
+        if (remote.role) d.access.role = remote.role;
+        d.access.lastSyncedAt = remote.updatedAt;
+        save();
+      } catch (e) {}
+    }
+
+    async function syncAllSharedDecks() {
+      await Promise.all(sharedWithMeDecks().map(syncSharedDeckFromGrant));
     }
 
     function shareDeckLink(deckId) {
@@ -1075,15 +1228,19 @@
       try { localStorage.setItem(DELIVERIES_KEY, JSON.stringify(deliveries)); } catch (e) {}
     }
 
-    function createDeliveryEntry(deckId) {
+    function createDeliveryEntry(deckId, role, grantId) {
       const d = deckById(deckId);
       if (!d) throw new Error('Deck not found');
       return {
         id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
         fromEmail: state.auth.user?.email || null,
         fromName: state.auth.user?.name || state.userName || 'A Shine user',
+        fromUserId: state.auth.user?.id || null,
         deckName: d.name,
-        payload: buildDeckSharePayload(d),
+        role,
+        grantId,
+        accessType: 'granted',
+        payload: buildDeckSharePayload(d, { role, grantId }),
         createdAt: new Date().toISOString(),
       };
     }
@@ -1108,18 +1265,20 @@
       }
     }
 
-    async function sendDeckToUser(recipientEmail, deckId) {
+    async function sendDeckToUser(recipientEmail, deckId, role = 'viewer') {
       const em = normalizeEmail(recipientEmail);
       if (!em || !em.includes('@')) throw new Error('Enter a valid email');
       const me = normalizeEmail(state.auth.user?.email);
       if (me && me === em) throw new Error('You cannot send a deck to yourself');
-      const entry = createDeliveryEntry(deckId);
+      if (!['viewer', 'editor'].includes(role)) role = 'viewer';
+      const collab = ensureCollaborator(deckId, em, role);
+      const entry = createDeliveryEntry(deckId, collab.role, collab.grantId);
       const deliveries = getDeliveries();
       if (!deliveries[em]) deliveries[em] = [];
       deliveries[em].push(entry);
       saveDeliveries(deliveries);
       const cloudOk = await pushDeliveryToCloud(em, entry);
-      return { entry, cloudOk };
+      return { entry, cloudOk, role: collab.role };
     }
 
     function getInboxForCurrentUser() {
@@ -1182,14 +1341,36 @@
       const inbox = getInboxForCurrentUser();
       if (!inbox.length) return;
       const latest = inbox[inbox.length - 1];
-      state.modal = { type: 'import-share', payload: latest.payload, deliveryId: latest.id };
+      state.modal = { type: 'import-share', delivery: latest, payload: latest.payload, deliveryId: latest.id };
       render();
     }
 
     function openShareDeckModal(deckId) {
-      if (!deckById(deckId)) return;
-      state.modal = { type: 'share-deck', deckId };
+      const d = deckById(deckId);
+      if (!d || !canShareDeck(d)) {
+        showToast('Only the deck owner can manage sharing');
+        return;
+      }
+      state.modal = { type: 'share-deck', deckId, shareRole: 'viewer' };
       render();
+    }
+
+    function renderCollaboratorsList(d) {
+      const collabs = d.sharing?.collaborators || [];
+      if (!collabs.length) return '';
+      return `
+        <div class="collab-list">
+          <p style="font-size:.78rem;font-weight:600;color:var(--muted);margin:0 0 8px">People with access</p>
+          ${collabs.map(c => `
+            <div class="collab-item">
+              <span class="collab-email">${esc(c.email)}</span>
+              <select data-update-collab-role="${esc(c.email)}">
+                <option value="viewer" ${c.role === 'viewer' ? 'selected' : ''}>Can view</option>
+                <option value="editor" ${c.role === 'editor' ? 'selected' : ''}>Can edit</option>
+              </select>
+              <button type="button" class="btn-outline btn-sm" data-revoke-collab="${esc(c.email)}" style="color:var(--danger);flex-shrink:0">Remove</button>
+            </div>`).join('')}
+        </div>`;
     }
 
     function importSharedDeckFromText(text) {
@@ -1255,19 +1436,23 @@
       return `
         <div class="panel-card inbox-panel">
           <h2>Decks sent to you<span class="inbox-count">${items.length}</span></h2>
-          <p class="hint" style="margin:0 0 4px">Someone shared these directly with your account.</p>
+          <p class="hint" style="margin:0 0 4px">Accept to open with the access level the owner chose.</p>
           <div class="inbox-list">
-            ${items.slice().reverse().map(item => `
+            ${items.slice().reverse().map(item => {
+              const role = item.role || 'viewer';
+              const roleLabel = DECK_ROLES[role]?.label || role;
+              return `
               <div class="inbox-item">
                 <div class="inbox-item-main">
                   <strong>${esc(item.deckName || 'Shared deck')}</strong>
-                  <span class="hint" style="margin:0">from ${esc(item.fromName || 'Someone')}</span>
+                  <span class="hint" style="margin:0">from ${esc(item.fromName || 'Someone')} · ${esc(roleLabel)}</span>
                 </div>
                 <div class="inbox-actions">
-                  <button type="button" class="btn-primary btn-sm" data-accept-inbox="${esc(item.id)}">Add</button>
+                  <button type="button" class="btn-primary btn-sm" data-accept-inbox="${esc(item.id)}">Accept</button>
                   <button type="button" class="btn-outline btn-sm" data-dismiss-inbox="${esc(item.id)}">Dismiss</button>
                 </div>
-              </div>`).join('')}
+              </div>`;
+            }).join('')}
           </div>
         </div>`;
     }
@@ -1293,6 +1478,7 @@
       mergeGuestDataIntoAccount() || migrateGuestDataIfEmpty();
       save();
       await syncInboxFromCloud();
+      await syncAllSharedDecks();
       if (state.tab === 'account') state.authMode = 'signin';
       render();
       initGoogleButton();
@@ -1537,10 +1723,24 @@
       return { id: c.id, name: c.name || 'Cluster', emoji: c.emoji || '📁' };
     }
 
+    function deckOwnership(d) {
+      if (d?.ownership) return d.ownership;
+      const u = state.auth.user;
+      return {
+        userId: u?.id || 'guest',
+        email: u?.email || null,
+        name: u?.name || state.userName || 'Guest',
+      };
+    }
+
     function initDeck(d) {
       return {
         ...d,
         clusterId: d.clusterId ?? null,
+        ownership: deckOwnership(d),
+        sharing: d.sharing || { collaborators: [] },
+        access: d.access || null,
+        commerce: d.commerce || { forSale: false, priceCents: null, currency: 'USD', listingId: null },
         cards: (d.cards || []).map(initCard),
         sr: d.sr || newDeckSR(),
         schedule: d.schedule || [],
@@ -1594,6 +1794,9 @@
     }
     function save() {
       persistAppData();
+      state.decks.filter(d => isDeckOwner(d) && d.sharing?.collaborators?.length).forEach(d => {
+        d.sharing.collaborators.forEach(c => pushGrantToCloud(c.grantId, d, c.role));
+      });
     }
     function clusterById(id) { return state.clusters.find(c => c.id === id); }
     function decksInCluster(clusterId) {
@@ -1849,6 +2052,39 @@
 
     function deckById(id) { return state.decks.find(d => d.id === id); }
 
+    const DECK_ROLES = {
+      viewer: { label: 'Can view', short: 'View', desc: 'Study and browse' },
+      editor: { label: 'Can edit', short: 'Edit', desc: 'Edit cards and settings' },
+      owner: { label: 'Owner', short: 'Owner', desc: 'Full control' },
+    };
+
+    function deckRole(d) {
+      if (!d) return null;
+      if (d.access?.role) return d.access.role;
+      return 'owner';
+    }
+
+    function isSharedDeck(d) { return !!(d?.access); }
+    function isDeckOwner(d) { return deckRole(d) === 'owner'; }
+    function canEditDeck(d) { return ['owner', 'editor'].includes(deckRole(d)); }
+    function canShareDeck(d) { return isDeckOwner(d); }
+    function canDeleteDeck(d) { return isDeckOwner(d); }
+    function canLeaveDeck(d) { return isSharedDeck(d); }
+    function canChangeDeckSettings(d) { return canEditDeck(d); }
+
+    function ownedDecks() { return state.decks.filter(d => !d.access); }
+    function sharedWithMeDecks() { return state.decks.filter(d => d.access); }
+
+    function renderAccessBadge(d) {
+      const role = deckRole(d);
+      if (role === 'owner') {
+        if (d.sharing?.collaborators?.length) return '<span class="badge-access badge-shared">Shared</span>';
+        return '';
+      }
+      const cls = role === 'editor' ? 'badge-editor' : 'badge-viewer';
+      return `<span class="badge-access ${cls}">${DECK_ROLES[role]?.short || role}</span>`;
+    }
+
     function isSmartScheduleOn(d) { return !!(d.ebbinghaus || deckAlgo(d).enabled); }
     function isEbbinghausOn(d) { return isSmartScheduleOn(d); }
 
@@ -1862,6 +2098,7 @@
     }
 
     function applyPreset(d, key) {
+      if (!canChangeDeckSettings(d)) return;
       const p = PRESETS[key];
       if (!p) return;
       const { label, desc, ...algoFields } = p;
@@ -2102,11 +2339,17 @@
     function renderDeckCard(d) {
       const due = isDue(d);
       const next = nextScheduled(d);
+      const shareBtn = canShareDeck(d)
+        ? `<button type="button" class="share" data-share-deck-card="${d.id}" title="Share deck">↗</button>`
+        : '';
+      const removeBtn = canDeleteDeck(d)
+        ? `<button type="button" class="delete" data-del-deck="${d.id}" title="Delete deck">✕</button>`
+        : (canLeaveDeck(d) ? `<button type="button" class="delete" data-leave-deck="${d.id}" title="Leave deck">✕</button>` : '');
       return `
         <div class="deck-card" data-open-deck="${d.id}">
-          <button type="button" class="share" data-share-deck-card="${d.id}" title="Share deck">↗</button>
-          <button type="button" class="delete" data-del-deck="${d.id}">✕</button>
-          <h2>${esc(d.name)}${isSmartScheduleOn(d) ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h2>
+          ${shareBtn}
+          ${removeBtn}
+          <h2>${esc(d.name)}${renderAccessBadge(d)}${isSmartScheduleOn(d) ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h2>
           <p>${esc(d.description || '')}</p>
           <div class="meta">
             <span class="due">${due ? 'Scheduled today' : 'On track'}</span>
@@ -2136,11 +2379,19 @@
         </details>`;
     }
 
+    function ownedInCluster(clusterId) {
+      return ownedDecks().filter(d => clusterId == null ? d.clusterId == null : d.clusterId === clusterId);
+    }
+
     function renderHome() {
       const dueDecks = state.decks.filter(isDue);
-      const sections = state.clusters.map(cl => renderClusterSection(cl, decksInCluster(cl.id))).join('');
-      const other = decksInCluster(null);
+      const sections = state.clusters.map(cl => renderClusterSection(cl, ownedInCluster(cl.id))).join('');
+      const other = ownedInCluster(null);
       const otherSection = other.length ? renderClusterSection({ id: null, name: 'Other', emoji: '📋' }, other, true) : '';
+      const shared = sharedWithMeDecks();
+      const sharedSection = shared.length
+        ? renderClusterSection({ id: 'shared', name: 'Shared with me', emoji: '🤝' }, shared, true)
+        : '';
       const headerActions = `<div class="header-actions">
             <button class="icon-btn" data-go-account title="Account">${state.auth.user?.avatar
               ? `<img src="${esc(state.auth.user.avatar)}" alt="" style="width:22px;height:22px;border-radius:50%">`
@@ -2159,6 +2410,7 @@
           </div>` : ''}
           ${sections || '<div class="empty"><div class="empty-icon">📁</div><p>Create a cluster to organize your decks</p></div>'}
           ${otherSection}
+          ${sharedSection}
         </main>
         <button class="fab" data-new-deck title="New deck">+</button>`;
     }
@@ -2261,22 +2513,33 @@
       if (!d) return '';
       const ebbOn = isEbbinghausOn(d);
       const cl = clusterById(d.clusterId);
-      const deckTitle = `${esc(d.name)}${ebbOn ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}`;
-      return `
-        ${renderPageHeader({
-          title: deckTitle,
-          subtitle: cl ? `${cl.emoji} ${esc(cl.name)}` : 'Other',
-          backAction: 'go-home'
-        })}
-        <main>
+      const role = deckRole(d);
+      const deckTitle = `${esc(d.name)}${renderAccessBadge(d)}${ebbOn ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}`;
+      const accessBanner = isSharedDeck(d)
+        ? `<div class="access-banner">${role === 'viewer'
+          ? `<strong>View only</strong> — shared by ${esc(d.access.ownerName || d.access.ownerEmail || 'someone')}. You can study but not edit.`
+          : `<strong>Can edit</strong> — shared by ${esc(d.access.ownerName || d.access.ownerEmail || 'someone')}. You can change cards and settings.`}</div>`
+        : '';
+      const clusterField = canChangeDeckSettings(d) ? `
           <div class="field" style="margin-bottom:14px">
             <label>Cluster</label>
             <select id="deck-cluster">${renderClusterOptions(d.clusterId)}</select>
-          </div>
-          ${renderScheduleCard(d)}
+          </div>` : '';
+      const fab = canEditDeck(d) ? `<button class="fab" data-new-card>+</button>` : '';
+      return `
+        ${renderPageHeader({
+          title: deckTitle,
+          subtitle: cl ? `${cl.emoji} ${esc(cl.name)}` : (isSharedDeck(d) ? 'Shared deck' : 'Other'),
+          backAction: 'go-home'
+        })}
+        <main>
+          ${accessBanner}
+          ${clusterField}
+          ${canChangeDeckSettings(d) ? renderScheduleCard(d) : ''}
           ${renderDeckCards(d)}
+          ${canLeaveDeck(d) ? `<button type="button" class="btn-outline" data-leave-deck="${d.id}" style="margin-top:14px;color:var(--danger);border-color:#fecaca;width:100%">Leave shared deck</button>` : ''}
         </main>
-        <button class="fab" data-new-card>+</button>`;
+        ${fab}`;
     }
 
     function scheduleSummary(d) {
@@ -2539,24 +2802,26 @@
 
     function renderDeckCards(d) {
       const alg = getAlgorithm(d);
+      const editable = canEditDeck(d);
       const cards = d.cards.map(c => `
         <div class="card-item ${cardColorClass(c.color)}" style="${cardColorStyle(c.color)}" data-card-id="${c.id}">
           <div class="en">${esc(cardFront(c))}</div>
           <div class="de">${esc(cardBack(c))}</div>
           ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
           ${isSmartScheduleOn(d) && alg === 'sm2' ? `<div class="card-meta">SM-2 · ${c.sm2?.intervalDays || 0}d interval · ease ${(c.sm2?.easeFactor || 2.5).toFixed(1)}</div>` : ''}
-          <div class="card-actions">
+          ${editable ? `<div class="card-actions">
             <button data-edit-card="${c.id}">Edit</button>
             <button data-del-card="${c.id}" style="color:var(--danger)">Delete</button>
-          </div>
+          </div>` : ''}
         </div>`).join('');
+      const shareBtn = canShareDeck(d) ? `<button type="button" class="btn-outline" data-share-deck>↗ Share</button>` : '';
       return `
         <div class="deck-toolbar">
           ${d.cards.length ? `<button class="btn-primary" data-study-now>Study now (${d.cards.length} cards)</button>` : ''}
-          <button type="button" class="btn-outline" data-share-deck>↗ Share deck</button>
-          ${d.cards.length ? `<button type="button" class="btn-outline btn-shuffle" data-shuffle-deck>🔀 Shuffle cards</button>` : ''}
+          ${shareBtn}
+          ${d.cards.length && editable ? `<button type="button" class="btn-outline btn-shuffle" data-shuffle-deck>🔀 Shuffle cards</button>` : ''}
         </div>
-        ${cards ? `<div class="card-list" id="card-list">${cards}</div>` : '<div class="empty"><div class="empty-icon">🃏</div><p>No cards yet — tap + to add your first one</p></div>'}`;
+        ${cards ? `<div class="card-list" id="card-list">${cards}</div>` : `<div class="empty"><div class="empty-icon">🃏</div><p>${editable ? 'No cards yet — tap + to add your first one' : 'No cards in this deck yet'}</p></div>`}`;
     }
 
     function renderStudy() {
@@ -2642,6 +2907,7 @@
         const d = deckById(m.deckId);
         const cardCount = d?.cards.length || 0;
         const deviceUsers = listDeviceUsers();
+        const shareRole = m.shareRole || 'viewer';
         const link = shareDeckLink(m.deckId);
         const canLink = link && link.length <= SHARE_URL_MAX;
         const devicePick = deviceUsers.length ? `
@@ -2654,45 +2920,61 @@
               </button>`).join('')}
           </div>` : '';
         return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
-          <h2>Send deck</h2>
+          <h2>Share “${esc(d?.name || 'deck')}”</h2>
           <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;line-height:1.45">
-            Send <strong>${esc(d?.name || 'this deck')}</strong> (${cardCount} card${cardCount !== 1 ? 's' : ''}) directly to another Shine user. Study progress is not included.
+            ${cardCount} card${cardCount !== 1 ? 's' : ''} · choose who can view or edit, like Google Docs.
           </p>
+          <p style="font-size:.78rem;font-weight:600;color:var(--muted);margin:0 0 6px">Access level</p>
+          <div class="role-pick">
+            <button type="button" class="role-opt ${shareRole === 'viewer' ? 'active' : ''}" data-pick-role="viewer">
+              Can view<span>${DECK_ROLES.viewer.desc}</span>
+            </button>
+            <button type="button" class="role-opt ${shareRole === 'editor' ? 'active' : ''}" data-pick-role="editor">
+              Can edit<span>${DECK_ROLES.editor.desc}</span>
+            </button>
+          </div>
           <div class="field" style="margin-bottom:8px">
-            <label>Recipient email</label>
+            <label>Add people</label>
             <input id="share-deck-email" type="email" placeholder="friend@example.com" value="${esc(m.recipientEmail || '')}" />
           </div>
-          <button type="button" class="btn-primary" data-send-deck-email style="width:100%">Send deck</button>
-          <p class="share-hint">They&apos;ll see it in Account when signed in with that email.</p>
+          <button type="button" class="btn-primary" data-send-deck-email style="width:100%">Send invite</button>
+          <p class="share-hint">They accept in Account and get the access level you chose.</p>
+          ${renderCollaboratorsList(d)}
           ${devicePick}
           ${typeof navigator !== 'undefined' && navigator.share ? `
-            <button type="button" class="btn-outline" data-native-share-deck style="width:100%;margin-top:10px">Send via Messages, Mail, etc.</button>
-            <p class="share-hint">Shares the deck file through your apps — no link needed.</p>` : ''}
+            <button type="button" class="btn-outline" data-native-share-deck style="width:100%;margin-top:10px">Send file via Messages, Mail…</button>` : ''}
+          <div class="commerce-stub">
+            <p style="font-size:.78rem;font-weight:600;color:var(--muted);margin:0 0 6px">Sell this deck</p>
+            <p class="share-hint" style="margin-top:0">Paid listings are coming soon. Permissions and ownership are already set up for marketplace sales.</p>
+          </div>
           <details class="share-advanced">
-            <summary>Other options</summary>
+            <summary>Export options</summary>
             <div class="backup-row" style="margin-top:10px">
               <button type="button" class="btn-outline" data-download-share-deck>Download file</button>
               ${canLink ? '<button type="button" class="btn-outline" data-copy-share-link>Copy link</button>' : ''}
             </div>
-            ${!canLink ? '<p class="share-hint">This deck is too large for a share link — use direct send or download the file.</p>' : ''}
           </details>
           <div class="modal-actions"><button class="cancel" data-close>Done</button></div>
         </div></div>`;
       }
       if (m.type === 'import-share') {
-        const src = m.payload?.deck || {};
+        const delivery = m.delivery || {};
+        const payload = m.payload || delivery.payload;
+        const src = payload?.deck || {};
         const cardCount = (src.cards || []).length;
-        const hint = m.payload?.cluster;
+        const role = delivery.role || payload?.access?.role || 'viewer';
+        const roleLabel = DECK_ROLES[role]?.label || role;
+        const hint = payload?.cluster;
         const matched = clusterHintMatch(hint);
         const defaultCluster = matched?.id ?? (hint?.name ? '__new__' : (state.clusters[0]?.id ?? null));
         const createOpt = hint?.name && !matched
           ? `<option value="__new__" ${defaultCluster === '__new__' ? 'selected' : ''}>${esc(hint.emoji || '📁')} Create “${esc(hint.name)}”</option>`
           : '';
         return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
-          <h2>Import shared deck</h2>
+          <h2>Accept shared deck</h2>
           <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;line-height:1.45">
-            <strong>${esc(src.name || 'Shared deck')}</strong> · ${cardCount} card${cardCount !== 1 ? 's' : ''}
-            ${hint?.name ? `<br><span style="font-size:.8rem">Shared from ${esc(hint.emoji || '📁')} ${esc(hint.name)}</span>` : ''}
+            <strong>${esc(src.name || delivery.deckName || 'Shared deck')}</strong> · ${cardCount} card${cardCount !== 1 ? 's' : ''}
+            <br><span style="font-size:.8rem">Access: <strong>${esc(roleLabel)}</strong>${delivery.fromName ? ` · from ${esc(delivery.fromName)}` : ''}</span>
           </p>
           <div class="field">
             <label>Save to cluster</label>
@@ -2700,7 +2982,7 @@
           </div>
           <div class="modal-actions">
             <button class="cancel" data-close>Cancel</button>
-            <button class="confirm" data-confirm-import-share>Import deck</button>
+            <button class="confirm" data-confirm-import-share>Accept deck</button>
           </div>
         </div></div>`;
       }
@@ -2800,20 +3082,45 @@
         const d = deck();
         if (d) openShareDeckModal(d.id);
       });
+      const getSelectedShareRole = () => {
+        const active = document.querySelector('[data-pick-role].active');
+        return active?.dataset.pickRole || state.modal?.shareRole || 'viewer';
+      };
       const submitSendDeck = async (email) => {
         const deckId = state.modal?.deckId;
         if (!deckId) return;
+        const role = getSelectedShareRole();
         try {
-          const { cloudOk } = await sendDeckToUser(email, deckId);
-          state.modal = null;
+          const { cloudOk, role: sentRole } = await sendDeckToUser(email, deckId, role);
+          const roleLabel = DECK_ROLES[sentRole]?.label || sentRole;
+          state.modal = { type: 'share-deck', deckId, shareRole: sentRole };
           showToast(cloudOk || !getShareApiUrl()
-            ? `Deck sent to ${email}`
-            : `Deck saved for ${email} on this device`);
+            ? `Sent to ${email} · ${roleLabel}`
+            : `Saved for ${email} on this device · ${roleLabel}`);
           render();
         } catch (e) {
           showToast(e.message || 'Could not send deck');
         }
       };
+      document.querySelectorAll('[data-pick-role]').forEach(el => el.addEventListener('click', () => {
+        if (state.modal?.type === 'share-deck') state.modal.shareRole = el.dataset.pickRole;
+        render();
+      }));
+      document.querySelectorAll('[data-update-collab-role]').forEach(el => el.addEventListener('change', () => {
+        const deckId = state.modal?.deckId;
+        if (!deckId) return;
+        ensureCollaborator(deckId, el.dataset.updateCollabRole, el.value);
+        showToast('Access updated');
+        render();
+      }));
+      document.querySelectorAll('[data-revoke-collab]').forEach(el => el.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        if (!deckId) return;
+        if (!confirm(`Remove access for ${el.dataset.revokeCollab}?`)) return;
+        revokeCollaborator(deckId, el.dataset.revokeCollab);
+        showToast('Access removed');
+        render();
+      }));
       document.querySelector('[data-send-deck-email]')?.addEventListener('click', () => {
         submitSendDeck(document.getElementById('share-deck-email')?.value);
       });
@@ -2836,26 +3143,31 @@
         if (deckId) await shareDeckNative(deckId);
       });
       document.querySelector('[data-confirm-import-share]')?.addEventListener('click', () => {
-        const payload = state.modal?.payload;
-        if (!payload) return;
+        const delivery = state.modal?.delivery || {
+          payload: state.modal?.payload,
+          role: state.modal?.payload?.access?.role,
+          grantId: state.modal?.payload?.access?.grantId,
+        };
+        if (!delivery.payload) return;
         const val = document.getElementById('import-share-cluster')?.value;
         const clusterId = val === '__new__' ? '__new__' : (val ? parseInt(val, 10) : null);
         try {
-          const deckId = importSharedDeck(payload, { clusterId });
+          const deckId = acceptSharedDeck(delivery, { clusterId });
           if (state.modal?.deliveryId) dismissInboxItem(state.modal.deliveryId);
           state.modal = null;
           state.deckId = deckId;
           state.view = 'deck';
-          showToast('Shared deck imported');
+          const roleLabel = DECK_ROLES[deckRole(deckById(deckId))]?.label || 'access';
+          showToast(`Deck added · ${roleLabel}`);
           render();
         } catch (e) {
-          showToast('Could not import shared deck');
+          showToast(e.message || 'Could not accept deck');
         }
       });
       document.querySelectorAll('[data-accept-inbox]').forEach(el => el.addEventListener('click', () => {
         const item = getInboxForCurrentUser().find(i => i.id === el.dataset.acceptInbox);
         if (!item) return;
-        state.modal = { type: 'import-share', payload: item.payload, deliveryId: item.id };
+        state.modal = { type: 'import-share', delivery: item, payload: item.payload, deliveryId: item.id };
         render();
       }));
       document.querySelectorAll('[data-dismiss-inbox]').forEach(el => el.addEventListener('click', () => {
@@ -2872,14 +3184,30 @@
       }));
       document.querySelector('[data-go-home]')?.addEventListener('click', () => { state.view = 'home'; state.deckId = null; render(); });
       document.querySelectorAll('[data-open-deck]').forEach(el => el.addEventListener('click', e => {
-        if (e.target.closest('[data-del-deck]') || e.target.closest('[data-share-deck-card]')) return;
+        if (e.target.closest('[data-del-deck]') || e.target.closest('[data-leave-deck]') || e.target.closest('[data-share-deck-card]')) return;
         state.deckId = +el.dataset.openDeck;
         state.view = 'deck';
-        render();
+        const d = deckById(state.deckId);
+        if (d?.access?.grantId) {
+          syncSharedDeckFromGrant(d).then(() => render());
+        } else {
+          render();
+        }
       }));
       document.querySelectorAll('[data-del-deck]').forEach(el => el.addEventListener('click', e => {
         e.stopPropagation();
-        if (confirm('Delete deck?')) { state.decks = state.decks.filter(d => d.id !== +el.dataset.delDeck); save(); render(); }
+        const d = deckById(+el.dataset.delDeck);
+        if (!d || !canDeleteDeck(d)) return;
+        if (confirm('Delete deck?')) { state.decks = state.decks.filter(x => x.id !== d.id); save(); render(); }
+      }));
+      document.querySelectorAll('[data-leave-deck]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = +el.dataset.leaveDeck;
+        if (!confirm('Leave this shared deck? Your study progress for it will be removed.')) return;
+        leaveSharedDeck(id);
+        if (state.deckId === id) { state.deckId = null; state.view = 'home'; }
+        showToast('Left shared deck');
+        render();
       }));
       document.querySelector('[data-new-deck]')?.addEventListener('click', () => {
         state.modal = { type: 'deck', clusterId: state.clusters[0]?.id ?? null };
@@ -2918,7 +3246,10 @@
         save();
         render();
       });
-      document.querySelector('[data-new-card]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
+      document.querySelector('[data-new-card]')?.addEventListener('click', () => {
+        if (!canEditDeck(deck())) { showToast('View-only access'); return; }
+        state.modal = { type: 'card' }; render();
+      });
       document.getElementById('deck-schedule-fold')?.addEventListener('toggle', (e) => {
         state.deckScheduleOpen = e.target.open;
       });
@@ -2987,10 +3318,12 @@
       }));
       document.querySelector('[data-study-now]')?.addEventListener('click', () => startStudy(deck()));
       document.querySelector('[data-shuffle-deck]')?.addEventListener('click', () => {
-        shuffleDeck(deck());
+        const d = deck();
+        if (!canEditDeck(d)) return;
+        shuffleDeck(d);
         render();
       });
-      bindCardReorder();
+      if (canEditDeck(deck())) bindCardReorder();
       document.querySelectorAll('[data-end-study]').forEach(el => el.addEventListener('click', () => {
         const s = state.study;
         if (s && !s.done && (s.correct + s.incorrect) > 0) {
@@ -3014,11 +3347,15 @@
         save(); render();
       });
       document.querySelectorAll('[data-edit-card]').forEach(el => el.addEventListener('click', () => {
-        const c = deck().cards.find(x => x.id === +el.dataset.editCard);
+        const d = deck();
+        if (!canEditDeck(d)) return;
+        const c = d.cards.find(x => x.id === +el.dataset.editCard);
         state.modal = { type: 'card', edit: c.id, front: cardFront(c), back: cardBack(c), color: c.color || 'none' }; render();
       }));
       document.querySelectorAll('[data-del-card]').forEach(el => el.addEventListener('click', () => {
-        if (confirm('Delete card?')) { deck().cards = deck().cards.filter(c => c.id !== +el.dataset.delCard); save(); render(); }
+        const d = deck();
+        if (!canEditDeck(d)) return;
+        if (confirm('Delete card?')) { d.cards = d.cards.filter(c => c.id !== +el.dataset.delCard); save(); render(); }
       }));
       document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => { state.modal = null; render(); }));
       document.querySelector('[data-save-welcome]')?.addEventListener('click', () => {
@@ -3055,6 +3392,7 @@
         const back = document.getElementById('m-back').value.trim();
         if (!front || !back) return;
         const d = deck();
+        if (!canEditDeck(d)) return;
         const colorVal = document.getElementById('m-color')?.value || 'none';
         const color = colorVal === 'none' ? null : colorVal;
         if (state.modal.edit) {
