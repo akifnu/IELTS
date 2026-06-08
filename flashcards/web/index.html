@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>German Flashcards</title>
+  <title>Shine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -18,8 +18,8 @@
     #splash{cursor:pointer}
     .splash-skip{position:relative;z-index:2;margin-top:28px;padding:12px 28px;font-size:.9rem;font-weight:600;color:#fff;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.8);border-radius:999px;cursor:pointer}
     .splash-skip:hover{background:rgba(255,255,255,.3)}
-    #splash .bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=1200&q=80') center/cover;animation:kenburns 2s ease forwards}
-    #splash .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,71,161,.5),rgba(21,101,192,.8))}
+    #splash .bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1499203535255-f9df020d5d0b?auto=format&fit=crop&w=1200&q=80') center/cover;animation:kenburns 2s ease forwards}
+    #splash .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,71,161,.45),rgba(21,101,192,.82))}
     @keyframes kenburns{to{transform:scale(1.02)}}
     .splash-content{position:relative;z-index:1;text-align:center;color:#fff;padding:32px;animation:fadeUp .8s ease}
     .splash-content .greeting{font-size:1rem;letter-spacing:.12em;text-transform:uppercase;opacity:.9}
@@ -165,6 +165,21 @@
     .schedule-fold summary .sched-line{color:var(--muted);font-weight:500;font-size:.8rem}
     .schedule-fold .sched-body{padding:0 14px 14px;border-top:1px solid var(--border)}
     .schedule-fold .sched-body h3{font-size:.9rem;margin:14px 0 4px}
+    .cluster-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+    .cluster-section summary{cursor:pointer;padding:14px 16px;font-weight:600;color:var(--blue-dark);list-style:none;display:flex;align-items:center;gap:10px}
+    .cluster-section summary::-webkit-details-marker{display:none}
+    .cluster-section summary::after{content:'▾';margin-left:auto;color:var(--muted);font-size:.9rem;transition:transform .2s}
+    .cluster-section[open] summary::after{transform:rotate(180deg)}
+    .cluster-section .cluster-meta{font-size:.75rem;color:var(--muted);font-weight:500}
+    .cluster-actions{display:flex;gap:4px;margin-left:8px}
+    .cluster-actions button{background:none;border:none;cursor:pointer;font-size:.85rem;padding:4px 6px;color:var(--muted)}
+    .cluster-decks{padding:0 12px 12px}
+    .cluster-decks .deck-card{margin-bottom:8px}
+    .cluster-decks .deck-card:last-child{margin-bottom:0}
+    .cluster-empty{padding:12px 16px 16px;font-size:.82rem;color:var(--muted)}
+    .header-actions{display:flex;gap:6px}
+    .tagline{font-size:.78rem;color:var(--muted);font-weight:500;margin-top:2px}
+    .deck-cluster-tag{font-size:.72rem;color:var(--muted);font-weight:500;margin-top:2px}
   </style>
 </head>
 <body>
@@ -172,16 +187,16 @@
     <div class="bg"></div>
     <div class="overlay"></div>
     <div class="splash-content">
-      <div class="greeting">Guten Tag</div>
-      <h1 id="splash-name">Friend</h1>
-      <p>German flashcards · Ebbinghaus, Leitner & SM-2</p>
+      <div class="greeting">Welcome to</div>
+      <h1>✨ Shine</h1>
+      <p id="splash-name">Your lifestyle knowledge hub</p>
       <button type="button" class="splash-skip" id="splash-continue">Continue</button>
     </div>
   </div>
   <div id="app"></div>
   <script>
-    const STORAGE_KEY = 'german_flashcards_v4';
-    const LEGACY_KEYS = ['german_flashcards_v3', 'german_flashcards_v2', 'german_flashcards_v1'];
+    const STORAGE_KEY = 'shine_v1';
+    const LEGACY_KEYS = ['german_flashcards_v4', 'german_flashcards_v3', 'german_flashcards_v2', 'german_flashcards_v1'];
 
     const CARD_COLORS = [
       { id: 'none', hex: '', border: 'var(--border)', label: 'None' },
@@ -231,35 +246,42 @@
       curveSteepness: 1.0,
     };
 
-    const GERMAN_DECKS = [
+    const SAMPLE_CLUSTERS = [
+      { id: 1, name: 'Languages', emoji: '🌍' },
+      { id: 2, name: 'Wellness', emoji: '🧘' },
+      { id: 3, name: 'Life & Skills', emoji: '✨' },
+    ];
+
+    const SAMPLE_DECKS = [
       {
-        id: 1, name: 'German Basics', description: 'Essential everyday German',
+        id: 1, clusterId: 1, name: 'Spanish Phrases', description: 'Everyday conversation',
         cards: [
-          { id: 1, en: 'Hello', de: 'Hallo' },
-          { id: 2, en: 'Good day', de: 'Guten Tag' },
-          { id: 3, en: 'Thank you', de: 'Danke' },
-          { id: 4, en: 'Please', de: 'Bitte' },
-          { id: 5, en: 'Yes / No', de: 'Ja / Nein' },
-          { id: 6, en: 'Goodbye', de: 'Auf Wiedersehen' },
+          { id: 1, front: 'Hello', back: 'Hola' },
+          { id: 2, front: 'Thank you', back: 'Gracias' },
+          { id: 3, front: 'How are you?', back: '¿Cómo estás?' },
         ],
       },
       {
-        id: 2, name: 'German Travel', description: 'At the hotel, train & airport',
+        id: 2, clusterId: 1, name: 'French Basics', description: 'Travel essentials',
         cards: [
-          { id: 1, en: 'Where is the station?', de: 'Wo ist der Bahnhof?' },
-          { id: 2, en: 'A ticket, please', de: 'Eine Fahrkarte, bitte' },
-          { id: 3, en: 'I have a reservation', de: 'Ich habe eine Reservierung' },
-          { id: 4, en: 'How much does it cost?', de: 'Was kostet das?' },
+          { id: 1, front: 'Good morning', back: 'Bonjour' },
+          { id: 2, front: 'Please', back: "S'il vous plaît" },
+          { id: 3, front: 'Where is…?', back: 'Où est…?' },
         ],
       },
       {
-        id: 3, name: 'German Verbs', description: 'Common verbs & meanings',
+        id: 3, clusterId: 2, name: 'Mindfulness', description: 'Calm daily practices',
         cards: [
-          { id: 1, en: 'to be', de: 'sein' },
-          { id: 2, en: 'to have', de: 'haben' },
-          { id: 3, en: 'to go', de: 'gehen' },
-          { id: 4, en: 'to eat', de: 'essen' },
-          { id: 5, en: 'to speak', de: 'sprechen' },
+          { id: 1, front: 'Box breathing', back: 'Inhale 4s · hold 4s · exhale 4s · hold 4s' },
+          { id: 2, front: 'Body scan', back: 'Notice tension from toes to head, release slowly' },
+          { id: 3, front: 'Gratitude pause', back: 'Name 3 specific things you appreciate today' },
+        ],
+      },
+      {
+        id: 4, clusterId: 3, name: 'Coffee & Recipes', description: 'Kitchen know-how',
+        cards: [
+          { id: 1, front: 'Espresso ratio', back: '1:2 coffee to liquid · ~25–30s shot' },
+          { id: 2, front: 'Vinaigrette base', back: '3 parts oil · 1 part acid · salt + mustard' },
         ],
       },
     ];
@@ -274,6 +296,7 @@
       calSelected: null,
       scheduleDeckId: null,
       decks: [],
+      clusters: [],
       algo: { ...DEFAULT_ALGO },
       globalMaxSessionsPerDay: 3,
       deckScheduleOpen: false,
@@ -283,7 +306,9 @@
       splashDone: false,
     };
 
-    try { state.userName = localStorage.getItem('flashcards_user') || ''; } catch (e) {}
+    try {
+      state.userName = localStorage.getItem('shine_user') || localStorage.getItem('flashcards_user') || '';
+    } catch (e) {}
 
     // ── Date helpers ──
     function todayStr() {
@@ -310,26 +335,48 @@
       return { id: Date.now() + Math.random(), date, source, completed: false };
     }
 
+    function cardFront(c) { return c.front || c.en || ''; }
+    function cardBack(c) { return c.back || c.de || ''; }
+
     function initCard(c) {
       return {
         id: c.id,
-        en: c.en || c.front,
-        de: c.de || c.back,
+        front: cardFront(c),
+        back: cardBack(c),
+        en: cardFront(c),
+        de: cardBack(c),
         color: c.color || null,
         leitnerBox: c.leitnerBox || 1,
         sm2: c.sm2 || { repetitions: 0, easeFactor: 2.5, intervalDays: 0 },
       };
     }
 
+    function initCluster(c) {
+      return { id: c.id, name: c.name || 'Cluster', emoji: c.emoji || '📁' };
+    }
+
     function initDeck(d) {
       return {
         ...d,
+        clusterId: d.clusterId ?? null,
         cards: (d.cards || []).map(initCard),
         sr: d.sr || newDeckSR(),
         schedule: d.schedule || [],
         ebbinghaus: d.ebbinghaus === true || (d.algo && d.algo.enabled === true),
         algo: { ...DEFAULT_ALGO, ...(d.algo || {}), enabled: d.ebbinghaus === true || (d.algo && d.algo.enabled === true) },
       };
+    }
+
+    function migrateLegacyClusters(decks, clusters) {
+      if (Array.isArray(clusters) && clusters.length) return clusters.map(initCluster);
+      const legacy = [{ id: 1, name: 'Languages', emoji: '🌍' }];
+      decks.forEach(d => { if (d.clusterId == null) d.clusterId = 1; });
+      return legacy.map(initCluster);
+    }
+
+    function loadSampleData() {
+      state.clusters = SAMPLE_CLUSTERS.map(initCluster);
+      state.decks = SAMPLE_DECKS.map(initDeck);
     }
 
     function load() {
@@ -344,25 +391,33 @@
         const raw = JSON.parse(stored || 'null');
         if (raw && Array.isArray(raw.decks)) {
           state.decks = raw.decks.map(initDeck);
+          state.clusters = migrateLegacyClusters(state.decks, raw.clusters);
           state.algo = { ...DEFAULT_ALGO, ...raw.algo };
           state.globalMaxSessionsPerDay = raw.globalMaxSessionsPerDay ?? 3;
         } else {
-          state.decks = GERMAN_DECKS.map(initDeck);
+          loadSampleData();
         }
         save();
       } catch (e) {
         console.warn('Load failed, using defaults', e);
-        state.decks = GERMAN_DECKS.map(initDeck);
+        loadSampleData();
       }
     }
     function save() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          decks: state.decks, algo: state.algo, globalMaxSessionsPerDay: state.globalMaxSessionsPerDay
+          decks: state.decks,
+          clusters: state.clusters,
+          algo: state.algo,
+          globalMaxSessionsPerDay: state.globalMaxSessionsPerDay,
         }));
       } catch (e) {
         console.warn('Save failed', e);
       }
+    }
+    function clusterById(id) { return state.clusters.find(c => c.id === id); }
+    function decksInCluster(clusterId) {
+      return state.decks.filter(d => clusterId == null ? d.clusterId == null : d.clusterId === clusterId);
     }
     function deck() { return state.decks.find(d => d.id === state.deckId); }
     function deckAlgo(d) { return { ...state.algo, ...(d.algo || {}) }; }
@@ -656,7 +711,8 @@
     }
 
     function startSplash() {
-      document.getElementById('splash-name').textContent = state.userName || 'Friend';
+      const el = document.getElementById('splash-name');
+      if (el) el.textContent = state.userName ? `Hi ${state.userName} — store what matters` : 'Your lifestyle knowledge hub';
       const go = (e) => { e?.preventDefault?.(); e?.stopPropagation?.(); finishSplash(); };
       window.finishSplash = finishSplash;
       document.getElementById('splash-continue')?.addEventListener('click', go);
@@ -691,32 +747,66 @@
         </nav>`;
     }
 
-    function renderHome() {
-      const list = state.decks.map(d => {
-        const due = isDue(d);
-        const next = nextScheduled(d);
-        return `
-          <div class="deck-card" data-open-deck="${d.id}">
-            <button class="delete" data-del-deck="${d.id}">✕</button>
-            <h2>🇩🇪 ${esc(d.name)}${isSmartScheduleOn(d) ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h2>
-            <p>${esc(d.description || '')}</p>
-            <div class="meta">
-              <span class="due">${due ? 'Scheduled today' : 'On track'}</span>
-              <span class="next">${d.cards.length} cards · ${next ? formatDate(next) : 'Use Calendar'}</span>
-            </div>
-          </div>`;
-      }).join('');
-      const dueDecks = state.decks.filter(isDue);
+    function renderDeckCard(d) {
+      const due = isDue(d);
+      const next = nextScheduled(d);
       return `
-        <header><h1>🇩🇪 German Flashcards</h1></header>
+        <div class="deck-card" data-open-deck="${d.id}">
+          <button class="delete" data-del-deck="${d.id}">✕</button>
+          <h2>${esc(d.name)}${isSmartScheduleOn(d) ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h2>
+          <p>${esc(d.description || '')}</p>
+          <div class="meta">
+            <span class="due">${due ? 'Scheduled today' : 'On track'}</span>
+            <span class="next">${d.cards.length} cards · ${next ? formatDate(next) : 'Use Calendar'}</span>
+          </div>
+        </div>`;
+    }
+
+    function renderClusterSection(cluster, decks, isOther) {
+      const id = cluster.id;
+      const count = decks.length;
+      return `
+        <details class="cluster-section" open>
+          <summary>
+            <span>${cluster.emoji || '📁'}</span>
+            <span>${esc(cluster.name)}</span>
+            <span class="cluster-meta">${count} deck${count !== 1 ? 's' : ''}</span>
+            ${!isOther ? `<span class="cluster-actions" onclick="event.stopPropagation()">
+              <button type="button" data-add-deck-cluster="${id}" title="Add deck">+</button>
+              <button type="button" data-edit-cluster="${id}" title="Edit cluster">✎</button>
+              <button type="button" data-del-cluster="${id}" title="Delete cluster" style="color:var(--danger)">✕</button>
+            </span>` : ''}
+          </summary>
+          <div class="cluster-decks">
+            ${count ? decks.map(renderDeckCard).join('') : `<div class="cluster-empty">No decks yet — tap + to add one.</div>`}
+          </div>
+        </details>`;
+    }
+
+    function renderHome() {
+      const dueDecks = state.decks.filter(isDue);
+      const sections = state.clusters.map(cl => renderClusterSection(cl, decksInCluster(cl.id))).join('');
+      const other = decksInCluster(null);
+      const otherSection = other.length ? renderClusterSection({ id: null, name: 'Other', emoji: '📋' }, other, true) : '';
+      return `
+        <header>
+          <div style="flex:1">
+            <h1>✨ Shine</h1>
+            <div class="tagline">Your knowledge, organized in clusters</div>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn" data-new-cluster title="New cluster">📁</button>
+          </div>
+        </header>
         <main>
           ${dueDecks.length ? `<div class="overload-box" style="background:var(--blue-light);border-color:var(--blue-soft)">
             <h3 style="color:var(--blue-dark)">${dueDecks.length} deck${dueDecks.length>1?'s':''} due today</h3>
             <p style="font-size:.85rem;color:var(--muted)">Open Calendar tab to schedule & review</p>
           </div>` : ''}
-          ${list}
+          ${sections || '<div class="empty"><p>Create a cluster to organize your decks</p></div>'}
+          ${otherSection}
         </main>
-        <button class="fab" data-new-deck>+</button>`;
+        <button class="fab" data-new-deck title="New deck">+</button>`;
     }
 
     function renderGlobalCalendar() {
@@ -777,7 +867,7 @@
             <h3>${formatDate(selected)}</h3>
             ${selItems.length ? selItems.map(({ deck, session }) => `
               <div class="session-row">
-                <span>🇩🇪 ${esc(deck.name)} <small style="color:var(--muted)">(${session.source})</small></span>
+                <span>${esc(deck.name)} <small style="color:var(--muted)">(${session.source})</small></span>
                 <span>
                   ${selected <= todayStr() ? `<button class="btn-danger-sm" style="margin-right:6px;background:var(--blue-light);color:var(--blue);border-color:var(--blue-soft)" data-start-deck="${deck.id}">Study</button>` : ''}
                   <button class="btn-danger-sm" data-rm-session="${session.id}" data-rm-deck="${deck.id}">Remove</button>
@@ -805,16 +895,31 @@
         </main>`;
     }
 
+    function renderClusterOptions(selectedId) {
+      const opts = `<option value="">Other (no cluster)</option>` + state.clusters.map(c =>
+        `<option value="${c.id}" ${selectedId === c.id ? 'selected' : ''}>${c.emoji} ${esc(c.name)}</option>`
+      ).join('');
+      return opts;
+    }
+
     function renderDeck() {
       const d = deck();
       if (!d) return '';
       const ebbOn = isEbbinghausOn(d);
+      const cl = clusterById(d.clusterId);
       return `
         <header>
           <button class="icon-btn" data-go-home>←</button>
-          <h1>${esc(d.name)}${ebbOn ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h1>
+          <div style="flex:1;min-width:0">
+            <h1>${esc(d.name)}${ebbOn ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h1>
+            <div class="deck-cluster-tag">${cl ? `${cl.emoji} ${esc(cl.name)}` : 'Other'}</div>
+          </div>
         </header>
         <main>
+          <div class="field" style="margin-bottom:14px">
+            <label>Cluster</label>
+            <select id="deck-cluster">${renderClusterOptions(d.clusterId)}</select>
+          </div>
           ${renderScheduleCard(d)}
           ${renderDeckCards(d)}
         </main>
@@ -927,7 +1032,7 @@
     }
 
     function flipReorder(list, mutate) {
-      const nodes = [...list.children].filter(c => !c.classList.contains('drag-lifted'));
+      const nodes = [...list.children];
       const tops = new Map(nodes.map(c => [c, c.getBoundingClientRect().top]));
       mutate();
       nodes.forEach(c => {
@@ -1083,8 +1188,8 @@
       const alg = getAlgorithm(d);
       const cards = d.cards.map(c => `
         <div class="card-item ${cardColorClass(c.color)}" style="${cardColorStyle(c.color)}" data-card-id="${c.id}">
-          <div class="en">${esc(c.en)}</div>
-          <div class="de">${esc(c.de)}</div>
+          <div class="en">${esc(cardFront(c))}</div>
+          <div class="de">${esc(cardBack(c))}</div>
           ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
           ${isSmartScheduleOn(d) && alg === 'sm2' ? `<div class="card-meta">SM-2 · ${c.sm2?.intervalDays || 0}d interval · ease ${(c.sm2?.easeFactor || 2.5).toFixed(1)}</div>` : ''}
           <div class="card-actions">
@@ -1124,39 +1229,48 @@
       return `
         <header><button class="icon-btn" data-end-study>←</button><h1>Review</h1></header>
         <main>
-          <div class="progress-row"><span>${s.index+1} / ${s.cards.length}</span><span>${s.flipped?'German':'English'}</span></div>
+          <div class="progress-row"><span>${s.index+1} / ${s.cards.length}</span><span>${s.flipped?'Answer':'Question'}</span></div>
           <div class="progress-bar"><div style="width:${prog}%"></div></div>
           <div class="flip-card ${s.flipped?'flipped':''}" data-flip>
             <div class="flip-inner">
-              <div class="flip-face flip-front ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'front')}">${esc(c.en)}</div>
-              <div class="flip-face flip-back ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'back')}">${esc(c.de)}</div>
+              <div class="flip-face flip-front ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'front')}">${esc(cardFront(c))}</div>
+              <div class="flip-face flip-back ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'back')}">${esc(cardBack(c))}</div>
             </div>
           </div>
           ${s.flipped ? `<div class="study-actions">
             <button class="missed" data-ans="0">Missed</button>
             <button class="got-it" data-ans="1">Got it</button>
-          </div>` : `<button class="show-answer" data-flip>Show German</button>`}
+          </div>` : `<button class="show-answer" data-flip>Show answer</button>`}
         </main>`;
     }
 
     function renderModal() {
       const m = state.modal;
       if (m.type === 'welcome') return `<div class="modal-bg"><div class="modal">
-        <h2>Willkommen!</h2>
+        <h2>Welcome to Shine</h2>
         <p style="color:var(--muted);font-size:.88rem;margin-bottom:10px">Your name appears on the splash screen.</p>
-        <input id="welcome-name" placeholder="Your name" />
+        <input id="welcome-name" placeholder="Your name" value="${esc(state.userName || '')}" />
         <div class="modal-actions"><button class="confirm" data-save-welcome>Continue</button></div>
       </div></div>`;
+      if (m.type === 'cluster') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+        <h2>${m.edit ? 'Edit' : 'New'} cluster</h2>
+        <input id="m-cluster-name" placeholder="Cluster name" value="${esc(m.name || '')}" />
+        <input id="m-cluster-emoji" placeholder="Emoji (e.g. 🌍)" value="${esc(m.emoji || '📁')}" maxlength="4" />
+        <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-cluster>Save</button></div>
+      </div></div>`;
       if (m.type === 'deck') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
-        <h2>New German deck</h2>
+        <h2>New deck</h2>
+        <div class="field"><label>Cluster</label>
+          <select id="m-cluster">${renderClusterOptions(m.clusterId ?? null)}</select>
+        </div>
         <input id="m-name" placeholder="Deck name" />
-        <textarea id="m-desc" placeholder="Description" rows="2"></textarea>
+        <textarea id="m-desc" placeholder="What knowledge lives here?" rows="2"></textarea>
         <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-deck>Save</button></div>
       </div></div>`;
       if (m.type === 'card') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
         <h2>${m.edit?'Edit':'New'} card</h2>
-        <input id="m-en" placeholder="English" value="${esc(m.en||'')}" />
-        <input id="m-de" placeholder="German" value="${esc(m.de||'')}" />
+        <input id="m-front" placeholder="Question / front" value="${esc(m.front || m.en || '')}" />
+        <input id="m-back" placeholder="Answer / back" value="${esc(m.back || m.de || '')}" />
         <label style="font-size:.78rem;font-weight:600;color:var(--muted)">Card color</label>
         ${renderColorPicker(m.color || 'none')}
         <input type="hidden" id="m-color" value="${esc(m.color || 'none')}" />
@@ -1209,7 +1323,43 @@
         e.stopPropagation();
         if (confirm('Delete deck?')) { state.decks = state.decks.filter(d => d.id !== +el.dataset.delDeck); save(); render(); }
       }));
-      document.querySelector('[data-new-deck]')?.addEventListener('click', () => { state.modal = { type: 'deck' }; render(); });
+      document.querySelector('[data-new-deck]')?.addEventListener('click', () => {
+        state.modal = { type: 'deck', clusterId: state.clusters[0]?.id ?? null };
+        render();
+      });
+      document.querySelector('[data-new-cluster]')?.addEventListener('click', () => { state.modal = { type: 'cluster' }; render(); });
+      document.querySelectorAll('[data-add-deck-cluster]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        state.modal = { type: 'deck', clusterId: +el.dataset.addDeckCluster };
+        render();
+      }));
+      document.querySelectorAll('[data-edit-cluster]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        const cl = clusterById(+el.dataset.editCluster);
+        if (cl) state.modal = { type: 'cluster', edit: cl.id, name: cl.name, emoji: cl.emoji };
+        render();
+      }));
+      document.querySelectorAll('[data-del-cluster]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = +el.dataset.delCluster;
+        const count = decksInCluster(id).length;
+        const msg = count
+          ? `Delete this cluster? ${count} deck(s) will move to Other.`
+          : 'Delete this empty cluster?';
+        if (!confirm(msg)) return;
+        state.decks.forEach(d => { if (d.clusterId === id) d.clusterId = null; });
+        state.clusters = state.clusters.filter(c => c.id !== id);
+        save();
+        render();
+      }));
+      document.getElementById('deck-cluster')?.addEventListener('change', (e) => {
+        const d = deck();
+        if (!d) return;
+        const val = e.target.value;
+        d.clusterId = val ? parseInt(val, 10) : null;
+        save();
+        render();
+      });
       document.querySelector('[data-new-card]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
       document.getElementById('deck-schedule-fold')?.addEventListener('toggle', (e) => {
         state.deckScheduleOpen = e.target.open;
@@ -1300,7 +1450,7 @@
       });
       document.querySelectorAll('[data-edit-card]').forEach(el => el.addEventListener('click', () => {
         const c = deck().cards.find(x => x.id === +el.dataset.editCard);
-        state.modal = { type: 'card', edit: c.id, en: c.en, de: c.de, color: c.color || 'none' }; render();
+        state.modal = { type: 'card', edit: c.id, front: cardFront(c), back: cardBack(c), color: c.color || 'none' }; render();
       }));
       document.querySelectorAll('[data-del-card]').forEach(el => el.addEventListener('click', () => {
         if (confirm('Delete card?')) { deck().cards = deck().cards.filter(c => c.id !== +el.dataset.delCard); save(); render(); }
@@ -1308,28 +1458,45 @@
       document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => { state.modal = null; render(); }));
       document.querySelector('[data-save-welcome]')?.addEventListener('click', () => {
         const n = document.getElementById('welcome-name').value.trim();
-        if (n) { state.userName = n; localStorage.setItem('flashcards_user', n); }
+        if (n) {
+          state.userName = n;
+          try { localStorage.setItem('shine_user', n); } catch (_) {}
+        }
         state.modal = null; render();
+      });
+      document.querySelector('[data-save-cluster]')?.addEventListener('click', () => {
+        const name = document.getElementById('m-cluster-name').value.trim();
+        if (!name) return;
+        const emoji = document.getElementById('m-cluster-emoji').value.trim() || '📁';
+        if (state.modal.edit) {
+          const cl = clusterById(state.modal.edit);
+          if (cl) { cl.name = name; cl.emoji = emoji; }
+        } else {
+          state.clusters.push(initCluster({ id: nextId(state.clusters), name, emoji }));
+        }
+        save(); state.modal = null; render();
       });
       document.querySelector('[data-save-deck]')?.addEventListener('click', () => {
         const name = document.getElementById('m-name').value.trim();
         if (!name) return;
         const desc = document.getElementById('m-desc').value.trim();
-        state.decks.unshift(initDeck({ id: nextId(state.decks), name, description: desc, cards: [] }));
+        const clusterVal = document.getElementById('m-cluster')?.value;
+        const clusterId = clusterVal ? parseInt(clusterVal, 10) : null;
+        state.decks.unshift(initDeck({ id: nextId(state.decks), name, description: desc, clusterId, cards: [] }));
         save(); state.modal = null; render();
       });
       document.querySelector('[data-save-card]')?.addEventListener('click', () => {
-        const en = document.getElementById('m-en').value.trim();
-        const de = document.getElementById('m-de').value.trim();
-        if (!en || !de) return;
+        const front = document.getElementById('m-front').value.trim();
+        const back = document.getElementById('m-back').value.trim();
+        if (!front || !back) return;
         const d = deck();
         const colorVal = document.getElementById('m-color')?.value || 'none';
         const color = colorVal === 'none' ? null : colorVal;
         if (state.modal.edit) {
           const c = d.cards.find(x => x.id === state.modal.edit);
-          c.en = en; c.de = de; c.color = color;
+          Object.assign(c, initCard({ ...c, front, back, color }));
         } else {
-          d.cards.push(initCard({ id: nextId(d.cards), en, de, color }));
+          d.cards.push(initCard({ id: nextId(d.cards), front, back, color }));
         }
         save(); state.modal = null; render();
       });
