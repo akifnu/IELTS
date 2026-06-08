@@ -1,0 +1,19 @@
+{
+  "name": "Shine — Lifestyle Flashcards",
+  "short_name": "Shine",
+  "description": "Organize your knowledge in clusters. Study with spaced repetition.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6fb",
+  "theme_color": "#5b5ef7",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

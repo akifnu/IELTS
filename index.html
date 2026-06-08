@@ -1,0 +1,3852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <title>Shine — Lifestyle Flashcards</title>
+  <meta name="description" content="Shine helps you store everyday knowledge in clusters and review with smart spaced repetition." />
+  <meta name="theme-color" content="#5b5ef7" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Shine" />
+  <meta property="og:title" content="Shine — Lifestyle Flashcards" />
+  <meta property="og:description" content="Organize knowledge in clusters. Study smarter with Ebbinghaus, Leitner, and SM-2." />
+  <meta property="og:type" content="website" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary:#5b5ef7; --primary-dark:#4346e8; --primary-light:#ededff;
+      --accent:#8b5cf6; --accent-soft:#f3e8ff;
+      --blue:var(--primary); --blue-dark:var(--primary-dark); --blue-light:var(--primary-light); --blue-soft:#d4d6ff;
+      --bg:#f4f6fb; --surface:#fff; --surface-2:#f8f9fd; --white:#fff;
+      --text:#111827; --text-soft:#374151; --muted:#6b7280; --border:rgba(15,23,42,.06);
+      --danger:#ef4444; --warn:#f59e0b; --success:#10b981;
+      --shadow-sm:0 1px 2px rgba(15,23,42,.04);
+      --shadow:0 8px 30px rgba(91,94,247,.08), 0 2px 8px rgba(15,23,42,.04);
+      --shadow-lg:0 20px 50px rgba(91,94,247,.14), 0 8px 20px rgba(15,23,42,.06);
+      --radius:20px; --radius-sm:14px; --radius-pill:999px;
+      --ease:cubic-bezier(.22,1,.36,1);
+      --glass:rgba(255,255,255,.78);
+      --glass-border:rgba(255,255,255,.65);
+      --app-vh:100vh;
+      --vv-width:100vw;
+      --vv-height:100vh;
+      --vv-top:0px;
+      --vv-left:0px;
+      --safe-top:env(safe-area-inset-top,0px);
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+      --safe-left:env(safe-area-inset-left,0px);
+      --safe-right:env(safe-area-inset-right,0px);
+      --modal-max-h:100vh;
+      --share-sheet-max-h:100vh;
+      --keyboard-gap:0px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-tap-highlight-color:transparent;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+    body{
+      font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+      background:#0f172a;color:var(--text);width:100%;height:100%;
+      overflow:hidden;overscroll-behavior:none;-webkit-font-smoothing:antialiased;
+    }
+    #shine-viewport{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      overflow:hidden;contain:strict;isolation:isolate;
+      transform:translate3d(0,0,0);will-change:transform,width,height;
+      background:linear-gradient(165deg,#e8eaff 0%,#f4f6fb 38%,#faf8ff 100%);
+    }
+    #shine-scroll{
+      position:absolute;inset:0;overflow-x:clip;overflow-y:auto;
+      overscroll-behavior:contain;-webkit-overflow-scrolling:touch;z-index:1;
+    }
+    body.modal-open #shine-scroll{overflow:hidden}
+    .shine-app-frame{
+      width:100%;max-width:min(480px,var(--vv-width));margin:0 auto;min-height:100%;
+      padding-left:var(--safe-left);padding-right:var(--safe-right);
+      position:relative;overflow-x:clip;
+    }
+    html.is-android .shine-app-frame,html.is-mobile .shine-app-frame{max-width:var(--vv-width)}
+    .shine-app-frame::before,.shine-app-frame::after{
+      content:'';position:absolute;pointer-events:none;z-index:0;border-radius:50%;filter:blur(60px);opacity:.55;
+    }
+    .shine-app-frame::before{width:min(280px,70vw);height:min(280px,70vw);top:-80px;right:-60px;background:radial-gradient(circle,#c7d2fe,transparent 70%)}
+    .shine-app-frame::after{width:min(320px,80vw);height:min(320px,80vw);bottom:80px;left:-100px;background:radial-gradient(circle,#ddd6fe,transparent 70%)}
+    #shine-overlays{position:absolute;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+    #modal-root{position:absolute;inset:0;pointer-events:none;z-index:300}
+    #modal-root:not(:empty){pointer-events:auto}
+    #toast-root{
+      position:absolute;left:50%;bottom:calc(96px + var(--safe-bottom));transform:translateX(-50%);
+      z-index:450;pointer-events:none;max-width:min(calc(var(--vv-width) - 24px),420px);width:max-content;
+    }
+    #app{position:relative;z-index:1;animation:pageIn .35s var(--ease);max-width:100%;overflow-x:clip}
+    @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    #splash{position:absolute;inset:0;z-index:250;display:flex;align-items:flex-end;justify-content:center;background:#0a0a12;overflow:hidden;transition:opacity .6s var(--ease),visibility .6s;pointer-events:auto}
+    #splash.hide{opacity:0;visibility:hidden;pointer-events:none;display:none}
+    .splash-photo{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.06);animation:splashKen 14s var(--ease) forwards;transition:opacity .7s var(--ease)}
+    .splash-photo.is-loading{opacity:0}
+    .splash-photo.is-ready{opacity:1}
+    @keyframes splashKen{to{transform:scale(1)}}
+    .splash-scrim{
+      position:absolute;inset:0;z-index:1;
+      background:linear-gradient(180deg,rgba(8,10,20,.15) 0%,rgba(8,10,20,.45) 38%,rgba(8,10,20,.88) 72%,rgba(8,10,20,.96) 100%);
+    }
+    .splash-content{
+      position:relative;z-index:2;width:100%;max-width:480px;color:#fff;
+      padding:var(--safe-top) 24px calc(28px + var(--safe-bottom));text-align:left;
+    }
+    .splash-content.splash-in .splash-brand,.splash-content.splash-in .splash-essence,.splash-content.splash-in .splash-headline,
+    .splash-content.splash-in .splash-subline,.splash-content.splash-in .splash-personal,.splash-content.splash-in .splash-actions,
+    .splash-content.splash-in .splash-auth,.splash-content.splash-in .splash-refresh,.splash-content.splash-in .splash-credit{
+      animation:splashLine .85s var(--ease) backwards;
+    }
+    .splash-content.splash-in .splash-essence{animation-delay:.08s}
+    .splash-content.splash-in .splash-headline{animation-delay:.18s}
+    .splash-content.splash-in .splash-subline{animation-delay:.3s}
+    .splash-content.splash-in .splash-personal{animation-delay:.42s}
+    .splash-content.splash-in .splash-actions{animation-delay:.54s}
+    .splash-content.splash-in .splash-auth{animation-delay:.64s}
+    .splash-content.splash-in .splash-refresh{animation-delay:.74s}
+    .splash-content.splash-in .splash-credit{animation-delay:.82s}
+    @keyframes splashLine{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+    .splash-brand{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:14px}
+    .splash-essence{
+      display:inline-block;padding:6px 14px;border-radius:var(--radius-pill);
+      font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+      background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(8px);
+    }
+    .splash-headline{
+      font-size:clamp(1.85rem,7vw,2.35rem);font-weight:800;line-height:1.12;
+      letter-spacing:-.03em;margin:14px 0 12px;text-shadow:0 2px 24px rgba(0,0,0,.35);
+    }
+    .splash-subline{font-size:.98rem;line-height:1.55;opacity:.9;max-width:34ch;text-shadow:0 1px 12px rgba(0,0,0,.3)}
+    .splash-personal{margin-top:12px;font-size:.86rem;font-weight:600;opacity:.78;font-style:italic}
+    .splash-actions{margin-top:22px}
+    .splash-begin{
+      width:100%;padding:16px 20px;border:none;border-radius:var(--radius-sm);
+      background:#fff;color:#1e1b4b;font-weight:800;font-size:1rem;font-family:inherit;
+      cursor:pointer;box-shadow:0 12px 36px rgba(0,0,0,.28);transition:transform .15s var(--ease);
+    }
+    .splash-begin:active{transform:scale(.98)}
+    .splash-auth{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+    .splash-skip{
+      width:100%;padding:12px 18px;font-size:.82rem;font-weight:600;color:rgba(255,255,255,.88);
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:var(--radius-pill);
+      cursor:pointer;backdrop-filter:blur(8px);transition:background .2s var(--ease);
+    }
+    .splash-skip:hover{background:rgba(255,255,255,.14)}
+    .splash-refresh{
+      display:block;width:100%;margin-top:16px;padding:8px;background:none;border:none;
+      color:rgba(255,255,255,.65);font-size:.78rem;font-weight:600;font-family:inherit;
+      cursor:pointer;text-decoration:underline;text-underline-offset:3px;
+    }
+    .splash-refresh:hover{color:rgba(255,255,255,.9)}
+    .splash-credit{margin-top:10px;font-size:.62rem;color:rgba(255,255,255,.4);text-align:center}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+    header.app-header{
+      background:rgba(255,255,255,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(91,94,247,.08);padding:calc(18px + var(--safe-top)) 20px 16px;
+      display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;
+      box-shadow:0 4px 24px rgba(91,94,247,.06);
+    }
+    header.app-header{position:sticky}
+    header.app-header::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:3px;
+      background:linear-gradient(90deg,var(--primary),var(--accent),#a78bfa);
+    }
+    header:not(.app-header){background:var(--glass);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);padding:calc(14px + var(--safe-top)) 18px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+    header h1{font-size:1.15rem;font-weight:700;flex:1;color:var(--text);letter-spacing:-.02em}
+    .brand{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+    .brand-mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;box-shadow:0 8px 20px rgba(91,94,247,.35);flex-shrink:0}
+    .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-soft);font-size:1rem;padding:9px 11px;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .15s var(--ease),box-shadow .15s}
+    .icon-btn:active{transform:scale(.96)}
+    main{padding:18px 18px calc(110px + var(--safe-bottom))}
+    .deck-card{
+      background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(248,249,253,.92));
+      border:1px solid rgba(91,94,247,.14);border-radius:var(--radius);
+      padding:18px 18px 18px 24px;margin-bottom:12px;cursor:pointer;position:relative;
+      box-shadow:0 10px 32px rgba(91,94,247,.1);transition:transform .22s var(--ease),box-shadow .22s var(--ease);
+      overflow:hidden;
+    }
+    .deck-card::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:5px;border-radius:0 6px 6px 0;background:linear-gradient(180deg,var(--primary),var(--accent));box-shadow:0 0 12px rgba(91,94,247,.4)}
+    .deck-card:active{transform:scale(.985);box-shadow:var(--shadow)}
+    .deck-card h2{font-size:1.02rem;font-weight:700;color:var(--text);letter-spacing:-.01em;padding-right:72px}
+    .deck-card p{color:var(--muted);font-size:.84rem;margin-top:6px;line-height:1.45}
+    .deck-card .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:.72rem;font-weight:600}
+    .deck-card .due{color:var(--primary);background:var(--primary-light);padding:4px 10px;border-radius:var(--radius-pill)}
+    .deck-card .next{color:var(--muted);background:var(--surface-2);padding:4px 10px;border-radius:var(--radius-pill)}
+    .deck-card .share,.deck-card .delete{position:absolute;top:14px;width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:none;color:var(--muted);cursor:pointer;font-size:.75rem;transition:background .15s,color .15s}
+    .deck-card .share{right:46px}
+    .deck-card .share:hover{background:var(--primary-light);color:var(--primary)}
+    .deck-card .delete{right:14px}
+    .deck-card .delete:hover{background:#fee2e2;color:var(--danger)}
+    .nav-badge{position:absolute;top:2px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--primary);color:#fff;font-size:.62rem;font-weight:800;line-height:16px;text-align:center}
+    .bottom-nav button{position:relative}
+    .inbox-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;margin-left:6px;border-radius:99px;background:var(--primary);color:#fff;font-size:.7rem;font-weight:800;vertical-align:middle}
+    .inbox-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+    .inbox-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)}
+    .inbox-item-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .inbox-item-main strong{font-size:.88rem}
+    .inbox-actions{display:flex;gap:6px;flex-shrink:0}
+    .btn-sm{padding:8px 12px;font-size:.78rem}
+    .badge-access{font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;letter-spacing:.02em}
+    .badge-viewer{background:#e0e7ff;color:#4338ca}
+    .badge-editor{background:#dbeafe;color:#1d4ed8}
+    .badge-shared{background:#f3e8ff;color:#7c3aed}
+    .access-banner{padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:14px;font-size:.8rem;color:var(--muted);line-height:1.45}
+    .access-banner strong{color:var(--text)}
+    body.modal-open{touch-action:none}
+    .modal-share{
+      display:flex;flex-direction:column;width:100%;max-width:min(420px,var(--vv-width));
+      max-height:var(--share-sheet-max-h);overflow:hidden;padding:0;position:relative;
+      contain:layout style paint;min-height:0;
+    }
+    .share-sheet-handle{width:40px;height:4px;border-radius:99px;background:rgba(15,23,42,.14);margin:10px auto 6px;flex-shrink:0}
+    .share-sheet-body{
+      flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:clip;
+      overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+      padding:0 16px calc(16px + var(--safe-bottom));
+    }
+    .share-header{flex-shrink:0;padding:4px 16px 0;padding-right:48px;margin-bottom:10px}
+    .modal-bg-sheet{align-items:flex-end;justify-content:center;padding:0}
+    .modal-share{border-radius:20px 20px 0 0;max-width:var(--vv-width)}
+    .modal-bg:not(.modal-bg-sheet){align-items:center;padding:12px}
+    .modal:not(.modal-share){max-width:min(400px,calc(var(--vv-width) - 24px));max-height:var(--modal-max-h);overflow-y:auto;overflow-x:clip}
+    html.is-mobile .modal-bg:not(.modal-bg-sheet),html.is-android .modal-bg:not(.modal-bg-sheet){align-items:flex-end;padding:0}
+    html.is-mobile .modal:not(.modal-share),html.is-android .modal:not(.modal-share){max-width:var(--vv-width);border-radius:20px 20px 0 0;margin-bottom:0}
+    .modal-share .modal-close{position:absolute;top:max(10px,var(--safe-top));right:max(14px,var(--safe-right));width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;font-size:.9rem;line-height:1;transition:background .15s,color .15s;z-index:2}
+    .modal-share .modal-close:hover{background:var(--primary-light);color:var(--primary)}
+    .share-header h2{margin-bottom:4px;font-size:1.12rem}
+    .share-deck-name{font-size:.92rem;font-weight:700;color:var(--text);margin:0;line-height:1.3}
+    .share-meta{font-size:.76rem;color:var(--muted);margin:4px 0 0}
+    .share-section{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;max-width:100%;overflow:hidden}
+    img,svg,video,canvas{max-width:100%;height:auto}
+    input,textarea,select,button{max-width:100%;font:inherit}
+    .panel-card,.account-card,.auth-panel,.deck-card,.inbox-item,.settings-card,.schedule-fold{max-width:100%;overflow:hidden}
+    .deck-card h2,.collab-email,.share-deck-name,.inbox-item-main strong{overflow-wrap:anywhere;word-break:break-word}
+    .share-section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+    .role-segment{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:12px;gap:3px;min-height:52px}
+    .role-segment button{flex:1;border:none;background:transparent;padding:9px 6px;border-radius:8px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;line-height:1.25;transition:background .15s,color .15s,box-shadow .15s;min-height:46px}
+    .role-segment button.active{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 2px 10px rgba(91,94,247,.28)}
+    .role-segment button span{display:block;font-size:.64rem;font-weight:500;opacity:.88;margin-top:2px}
+    .share-invite-row{display:flex;gap:8px;align-items:stretch}
+    .share-invite-row input{flex:1;min-width:0;margin:0;padding:11px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:var(--surface)}
+    .share-invite-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(91,94,247,.12)}
+    .btn-send{flex-shrink:0;padding:0 16px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-weight:700;font-size:.84rem;cursor:pointer;box-shadow:0 4px 14px rgba(91,94,247,.28);transition:transform .15s}
+    .btn-send:active{transform:scale(.97)}
+    .share-hint-inline{font-size:.72rem;color:var(--muted);margin:8px 0 0;line-height:1.4}
+    .collab-list{display:flex;flex-direction:column;gap:6px}
+    .collab-item{display:grid;grid-template-columns:32px minmax(0,1fr) auto 28px;gap:8px;align-items:center;padding:8px 10px;background:var(--surface);border-radius:10px;border:1px solid var(--border)}
+    .collab-avatar{width:32px;height:32px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:800;flex-shrink:0}
+    .collab-info{min-width:0;display:flex;flex-direction:column;gap:1px}
+    .collab-email{font-size:.8rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+    .collab-role-label{font-size:.67rem;color:var(--muted)}
+    .collab-role-select{padding:5px 4px;border:1px solid var(--border);border-radius:8px;font-size:.72rem;font-weight:600;background:var(--surface-2);color:var(--text);max-width:76px;cursor:pointer}
+    .collab-remove{width:28px;height:28px;border:none;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+    .collab-remove:hover{background:#fee2e2;color:var(--danger)}
+    .device-chips{display:flex;flex-wrap:wrap;gap:6px}
+    .device-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 6px;border:1px solid var(--border);border-radius:99px;background:var(--surface);font-size:.78rem;font-weight:600;color:var(--text);cursor:pointer;transition:border-color .15s,background .15s}
+    .device-chip:hover{border-color:var(--primary);background:var(--primary-light)}
+    .device-chip .avatar{width:22px;height:22px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;overflow:hidden;flex-shrink:0}
+    .device-chip .avatar img{width:100%;height:100%;object-fit:cover}
+    .share-more{margin-top:2px;border-top:1px solid var(--border);padding-top:4px}
+    .share-more-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;border:none;background:transparent;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;padding:12px 0;text-align:left;font-family:inherit}
+    .share-more-toggle::after{content:'▾';font-size:.85rem;transition:transform .2s var(--ease);flex-shrink:0}
+    .share-more-toggle[aria-expanded="true"]::after{transform:rotate(180deg)}
+    .share-more-panel{max-height:0;overflow:hidden;transition:max-height .28s var(--ease);pointer-events:none}
+    .share-more-panel.open{max-height:520px;pointer-events:auto}
+    .share-more-body{padding:2px 0 8px;display:flex;flex-direction:column;gap:8px}
+    .share-more .btn-outline{width:100%;margin-bottom:0;padding:11px 14px;font-size:.84rem}
+    .share-more .share-note{font-size:.72rem;color:var(--muted);line-height:1.45;margin:0}
+    @media (max-width:400px){
+      .role-segment{flex-direction:column;min-height:auto;gap:4px}
+      .role-segment button{min-height:42px;padding:8px 10px}
+      .share-invite-row{flex-direction:column}
+      .btn-send{width:100%;padding:12px 16px}
+      .collab-item{grid-template-columns:28px minmax(0,1fr) 28px;grid-template-areas:"avatar info remove" "avatar role remove"}
+      .collab-role-select{grid-area:role;max-width:none;width:100%;margin-top:2px}
+      .collab-remove{grid-area:remove}
+      .collab-info{grid-area:info}
+      .collab-avatar{grid-area:avatar}
+    }
+    .fab{
+      position:fixed;right:max(16px,calc(var(--safe-right) + 8px));bottom:calc(92px + var(--safe-bottom));width:58px;height:58px;border-radius:18px;
+      background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;
+      font-size:1.75rem;font-weight:300;line-height:1;cursor:pointer;
+      box-shadow:0 12px 32px rgba(91,94,247,.45);transition:transform .2s var(--ease),box-shadow .2s;
+    }
+    .fab:active{transform:scale(.94)}
+    .deck-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:4px}
+    .deck-tabs button{flex:1;border:none;background:none;padding:10px 6px;border-radius:10px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer}
+    .deck-tabs button.active{background:var(--blue);color:#fff}
+    .btn-primary{
+      width:100%;padding:15px 18px;
+      background:linear-gradient(135deg,var(--primary),var(--accent));
+      color:#fff;border:none;border-radius:var(--radius-sm);font-weight:700;font-size:.92rem;
+      cursor:pointer;margin-bottom:10px;box-shadow:0 8px 24px rgba(91,94,247,.32);
+      transition:transform .15s var(--ease),box-shadow .15s;
+    }
+    .btn-primary:active{transform:scale(.98)}
+    .btn-outline{
+      width:100%;padding:14px 18px;background:var(--surface);color:var(--primary-dark);
+      border:1.5px solid var(--blue-soft);border-radius:var(--radius-sm);
+      font-weight:600;font-size:.9rem;cursor:pointer;margin-bottom:10px;
+      transition:background .15s,border-color .15s;
+    }
+    .btn-outline:hover{background:var(--primary-light)}
+    .btn-warn{width:100%;padding:13px;background:#fffbeb;color:#b45309;border:1px solid #fde68a;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;margin-top:8px}
+    .btn-danger-sm{padding:8px 14px;background:#fef2f2;color:var(--danger);border:1px solid #fecaca;border-radius:var(--radius-pill);font-size:.78rem;font-weight:600;cursor:pointer}
+    .card-list{display:flex;flex-direction:column;gap:10px}
+    .deck-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+    .deck-toolbar .btn-primary{margin-bottom:0}
+    .btn-shuffle{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:0}
+    .card-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:0;cursor:grab;touch-action:none;will-change:transform;box-shadow:var(--shadow-sm)}
+    .card-item .card-actions{cursor:default;touch-action:auto}
+    .card-item .card-actions button{cursor:pointer;touch-action:auto}
+    .card-list.is-dragging .card-item:not(.drag-lifted){transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+    .card-item.drag-lifted{cursor:grabbing;box-shadow:0 14px 36px rgba(21,101,192,.28);opacity:.98;pointer-events:none}
+    .card-placeholder{border-radius:var(--radius);border:2px dashed var(--blue-soft);background:var(--blue-light);opacity:.55;transition:height .2s ease,margin .2s ease;box-sizing:border-box}
+    .card-item .en{font-weight:700;font-size:.95rem;letter-spacing:-.01em}
+    .card-item .de{color:var(--primary-dark);margin-top:6px;font-size:1rem;font-weight:500}
+    .card-item.card-fill-dark .de{color:rgba(255,255,255,.92)}
+    .card-item.card-fill-dark .card-meta{color:rgba(255,255,255,.75)}
+    .card-item.card-fill-dark .card-actions button{color:rgba(255,255,255,.85)}
+    .flip-face.flip-fill-dark{color:#fff}
+    .card-actions{text-align:right;margin-top:8px}
+    .card-actions button{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px}
+    .cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm)}
+    .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .cal-header button{background:var(--surface-2);border:1px solid var(--border);color:var(--primary);width:38px;height:38px;border-radius:12px;cursor:pointer;font-size:1.1rem;transition:background .15s}
+    .cal-header h2{font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:-.02em}
+    .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .cal-day{min-height:52px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);padding:4px;cursor:pointer;text-align:left;display:flex;flex-direction:column;transition:background .15s,box-shadow .15s}
+    .cal-day.blank{border:none;background:transparent;cursor:default}
+    .cal-day .num{font-size:.75rem;font-weight:600;padding:2px 4px}
+    .cal-day.today{border-color:var(--primary);background:var(--primary-light)}
+    .cal-day.selected{border-color:var(--primary);box-shadow:0 0 0 3px rgba(91,94,247,.2);background:var(--surface)}
+    .cal-day.overload{border-color:var(--danger);background:#fef2f2}
+    .cal-day .sess{font-size:.6rem;background:var(--blue);color:#fff;border-radius:4px;padding:2px 4px;margin-top:auto;line-height:1.2}
+    .cal-day .sess.manual{background:#64748b}
+    .cal-day .sess.done{opacity:.45;text-decoration:line-through}
+    .cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;font-size:.72rem;color:var(--muted)}
+    .cal-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}
+    .day-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:12px}
+    .day-panel h3{font-size:.92rem;color:var(--blue-dark);margin-bottom:10px}
+    .session-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+    .session-row:last-child{border:none}
+    .algo-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+    .algo-section h3{font-size:.92rem;color:var(--blue-dark);margin-bottom:12px}
+    .field{margin-bottom:12px}
+    .field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+    .field input,.field textarea,.field select{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font:inherit}
+    .field small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px;line-height:1.4}
+    .formula{background:var(--blue-light);border-radius:10px;padding:12px;font-size:.78rem;color:var(--blue-dark);line-height:1.5;margin-top:8px;font-family:ui-monospace,monospace}
+    .overload-box{background:#fff7ed;border:1px solid #fdba74;border-radius:var(--radius);padding:14px;margin-bottom:12px}
+    .overload-box h3{color:#c2410c;font-size:.9rem;margin-bottom:6px}
+    .flip-card{perspective:1200px;min-height:280px;margin:20px 0;cursor:pointer}
+    .flip-inner{position:relative;height:280px;transition:transform .55s var(--ease);transform-style:preserve-3d}
+    .flip-card.flipped .flip-inner{transform:rotateY(180deg)}
+    .flip-face{
+      position:absolute;inset:0;backface-visibility:hidden;border-radius:24px;
+      display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;
+      font-size:1.35rem;font-weight:600;line-height:1.45;letter-spacing:-.02em;
+      border:1px solid var(--border);box-shadow:var(--shadow-lg);
+    }
+    .flip-front{background:var(--surface)}
+    .flip-back{background:linear-gradient(145deg,var(--primary-light),#fff);color:var(--primary-dark);transform:rotateY(180deg)}
+    .progress-row{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:10px;font-weight:600}
+    .progress-bar{height:8px;background:rgba(91,94,247,.12);border-radius:var(--radius-pill);margin-bottom:22px;overflow:hidden}
+    .progress-bar>div{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:var(--radius-pill);transition:width .4s var(--ease)}
+    .study-actions{display:flex;gap:12px}
+    .study-actions button{flex:1;padding:16px;border-radius:var(--radius-sm);font-weight:700;font-size:.92rem;cursor:pointer;border:none;transition:transform .15s}
+    .study-actions button:active{transform:scale(.97)}
+    .missed{background:var(--surface);border:1.5px solid var(--border)!important;color:var(--text-soft)}
+    .got-it{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 8px 20px rgba(91,94,247,.35)}
+    .show-answer{width:100%;padding:16px;background:var(--surface);border:1.5px solid var(--blue-soft);color:var(--primary-dark);border-radius:var(--radius-sm);font-weight:700;font-size:.92rem;cursor:pointer;box-shadow:var(--shadow-sm)}
+    .modal-bg{
+      position:absolute;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(6px);
+      display:flex;align-items:center;justify-content:center;
+      padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+      z-index:300;animation:fadeIn .25s ease;overflow:hidden;
+    }
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .modal{background:var(--surface);border-radius:24px;padding:24px;width:100%;max-width:400px;box-shadow:var(--shadow-lg);animation:modalIn .35s var(--ease);border:1px solid var(--glass-border)}
+    .modal-stable,.modal-bg.modal-stable{animation:none!important}
+    @keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+    .modal h2{margin-bottom:12px;color:var(--text);font-size:1.2rem;font-weight:800;letter-spacing:-.02em}
+    .modal input,.modal textarea,.auth-panel input{
+      width:100%;padding:13px 14px;margin-bottom:10px;border:1px solid var(--border);
+      border-radius:var(--radius-sm);font:inherit;background:var(--surface-2);
+      transition:border-color .15s,box-shadow .15s;
+    }
+    .modal input:focus,.modal textarea:focus,.auth-panel input:focus,.field input:focus,.field select:focus,.field textarea:focus{
+      outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(91,94,247,.12);background:var(--surface);
+    }
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    .modal-actions button{padding:11px 18px;border-radius:var(--radius-sm);border:none;font-weight:700;cursor:pointer;font-size:.88rem}
+    .cancel{background:var(--surface-2);color:var(--muted)}
+    .confirm{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 6px 16px rgba(91,94,247,.3)}
+    .bottom-nav{
+      position:fixed;bottom:calc(14px + var(--safe-bottom));left:50%;transform:translateX(-50%);
+      width:min(452px,calc(var(--vv-width) - 28px));max-width:calc(var(--vv-width) - 28px);
+      background:rgba(255,255,255,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+      border:1px solid rgba(255,255,255,.9);border-radius:26px;
+      display:flex;padding:8px 10px;
+      z-index:20;box-shadow:0 16px 48px rgba(91,94,247,.18),0 4px 12px rgba(15,23,42,.06);
+    }
+    .bottom-nav button{
+      flex:1;background:none;border:none;padding:10px 8px;color:var(--muted);
+      font-size:.67rem;font-weight:700;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:5px;
+      border-radius:18px;transition:all .25s var(--ease);position:relative;
+    }
+    .bottom-nav button.active{
+      color:#fff;background:linear-gradient(135deg,var(--primary),var(--accent));
+      box-shadow:0 8px 22px rgba(91,94,247,.38);transform:translateY(-1px);
+    }
+    .bottom-nav .ni{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+    .bottom-nav .ni svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .bottom-nav button.active .ni svg{stroke:#fff}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+    .toggle-row strong{font-size:.9rem}
+    .toggle-row small{display:block;color:var(--muted);font-size:.75rem;margin-top:2px;font-weight:400}
+    .toggle{position:relative;width:48px;height:28px;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle span{position:absolute;inset:0;background:#cbd5e1;border-radius:14px;cursor:pointer;transition:.2s}
+    .toggle span::after{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+    .toggle input:checked+span{background:var(--blue)}
+    .toggle input:checked+span::after{transform:translateX(20px)}
+    .badge-ebb{font-size:.68rem;background:var(--blue-light);color:var(--blue);padding:2px 8px;border-radius:20px;font-weight:600;margin-left:6px}
+    .cal-day .sess.deck{font-size:.55rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .settings-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+    .settings-card>h3{font-size:.95rem;color:var(--blue-dark);margin-bottom:4px}
+    .settings-card>.hint{font-size:.8rem;color:var(--muted);margin-bottom:14px;line-height:1.4}
+    .mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .mode-opt{border:2px solid var(--border);border-radius:14px;padding:14px 12px;cursor:pointer;background:var(--bg);text-align:left;transition:.15s}
+    .mode-opt.active{border-color:var(--blue);background:var(--blue-light)}
+    .mode-opt .mo-icon{font-size:1.4rem;margin-bottom:6px}
+    .mode-opt strong{display:block;font-size:.88rem;margin-bottom:4px}
+    .mode-opt span{font-size:.75rem;color:var(--muted);line-height:1.35}
+    .preset-row{display:flex;gap:8px;margin-top:14px}
+    .preset-btn{flex:1;padding:11px 6px;border:1px solid var(--border);border-radius:12px;background:var(--white);font-size:.78rem;font-weight:600;cursor:pointer;color:var(--text)}
+    .preset-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+    details.advanced{margin-top:14px;border-top:1px solid var(--border);padding-top:8px}
+    details.advanced summary{cursor:pointer;font-weight:600;font-size:.85rem;color:var(--blue);padding:8px 0;list-style:none}
+    details.advanced summary::-webkit-details-marker{display:none}
+    .stepper{display:flex;align-items:center;gap:12px;margin-top:8px}
+    .stepper button{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--white);font-size:1.2rem;cursor:pointer;color:var(--blue)}
+    .stepper .val{font-size:1.1rem;font-weight:700;min-width:2rem;text-align:center}
+    .algo-pick{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+    .algo-opt{border:2px solid var(--border);border-radius:12px;padding:12px;background:var(--bg);cursor:pointer;text-align:left;width:100%}
+    .algo-opt.active{border-color:var(--blue);background:var(--blue-light)}
+    .algo-opt strong{font-size:.88rem;display:block}
+    .algo-opt span{font-size:.75rem;color:var(--muted)}
+    .color-pick{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+    .color-swatch{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);cursor:pointer}
+    .color-swatch.active{border-color:var(--blue-dark);box-shadow:0 0 0 2px var(--blue)}
+    .color-swatch.none{background:repeating-linear-gradient(45deg,#eee,#eee 4px,#fff 4px,#fff 8px)}
+    .color-swatch.swatch-dark{font-size:.65rem;font-weight:700;line-height:28px;text-align:center}
+    .card-meta{font-size:.72rem;color:var(--muted);margin-top:8px}
+    .schedule-fold{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+    .schedule-fold summary{cursor:pointer;padding:12px 14px;font-size:.85rem;font-weight:600;color:var(--blue-dark);list-style:none;display:flex;align-items:center;justify-content:space-between}
+    .schedule-fold summary::-webkit-details-marker{display:none}
+    .schedule-fold summary::after{content:'▾';color:var(--muted);font-size:.9rem;transition:transform .2s}
+    .schedule-fold[open] summary::after{transform:rotate(180deg)}
+    .schedule-fold summary .sched-line{color:var(--muted);font-weight:500;font-size:.8rem}
+    .schedule-fold .sched-body{padding:0 14px 14px;border-top:1px solid var(--border)}
+    .schedule-fold .sched-body h3{font-size:.9rem;margin:14px 0 4px}
+    .cluster-section summary::-webkit-details-marker{display:none}
+    .cluster-section .cluster-meta{font-size:.75rem;color:var(--muted);font-weight:500}
+    .cluster-actions{display:flex;gap:4px;margin-left:8px}
+    .cluster-actions button{background:none;border:none;cursor:pointer;font-size:.85rem;padding:4px 6px;color:var(--muted)}
+    .cluster-decks{padding:0 12px 12px}
+    .cluster-decks .deck-card{margin-bottom:8px}
+    .cluster-decks .deck-card:last-child{margin-bottom:0}
+    .cluster-empty{padding:12px 16px 16px;font-size:.82rem;color:var(--muted)}
+    .header-actions{display:flex;gap:6px}
+    .tagline{font-size:.78rem;color:var(--muted);font-weight:500;margin-top:2px}
+    .deck-cluster-tag{font-size:.72rem;color:var(--muted);font-weight:500;margin-top:2px}
+    .account-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+    .account-card .email{color:var(--muted);font-size:.85rem;margin-top:4px;word-break:break-all}
+    .auth-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px}
+    .auth-panel h2{font-size:1.05rem;color:var(--blue-dark);margin-bottom:6px}
+    .auth-panel>.hint{font-size:.82rem;color:var(--muted);margin-bottom:16px;line-height:1.45}
+    .auth-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--bg);border-radius:12px;padding:4px}
+    .auth-tabs button{flex:1;border:none;background:none;padding:10px;border-radius:9px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer}
+    .auth-tabs button.active{background:var(--white);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-size:.75rem}
+    .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    .btn-google-oneclick{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:14px 20px;background:#fff;border:1px solid #dadce0;border-radius:999px;font-weight:600;font-size:.95rem;font-family:inherit;color:#3c4043;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:background .15s,box-shadow .15s}
+    .btn-google-oneclick:hover{background:#f8f9fa;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+    .btn-google-oneclick:active{box-shadow:0 1px 2px rgba(0,0,0,.08)}
+    .btn-google-oneclick .g-logo{width:20px;height:20px;flex-shrink:0}
+    .btn-google-oneclick.splash-google{background:rgba(255,255,255,.95);border-color:rgba(255,255,255,.9)}
+    .google-fallback-host{display:flex;justify-content:center;min-height:0;overflow:hidden}
+    .google-fallback-host:empty{display:none}
+    .toast{background:#0f172a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.85rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:center;animation:fadeUp .3s ease}
+    .toast.toast-stable{animation:none}
+    .due-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .backup-row{display:flex;gap:8px;margin-top:12px}
+    .backup-row button,.backup-row label{flex:1}
+    .share-link-row{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+    .share-link-row input{flex:1;min-width:0;font-size:.78rem;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--white)}
+    .share-hint{font-size:.75rem;color:var(--muted);margin-top:8px;line-height:1.4}
+    .btn-primary:disabled,.btn-outline:disabled{opacity:.55;cursor:not-allowed}
+    .page-title{font-size:1.12rem;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+    .page-sub{font-size:.78rem;color:var(--muted);font-weight:500;margin-top:2px}
+    .due-hero{
+      background:linear-gradient(135deg,rgba(91,94,247,.12),rgba(139,92,246,.08));
+      border:1px solid rgba(91,94,247,.18);border-radius:var(--radius);
+      padding:18px;margin-bottom:18px;position:relative;overflow:hidden;
+    }
+    .due-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(91,94,247,.15),transparent 70%)}
+    .due-hero h3{color:var(--primary-dark);font-size:.95rem;font-weight:800;margin-bottom:4px;position:relative}
+    .due-hero p{font-size:.84rem;color:var(--muted);margin-bottom:10px;position:relative}
+    .due-actions button{
+      padding:12px 16px;border-radius:var(--radius-sm);border:none;
+      background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+      font-weight:700;cursor:pointer;font-size:.86rem;
+      box-shadow:0 6px 18px rgba(91,94,247,.28);transition:transform .15s var(--ease);
+    }
+    .due-actions button:active{transform:scale(.98)}
+    .empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:48px 24px}
+    .empty-icon{
+      width:64px;height:64px;border-radius:20px;
+      background:linear-gradient(135deg,var(--primary-light),#fff);
+      border:1px solid rgba(91,94,247,.12);
+      display:flex;align-items:center;justify-content:center;font-size:1.6rem;
+      box-shadow:var(--shadow-sm);
+    }
+    .empty p{color:var(--muted);font-size:.9rem;line-height:1.5;max-width:240px}
+    .cluster-section{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+      margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow-sm);
+    }
+    .cluster-section summary{
+      cursor:pointer;padding:16px 18px;font-weight:700;color:var(--text);
+      list-style:none;display:flex;align-items:center;gap:12px;
+      background:linear-gradient(180deg,var(--surface),var(--surface-2));
+    }
+    .cluster-chip{
+      width:40px;height:40px;border-radius:12px;background:var(--primary-light);
+      display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;
+    }
+    .cluster-section summary::after{content:'▾';margin-left:auto;color:var(--muted);font-size:.85rem;transition:transform .25s var(--ease)}
+    .cluster-section[open] summary::after{transform:rotate(180deg)}
+    .schedule-fold,.settings-card,.auth-panel,.account-card,.algo-section,.day-panel,.cal-wrap{
+      box-shadow:var(--shadow-sm);
+    }
+    .schedule-fold summary,.settings-card>h3{color:var(--text)}
+    .account-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+      padding:0;margin-bottom:14px;text-align:center;overflow:hidden;
+    }
+    .account-card-top{
+      background:linear-gradient(135deg,var(--primary),var(--accent));
+      padding:28px 20px 48px;position:relative;
+    }
+    .account-card-top::after{
+      content:'';position:absolute;bottom:-1px;left:0;right:0;height:24px;
+      background:var(--surface);border-radius:24px 24px 0 0;
+    }
+    .account-avatar{
+      width:76px;height:76px;border-radius:50%;object-fit:cover;
+      border:3px solid rgba(255,255,255,.9);margin:0 auto;
+      background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;
+      font-size:1.8rem;color:#fff;position:relative;z-index:1;
+      box-shadow:0 8px 24px rgba(0,0,0,.15);
+    }
+    .account-card-body{padding:8px 20px 22px}
+    .account-card h2{font-size:1.12rem;color:var(--text);font-weight:800}
+    .account-badge{
+      display:inline-block;margin-top:10px;font-size:.72rem;font-weight:700;
+      padding:5px 12px;border-radius:var(--radius-pill);
+      background:var(--primary-light);color:var(--primary-dark);
+    }
+    .panel-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+      padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow-sm);
+    }
+    .panel-card h2{font-size:.95rem;font-weight:800;color:var(--text);margin-bottom:6px}
+    .deck-tabs{
+      background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-pill);
+      padding:4px;margin-bottom:16px;
+    }
+    .deck-tabs button{
+      border-radius:var(--radius-pill);transition:all .2s var(--ease);
+    }
+    .deck-tabs button.active{
+      background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+      box-shadow:0 4px 12px rgba(91,94,247,.3);
+    }
+    .mode-opt,.algo-opt{transition:transform .15s var(--ease),border-color .15s,box-shadow .15s}
+    .mode-opt:hover,.algo-opt:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+    .mode-opt.active,.algo-opt.active{border-color:var(--primary);background:var(--primary-light)}
+    .preset-btn.active{background:linear-gradient(135deg,var(--primary),var(--accent));border-color:transparent}
+    .card-item{
+      border-radius:var(--radius);transition:transform .2s var(--ease),box-shadow .2s;
+    }
+    .card-item:hover{box-shadow:var(--shadow)}
+    .study-result{
+      background:var(--surface);border:1px solid var(--border);border-radius:28px;
+      padding:32px 24px;margin:8px 0 24px;box-shadow:var(--shadow-lg);
+    }
+    .study-result .score{
+      font-size:3.2rem;font-weight:800;letter-spacing:-.04em;line-height:1;
+      background:linear-gradient(135deg,var(--primary),var(--accent));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .study-result .stats{color:var(--muted);font-size:.9rem;margin-top:10px}
+    .icon-btn:hover{box-shadow:var(--shadow);border-color:rgba(91,94,247,.2)}
+    .auth-tabs{background:var(--surface-2);border-radius:var(--radius-pill);padding:4px;border:1px solid var(--border)}
+    .auth-tabs button{border-radius:var(--radius-pill);transition:all .2s var(--ease)}
+    .auth-tabs button.active{
+      background:var(--surface);color:var(--primary);box-shadow:var(--shadow-sm);font-weight:700;
+    }
+    .toggle input:checked+span{background:linear-gradient(135deg,var(--primary),var(--accent))}
+    .fab::after{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.2),transparent);pointer-events:none}
+    .fab{position:relative;overflow:hidden}
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div id="shine-viewport">
+    <div id="shine-scroll">
+      <div class="shine-app-frame">
+  <div id="app"></div>
+      </div>
+    </div>
+    <div id="shine-overlays">
+  <div id="splash" aria-label="Welcome to Shine">
+    <div class="splash-photo is-loading" id="splash-photo" role="img" aria-hidden="true"></div>
+    <div class="splash-scrim"></div>
+    <div class="splash-content splash-in" id="splash-content">
+      <div class="splash-brand">Shine</div>
+      <span class="splash-essence" id="splash-essence">New beginning</span>
+      <h1 class="splash-headline" id="splash-headline">Every ending is a door opening.</h1>
+      <p class="splash-subline" id="splash-subline">What you choose to learn today becomes part of who you are tomorrow.</p>
+      <p class="splash-personal" id="splash-personal">This moment is yours.</p>
+      <div class="splash-actions">
+        <button type="button" class="splash-begin" id="splash-begin">Begin anew</button>
+      </div>
+      <div class="splash-auth">
+        <button type="button" class="btn-google-oneclick splash-google" data-google-oneclick aria-label="Continue with Google">
+          <svg class="g-logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          <span>Continue with Google</span>
+        </button>
+        <div id="google-signin-fallback-splash" class="google-fallback-host"></div>
+        <button type="button" class="splash-skip" id="splash-continue">Continue as guest</button>
+      </div>
+      <button type="button" class="splash-refresh" id="splash-refresh">See another beginning →</button>
+      <p class="splash-credit" id="splash-credit"></p>
+    </div>
+  </div>
+      <div id="modal-root" aria-live="polite"></div>
+      <div id="toast-root" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+  <script>
+    (function loadAuthConfig() {
+      const finish = () => window.dispatchEvent(new Event('shine-auth-config-ready'));
+      const s = document.createElement('script');
+      s.src = 'auth-config.js';
+      s.onload = finish;
+      s.onerror = () => {
+        const f = document.createElement('script');
+        f.src = 'auth-config.example.js';
+        f.onload = finish;
+        f.onerror = finish;
+        document.head.appendChild(f);
+      };
+      document.head.appendChild(s);
+    })();
+  </script>
+  <script>
+    const GUEST_STORAGE_KEY = 'shine_v1';
+    const LEGACY_KEYS = ['german_flashcards_v4', 'german_flashcards_v3', 'german_flashcards_v2', 'german_flashcards_v1'];
+    const SESSION_KEY = 'shine_session';
+    const ACCOUNTS_KEY = 'shine_accounts';
+    const GOOGLE_CLIENT_KEY = 'shine_google_client_id';
+    const ONBOARDING_KEY = 'shine_onboarded';
+    const DELIVERIES_KEY = 'shine_deliveries';
+    const SPLASH_LAST_SCENE_KEY = 'shine_splash_scene';
+    // Optional: set your Google OAuth Web Client ID here or in Account → settings
+    const GOOGLE_CLIENT_ID_DEFAULT = '';
+
+    const SPLASH_SCENES = [
+      {
+        image: 'images/splash/sunrise-alps.jpg',
+        credit: 'Sunrise over the Alps · Unsplash',
+        essence: 'New beginning',
+        headline: 'Rise into who you\'re becoming.',
+        subline: 'The mountain doesn\'t ask who you were yesterday. It only asks if you\'re willing to climb again today.',
+      },
+      {
+        image: 'images/splash/golden-dawn.jpg',
+        credit: 'Valley at sunrise · Unsplash',
+        essence: 'Fresh start',
+        headline: 'Light finds you, even after the longest night.',
+        subline: 'Every sunrise is proof that nothing stays finished forever — including the person you\'re allowed to become.',
+      },
+      {
+        image: 'images/splash/seedling.jpg',
+        credit: 'Seedling in morning light · Unsplash',
+        essence: 'Quiet growth',
+        headline: 'Small beginnings change everything.',
+        subline: 'A single seed doesn\'t rush. It roots, then rises. Your knowledge grows the same way — one card, one day.',
+      },
+      {
+        image: 'images/splash/open-road.jpg',
+        credit: 'Road beside still water · Unsplash',
+        essence: 'Open path',
+        headline: 'The road ahead doesn\'t know your past.',
+        subline: 'You don\'t need permission to turn the page. You only need the courage to take the first step forward.',
+      },
+      {
+        image: 'images/splash/ocean-dawn.jpg',
+        credit: 'Sea at golden hour · Unsplash',
+        essence: 'Horizon calling',
+        headline: 'The horizon is an invitation, not a limit.',
+        subline: 'Waves erase the shore and draw it anew. You can let go of what didn\'t stick — and begin again.',
+      },
+      {
+        image: 'images/splash/ocean-waves.jpg',
+        credit: 'Waves at dawn · Unsplash',
+        essence: 'Transformation',
+        headline: 'Change doesn\'t have to be loud to be real.',
+        subline: 'What feels like starting over is often becoming. Every review is you choosing growth over forgetting.',
+      },
+      {
+        image: 'images/splash/open-book.jpg',
+        credit: 'Pages waiting to be read · Unsplash',
+        essence: 'Turn the page',
+        headline: 'Today you write a new chapter.',
+        subline: 'The stories you carry don\'t end where you left off. Pick up the pen. Your future self is reading along.',
+      },
+      {
+        image: 'images/splash/forest-mist.jpg',
+        credit: 'Forest path in morning mist · Unsplash',
+        essence: 'Second chance',
+        headline: 'Mist clears. The path appears.',
+        subline: 'When you can\'t see far ahead, you only need to see the next step. That\'s enough to begin again.',
+      },
+    ];
+
+    function getGoogleClientId() {
+      try {
+        return localStorage.getItem(GOOGLE_CLIENT_KEY) || window.SHINE_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_DEFAULT || '';
+      } catch (e) { return GOOGLE_CLIENT_ID_DEFAULT || ''; }
+    }
+
+    function getShareApiUrl() {
+      try {
+        return String(window.SHINE_SHARE_API || localStorage.getItem('shine_share_api') || '').replace(/\/$/, '');
+      } catch (e) { return ''; }
+    }
+
+    function activeStorageKey() {
+      return state.auth.user ? `shine_data_${state.auth.user.id}` : GUEST_STORAGE_KEY;
+    }
+
+    const CARD_COLORS = [
+      { id: 'none', hex: '', border: 'var(--border)', label: 'None' },
+      { id: 'blue', hex: '#e3f2fd', border: '#1565c0', label: 'Blue light' },
+      { id: 'green', hex: '#e8f5e9', border: '#2e7d32', label: 'Green light' },
+      { id: 'yellow', hex: '#fff8e1', border: '#f9a825', label: 'Yellow light' },
+      { id: 'pink', hex: '#fce4ec', border: '#c2185b', label: 'Pink light' },
+      { id: 'purple', hex: '#f3e5f5', border: '#7b1fa2', label: 'Purple light' },
+      { id: 'orange', hex: '#fff3e0', border: '#ef6c00', label: 'Orange light' },
+      { id: 'blue-dark', hex: '#1565c0', border: '#0d47a1', label: 'Blue' },
+      { id: 'green-dark', hex: '#2e7d32', border: '#1b5e20', label: 'Green' },
+      { id: 'yellow-dark', hex: '#f57f17', border: '#e65100', label: 'Amber' },
+      { id: 'pink-dark', hex: '#c2185b', border: '#880e4f', label: 'Pink' },
+      { id: 'purple-dark', hex: '#7b1fa2', border: '#4a148c', label: 'Purple' },
+      { id: 'orange-dark', hex: '#ef6c00', border: '#e65100', label: 'Orange' },
+      { id: 'slate-dark', hex: '#37474f', border: '#263238', label: 'Slate' },
+    ];
+
+    const ALGORITHMS = {
+      ebbinghaus: { label: 'Ebbinghaus', short: 'Ebb', desc: 'Forgetting curve — memory fades predictably over time' },
+      leitner: { label: 'Leitner', short: 'Leitner', desc: 'Box system — cards move up on success, reset on miss' },
+      sm2: { label: 'SM-2', short: 'SM-2', desc: 'SuperMemo 2 — adaptive ease factor (used by Anki)' },
+    };
+
+    const LEITNER_DAYS = [1, 2, 4, 7, 14];
+
+    const PRESETS = {
+      relaxed: { label: 'Relaxed', desc: 'Reviews spread further apart', intervals: [2, 4, 8, 16, 32, 64], retentionTarget: 0.85, failIntervalDays: 2 },
+      normal: { label: 'Normal', desc: 'Balanced spacing', intervals: [1, 2, 4, 7, 15, 30, 60], retentionTarget: 0.9, failIntervalDays: 1 },
+      intensive: { label: 'Intensive', desc: 'Review more frequently', intervals: [1, 1, 2, 4, 7, 14, 21], retentionTarget: 0.95, failIntervalDays: 1 },
+    };
+
+    const DEFAULT_ALGO = {
+      enabled: false,
+      algorithm: 'ebbinghaus',
+      preset: 'normal',
+      intervals: [1, 2, 4, 7, 15, 30, 60, 120],
+      initialStability: 1.0,
+      initialEase: 2.5,
+      minEase: 1.3,
+      maxEase: 3.0,
+      easeBonus: 0.15,
+      easePenalty: 0.25,
+      retentionTarget: 0.9,
+      maxSessionsPerDay: 1,
+      failIntervalDays: 1,
+      curveSteepness: 1.0,
+    };
+
+    const SAMPLE_CLUSTERS = [
+      { id: 1, name: 'Languages', emoji: '🌍' },
+      { id: 2, name: 'Wellness', emoji: '🧘' },
+      { id: 3, name: 'Life & Skills', emoji: '✨' },
+    ];
+
+    const SAMPLE_DECKS = [
+      {
+        id: 1, clusterId: 1, name: 'Spanish Phrases', description: 'Everyday conversation',
+        cards: [
+          { id: 1, front: 'Hello', back: 'Hola' },
+          { id: 2, front: 'Thank you', back: 'Gracias' },
+          { id: 3, front: 'How are you?', back: '¿Cómo estás?' },
+        ],
+      },
+      {
+        id: 2, clusterId: 1, name: 'French Basics', description: 'Travel essentials',
+        cards: [
+          { id: 1, front: 'Good morning', back: 'Bonjour' },
+          { id: 2, front: 'Please', back: "S'il vous plaît" },
+          { id: 3, front: 'Where is…?', back: 'Où est…?' },
+        ],
+      },
+      {
+        id: 3, clusterId: 2, name: 'Mindfulness', description: 'Calm daily practices',
+        cards: [
+          { id: 1, front: 'Box breathing', back: 'Inhale 4s · hold 4s · exhale 4s · hold 4s' },
+          { id: 2, front: 'Body scan', back: 'Notice tension from toes to head, release slowly' },
+          { id: 3, front: 'Gratitude pause', back: 'Name 3 specific things you appreciate today' },
+        ],
+      },
+      {
+        id: 4, clusterId: 3, name: 'Coffee & Recipes', description: 'Kitchen know-how',
+        cards: [
+          { id: 1, front: 'Espresso ratio', back: '1:2 coffee to liquid · ~25–30s shot' },
+          { id: 2, front: 'Vinaigrette base', back: '3 parts oil · 1 part acid · salt + mustard' },
+        ],
+      },
+    ];
+
+    let state = {
+      view: 'home',
+      tab: 'decks',
+      deckId: null,
+      study: null,
+      modal: null,
+      calMonth: new Date(),
+      calSelected: null,
+      scheduleDeckId: null,
+      decks: [],
+      clusters: [],
+      algo: { ...DEFAULT_ALGO },
+      globalMaxSessionsPerDay: 3,
+      deckScheduleOpen: false,
+      calSettingsOpen: false,
+      userName: '',
+      auth: { user: null },
+      authMode: 'signin',
+      authError: '',
+      authBusy: false,
+      toast: null,
+      ready: false,
+      splashDone: false,
+      pendingShare: null,
+    };
+
+    // ── Auth ──
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    }
+
+    function saveSession(user) {
+      try {
+        if (user) localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        else localStorage.removeItem(SESSION_KEY);
+      } catch (e) {}
+    }
+
+    function getAccountsDb() {
+      try {
+        return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{"users":{}}');
+      } catch (e) { return { users: {} }; }
+    }
+
+    function saveAccountsDb(db) {
+      try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(db)); } catch (e) {}
+    }
+
+    function bytesToB64(bytes) {
+      return btoa(String.fromCharCode(...bytes));
+    }
+
+    function b64ToBytes(b64) {
+      return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+
+    async function hashPassword(password, saltB64) {
+      const enc = new TextEncoder();
+      const salt = saltB64 ? b64ToBytes(saltB64) : crypto.getRandomValues(new Uint8Array(16));
+      const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, key, 256);
+      return { hash: bytesToB64(new Uint8Array(bits)), salt: saltB64 || bytesToB64(salt) };
+    }
+
+    function normalizeEmail(email) {
+      return String(email || '').trim().toLowerCase();
+    }
+
+    function setAuthError(msg) {
+      state.authError = msg || '';
+    }
+
+    function snapshotAppData() {
+      return {
+        decks: state.decks,
+        clusters: state.clusters,
+        algo: state.algo,
+        globalMaxSessionsPerDay: state.globalMaxSessionsPerDay,
+      };
+    }
+
+    function applyAppData(raw) {
+      if (!raw) return false;
+      state.decks = (raw.decks || []).map(initDeck);
+      state.clusters = migrateLegacyClusters(state.decks, raw.clusters);
+      state.algo = { ...DEFAULT_ALGO, ...(raw.algo || {}) };
+      state.globalMaxSessionsPerDay = raw.globalMaxSessionsPerDay ?? 3;
+      return true;
+    }
+
+    function persistAppData() {
+      try {
+        localStorage.setItem(activeStorageKey(), JSON.stringify(snapshotAppData()));
+      } catch (e) { console.warn('Save failed', e); }
+    }
+
+    function migrateGuestDataIfEmpty() {
+      if (state.decks.length) return;
+      try {
+        const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
+        if (!guestRaw) return;
+        const guest = JSON.parse(guestRaw);
+        if (guest.decks?.length) applyAppData(guest);
+      } catch (e) {}
+    }
+
+    function mergeGuestDataIntoAccount() {
+      try {
+        const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
+        if (!guestRaw) return false;
+        const guest = JSON.parse(guestRaw);
+        if (!guest.decks?.length) return false;
+        if (state.decks.length && !confirm('Import decks from your guest session into this account?')) return false;
+        if (!state.decks.length) {
+          applyAppData(guest);
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function isShareModalOpen() {
+      return state.modal?.type === 'share-deck' && !!document.getElementById('modal-root')?.querySelector('.modal-share');
+    }
+
+    function paintToast(msg) {
+      const root = document.getElementById('toast-root');
+      if (!root) return;
+      if (!msg) {
+        root.innerHTML = '';
+        return;
+      }
+      const hadToast = !!root.querySelector('.toast');
+      root.innerHTML = `<div class="toast${hadToast ? ' toast-stable' : ''}">${esc(msg)}</div>`;
+    }
+
+    function showToast(msg) {
+      state.toast = msg;
+      if (state.ready) paintToast(msg);
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => {
+        state.toast = null;
+        if (state.ready) paintToast(null);
+      }, 2800);
+    }
+
+    function setModalOpen(open) {
+      document.body.classList.toggle('modal-open', !!open);
+      if (open) ShineViewport.onModalOpen();
+      else ShineViewport.onModalClose();
+    }
+
+    function refreshShareCollaboratorsPanel() {
+      const deckId = state.modal?.deckId;
+      const d = deckById(deckId);
+      const body = document.querySelector('.share-sheet-body');
+      if (!body || !d) return;
+      const html = renderCollaboratorsList(d);
+      const existing = document.getElementById('share-collab-section');
+      const anchor = body.querySelector('[data-share-device-anchor]');
+      if (html) {
+        if (existing) existing.outerHTML = html;
+        else if (anchor) anchor.insertAdjacentHTML('beforebegin', html);
+        else body.querySelector('.share-section')?.insertAdjacentHTML('afterend', html);
+      } else {
+        existing?.remove();
+      }
+      bindShareCollaboratorHandlers();
+    }
+
+    function syncShareModalViewport() {
+      ShineViewport.layoutShareSheet();
+    }
+
+    function clearShareInviteField() {
+      const input = document.getElementById('share-deck-email');
+      if (input) input.value = '';
+      if (state.modal?.type === 'share-deck') state.modal.recipientEmail = '';
+    }
+
+    function renderModalLayer() {
+      const root = document.getElementById('modal-root');
+      if (!root) return;
+      if (!state.modal) {
+        root.innerHTML = '';
+        setModalOpen(false);
+        return;
+      }
+      setModalOpen(true);
+      root.innerHTML = renderModal();
+      const modal = root.querySelector('.modal-share, .modal');
+      const bg = root.querySelector('.modal-bg');
+      modal?.classList.add('modal-stable');
+      bg?.classList.add('modal-stable');
+      if (state.modal?.type === 'share-deck') syncShareModalViewport();
+    }
+
+    function bindShareCollaboratorHandlers() {
+      document.querySelectorAll('[data-update-collab-idx]').forEach(el => el.addEventListener('change', () => {
+        const deckId = state.modal?.deckId;
+        const d = deckById(deckId);
+        if (!d) return;
+        const collab = d.sharing?.collaborators?.[+el.dataset.updateCollabIdx];
+        if (!collab) return;
+        ensureCollaborator(deckId, collab.email, el.value);
+        const label = el.closest('.collab-item')?.querySelector('.collab-role-label');
+        if (label) label.textContent = DECK_ROLES[el.value]?.label || el.value;
+        showToast('Access updated');
+      }));
+      document.querySelectorAll('[data-revoke-collab-idx]').forEach(el => el.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        const d = deckById(deckId);
+        if (!d) return;
+        const collab = d.sharing?.collaborators?.[+el.dataset.revokeCollabIdx];
+        if (!collab) return;
+        if (!confirm(`Remove access for ${collab.email}?`)) return;
+        revokeCollaborator(deckId, collab.email);
+        const section = document.getElementById('share-collab-section');
+        el.closest('.collab-item')?.remove();
+        if (section && !section.querySelector('.collab-item')) section.remove();
+        showToast('Access removed');
+      }));
+    }
+
+    function bindShareModalHandlers() {
+      const getSelectedShareRole = () => {
+        const active = document.querySelector('[data-pick-role].active');
+        return active?.dataset.pickRole || state.modal?.shareRole || 'viewer';
+      };
+      const submitSendDeck = async (email) => {
+        const deckId = state.modal?.deckId;
+        if (!deckId) return;
+        const role = getSelectedShareRole();
+        const sendBtn = document.querySelector('[data-send-deck-email]');
+        if (sendBtn) sendBtn.disabled = true;
+        try {
+          const { cloudOk, role: sentRole } = await sendDeckToUser(email, deckId, role);
+          const roleLabel = DECK_ROLES[sentRole]?.label || sentRole;
+          state.modal.shareRole = sentRole;
+          clearShareInviteField();
+          refreshShareCollaboratorsPanel();
+          showToast(cloudOk || !getShareApiUrl()
+            ? `Invite sent · ${roleLabel}`
+            : `Saved on this device · ${roleLabel}`);
+        } catch (e) {
+          showToast(e.message || 'Could not send deck');
+        } finally {
+          if (sendBtn) sendBtn.disabled = false;
+        }
+      };
+      document.querySelectorAll('[data-pick-role]').forEach(el => el.addEventListener('click', () => {
+        if (state.modal?.type !== 'share-deck') return;
+        const role = el.dataset.pickRole;
+        if (state.modal.shareRole === role) return;
+        state.modal.shareRole = role;
+        document.querySelectorAll('[data-pick-role]').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.pickRole === role);
+        });
+      }));
+      document.querySelector('[data-send-deck-email]')?.addEventListener('click', () => {
+        submitSendDeck(document.getElementById('share-deck-email')?.value);
+      });
+      document.getElementById('share-deck-email')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitSendDeck(e.target.value);
+      });
+      document.getElementById('share-deck-email')?.addEventListener('focus', () => {
+        setTimeout(() => {
+          document.getElementById('share-deck-email')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          syncShareModalViewport();
+        }, 80);
+      });
+      document.querySelectorAll('[data-send-deck-user]').forEach(el => el.addEventListener('click', () => {
+        submitSendDeck(el.dataset.sendDeckUser);
+      }));
+      document.querySelector('[data-copy-share-link]')?.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) copyShareDeckLink(deckId);
+      });
+      document.querySelector('[data-download-share-deck]')?.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) shareDeckFile(deckId);
+      });
+      document.querySelector('[data-native-share-deck]')?.addEventListener('click', async () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) await shareDeckNative(deckId);
+      });
+      document.querySelector('.share-more-toggle')?.addEventListener('click', () => {
+        const panel = document.querySelector('.share-more-panel');
+        const toggle = document.querySelector('.share-more-toggle');
+        if (!panel || !toggle) return;
+        const open = !panel.classList.contains('open');
+        panel.classList.toggle('open', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (state.modal?.type === 'share-deck') state.modal.shareMoreOpen = open;
+      });
+      bindShareCollaboratorHandlers();
+    }
+
+    function isOnboarded() {
+      try { return localStorage.getItem(ONBOARDING_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    function markOnboarded() {
+      try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) {}
+    }
+
+    function exportUserData() {
+      const data = snapshotAppData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `shine-backup-${todayStr()}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('Backup downloaded');
+    }
+
+    function importUserData(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data.decks || !Array.isArray(data.decks)) throw new Error('Invalid backup');
+          applyAppData(data);
+          save();
+          showToast('Backup restored');
+          render();
+        } catch (e) {
+          showToast('Could not read backup file');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    const SHARE_URL_MAX = 1800;
+
+    function encodeSharePayload(obj) {
+      const json = JSON.stringify(obj);
+      const bytes = new TextEncoder().encode(json);
+      let bin = '';
+      bytes.forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function decodeSharePayload(encoded) {
+      try {
+        let b64 = String(encoded || '').trim().replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return JSON.parse(new TextDecoder().decode(bytes));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function buildDeckSharePayload(d, opts = {}) {
+      const cl = clusterById(d.clusterId);
+      const algo = deckAlgo(d);
+      const role = opts.role || 'viewer';
+      const grantId = opts.grantId || null;
+      return {
+        shine: 1,
+        kind: 'deck',
+        v: 2,
+        sharedAt: todayStr(),
+        access: {
+          role,
+          grantId,
+          accessType: opts.accessType || 'granted',
+          ownerEmail: d.ownership?.email || state.auth.user?.email || null,
+          ownerId: d.ownership?.userId || state.auth.user?.id || null,
+          ownerName: d.ownership?.name || state.auth.user?.name || state.userName || null,
+        },
+        cluster: cl ? { name: cl.name, emoji: cl.emoji } : null,
+        deck: {
+          name: d.name,
+          description: d.description || '',
+          ebbinghaus: isEbbinghausOn(d),
+          algo: {
+            algorithm: algo.algorithm,
+            preset: algo.preset,
+            enabled: isEbbinghausOn(d),
+            intervals: algo.intervals,
+            initialStability: algo.initialStability,
+            initialEase: algo.initialEase,
+            minEase: algo.minEase,
+            maxEase: algo.maxEase,
+            easeBonus: algo.easeBonus,
+            easePenalty: algo.easePenalty,
+            retentionTarget: algo.retentionTarget,
+            maxSessionsPerDay: algo.maxSessionsPerDay,
+            failIntervalDays: algo.failIntervalDays,
+            curveSteepness: algo.curveSteepness,
+          },
+          cards: d.cards.map(c => ({
+            front: cardFront(c),
+            back: cardBack(c),
+            color: c.color || null,
+          })),
+        },
+      };
+    }
+
+    function parseDeckSharePayload(data) {
+      if (!data) return null;
+      if (data.kind === 'deck' && data.shine === 1 && data.deck) return data;
+      if (data.name && Array.isArray(data.cards) && !data.decks) {
+        return { shine: 1, kind: 'deck', v: 1, deck: data };
+      }
+      return null;
+    }
+
+    function uniqueDeckName(name) {
+      const base = String(name || '').trim() || 'Shared deck';
+      const names = new Set(state.decks.map(d => d.name));
+      if (!names.has(base)) return base;
+      let i = 2;
+      while (names.has(`${base} (${i})`)) i++;
+      return `${base} (${i})`;
+    }
+
+    function clusterHintMatch(hint) {
+      if (!hint?.name) return null;
+      return state.clusters.find(c => c.name.toLowerCase() === hint.name.toLowerCase()) || null;
+    }
+
+    function resolveClusterForShare(hint, preferredId) {
+      if (preferredId === '__new__' && hint?.name) {
+        const created = initCluster({ id: nextId(state.clusters), name: hint.name, emoji: hint.emoji || '📁' });
+        state.clusters.push(created);
+        return created.id;
+      }
+      if (preferredId != null && preferredId !== '__new__' && clusterById(preferredId)) return preferredId;
+      const match = clusterHintMatch(hint);
+      if (match) return match.id;
+      if (hint?.name) {
+        const created = initCluster({ id: nextId(state.clusters), name: hint.name, emoji: hint.emoji || '📁' });
+        state.clusters.push(created);
+        return created.id;
+      }
+      return state.clusters[0]?.id ?? null;
+    }
+
+    function acceptSharedDeck(delivery, options = {}) {
+      const payload = delivery.payload || delivery;
+      const parsed = parseDeckSharePayload(payload);
+      if (!parsed?.deck) throw new Error('Invalid shared deck');
+      const src = parsed.deck;
+      const accessMeta = parsed.access || {};
+      const role = delivery.role || accessMeta.role || 'viewer';
+      const grantId = delivery.grantId || accessMeta.grantId || null;
+      if (grantId && state.decks.some(d => d.access?.grantId === grantId)) {
+        throw new Error('You already have access to this deck');
+      }
+      const clusterId = resolveClusterForShare(parsed.cluster, options.clusterId);
+      let cardId = Date.now();
+      const cards = (src.cards || []).map(c => initCard({
+        id: cardId++,
+        front: cardFront(c),
+        back: cardBack(c),
+        color: c.color || null,
+      }));
+      const newDeck = initDeck({
+        id: nextId(state.decks),
+        name: src.name || 'Shared deck',
+        description: src.description || '',
+        clusterId,
+        ebbinghaus: src.ebbinghaus,
+        algo: src.algo || {},
+        cards,
+        access: {
+          role,
+          grantId,
+          ownerEmail: delivery.fromEmail || accessMeta.ownerEmail || null,
+          ownerName: delivery.fromName || accessMeta.ownerName || 'Someone',
+          ownerId: delivery.fromUserId || accessMeta.ownerId || null,
+          acceptedAt: new Date().toISOString(),
+          accessType: delivery.accessType || accessMeta.accessType || 'granted',
+          lastSyncedAt: parsed.sharedAt || todayStr(),
+        },
+      });
+      state.decks.unshift(newDeck);
+      markOnboarded();
+      save();
+      return newDeck.id;
+    }
+
+    function importSharedDeck(payload, options = {}) {
+      return acceptSharedDeck({ payload, role: payload?.access?.role || 'viewer' }, options);
+    }
+
+    function leaveSharedDeck(deckId) {
+      const d = deckById(deckId);
+      if (!d || !canLeaveDeck(d)) return;
+      state.decks = state.decks.filter(x => x.id !== deckId);
+      save();
+    }
+
+    function ensureCollaborator(deckId, recipientEmail, role) {
+      const d = deckById(deckId);
+      if (!d || !canShareDeck(d)) throw new Error('Only the owner can change access');
+      const em = normalizeEmail(recipientEmail);
+      if (!d.sharing) d.sharing = { collaborators: [] };
+      let collab = d.sharing.collaborators.find(c => normalizeEmail(c.email) === em);
+      if (collab) {
+        collab.role = role;
+        collab.updatedAt = new Date().toISOString();
+      } else {
+        collab = {
+          email: em,
+          role,
+          grantId: `grant_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          addedAt: new Date().toISOString(),
+          addedBy: state.auth.user?.email || null,
+          accessType: 'granted',
+        };
+        d.sharing.collaborators.push(collab);
+      }
+      save();
+      pushGrantToCloud(collab.grantId, d, collab.role);
+      return collab;
+    }
+
+    function revokeCollaborator(deckId, email) {
+      const d = deckById(deckId);
+      if (!d || !canShareDeck(d)) return;
+      const em = normalizeEmail(email);
+      d.sharing.collaborators = (d.sharing.collaborators || []).filter(c => normalizeEmail(c.email) !== em);
+      save();
+    }
+
+    async function pushGrantToCloud(grantId, deck, role) {
+      const api = getShareApiUrl();
+      if (!api || !grantId) return;
+      try {
+        await fetch(`${api}/grant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            grantId,
+            role,
+            payload: buildDeckSharePayload(deck, { role, grantId }),
+            updatedAt: new Date().toISOString(),
+            ownerEmail: deck.ownership?.email,
+          }),
+        });
+      } catch (e) {}
+    }
+
+    function applyRemoteDeckContent(d, payload) {
+      const src = payload.deck || payload;
+      const schedule = d.schedule;
+      const sr = d.sr;
+      const cardMeta = new Map(d.cards.map(c => [cardFront(c) + '\0' + cardBack(c), c]));
+      let cardId = Date.now();
+      d.name = src.name || d.name;
+      d.description = src.description ?? d.description;
+      if (canChangeDeckSettings(d)) {
+        d.ebbinghaus = src.ebbinghaus;
+        d.algo = { ...DEFAULT_ALGO, ...(src.algo || {}), enabled: src.ebbinghaus === true || (src.algo && src.algo.enabled === true) };
+      }
+      d.cards = (src.cards || []).map(c => {
+        const key = cardFront(c) + '\0' + cardBack(c);
+        const prev = cardMeta.get(key);
+        return initCard({
+          id: prev?.id || cardId++,
+          front: cardFront(c),
+          back: cardBack(c),
+          color: c.color || null,
+          leitnerBox: prev?.leitnerBox,
+          sm2: prev?.sm2,
+        });
+      });
+      d.schedule = schedule;
+      d.sr = sr;
+    }
+
+    async function syncSharedDeckFromGrant(d) {
+      if (!d?.access?.grantId) return;
+      const api = getShareApiUrl();
+      if (!api) return;
+      try {
+        const res = await fetch(`${api}/grant?id=${encodeURIComponent(d.access.grantId)}`);
+        if (!res.ok) return;
+        const remote = await res.json();
+        if (!remote?.payload || !remote.updatedAt) return;
+        if (d.access.lastSyncedAt && remote.updatedAt <= d.access.lastSyncedAt) return;
+        applyRemoteDeckContent(d, remote.payload);
+        if (remote.role) d.access.role = remote.role;
+        d.access.lastSyncedAt = remote.updatedAt;
+        save();
+      } catch (e) {}
+    }
+
+    async function syncAllSharedDecks() {
+      await Promise.all(sharedWithMeDecks().map(syncSharedDeckFromGrant));
+    }
+
+    function shareDeckLink(deckId) {
+      const d = deckById(deckId);
+      if (!d) return null;
+      const encoded = encodeSharePayload(buildDeckSharePayload(d));
+      const url = new URL(location.href);
+      url.search = '';
+      url.hash = '';
+      url.searchParams.set('share', encoded);
+      return url.toString();
+    }
+
+    function shareDeckFile(deckId) {
+      const d = deckById(deckId);
+      if (!d) return;
+      const payload = buildDeckSharePayload(d);
+      const slug = (d.name || 'deck').replace(/[^\w\-]+/g, '-').replace(/-+/g, '-').toLowerCase() || 'deck';
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `shine-deck-${slug}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('Share file downloaded');
+    }
+
+    async function copyShareDeckLink(deckId) {
+      const link = shareDeckLink(deckId);
+      if (!link) return false;
+      if (link.length > SHARE_URL_MAX) {
+        showToast('Deck is too large for a link — download the file instead');
+        return false;
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast('Share link copied');
+        return true;
+      } catch (e) {
+        showToast('Could not copy link');
+        return false;
+      }
+    }
+
+    async function shareDeckNative(deckId) {
+      const d = deckById(deckId);
+      if (!d) return false;
+      const payload = buildDeckSharePayload(d);
+      const json = JSON.stringify(payload, null, 2);
+      const slug = (d.name || 'deck').replace(/[^\w\-]+/g, '-').replace(/-+/g, '-').toLowerCase() || 'deck';
+      const filename = `shine-deck-${slug}.json`;
+      if (window.ShineAndroid?.shareFile) {
+        try {
+          window.ShineAndroid.shareFile(filename, json, `Shine: ${d.name}`);
+          return true;
+        } catch (e) {
+          showToast('Could not share');
+        }
+        return false;
+      }
+      if (!navigator.share) {
+        shareDeckFile(deckId);
+        return false;
+      }
+      try {
+        const file = new File([json], filename, { type: 'application/json' });
+        if (!navigator.canShare?.({ files: [file] })) {
+          shareDeckFile(deckId);
+          return false;
+        }
+        await navigator.share({
+          title: `Shine: ${d.name}`,
+          text: `A Shine flashcard deck — open in Shine to import`,
+          files: [file],
+        });
+        return true;
+      } catch (e) {
+        if (e.name !== 'AbortError') showToast('Could not share');
+      }
+      return false;
+    }
+
+    function getDeliveries() {
+      try { return JSON.parse(localStorage.getItem(DELIVERIES_KEY) || '{}'); }
+      catch (e) { return {}; }
+    }
+
+    function saveDeliveries(deliveries) {
+      try { localStorage.setItem(DELIVERIES_KEY, JSON.stringify(deliveries)); } catch (e) {}
+    }
+
+    function createDeliveryEntry(deckId, role, grantId) {
+      const d = deckById(deckId);
+      if (!d) throw new Error('Deck not found');
+      return {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        fromEmail: state.auth.user?.email || null,
+        fromName: state.auth.user?.name || state.userName || 'A Shine user',
+        fromUserId: state.auth.user?.id || null,
+        deckName: d.name,
+        role,
+        grantId,
+        accessType: 'granted',
+        payload: buildDeckSharePayload(d, { role, grantId }),
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    function listDeviceUsers() {
+      const me = normalizeEmail(state.auth.user?.email);
+      return Object.values(getAccountsDb().users).filter(u => normalizeEmail(u.email) !== me);
+    }
+
+    async function pushDeliveryToCloud(recipientEmail, entry) {
+      const api = getShareApiUrl();
+      if (!api) return true;
+      try {
+        const res = await fetch(`${api}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: recipientEmail, ...entry }),
+        });
+        return res.ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function sendDeckToUser(recipientEmail, deckId, role = 'viewer') {
+      const em = normalizeEmail(recipientEmail);
+      if (!em || !em.includes('@')) throw new Error('Enter a valid email');
+      const me = normalizeEmail(state.auth.user?.email);
+      if (me && me === em) throw new Error('You cannot send a deck to yourself');
+      if (!['viewer', 'editor'].includes(role)) role = 'viewer';
+      const collab = ensureCollaborator(deckId, em, role);
+      const entry = createDeliveryEntry(deckId, collab.role, collab.grantId);
+      const deliveries = getDeliveries();
+      if (!deliveries[em]) deliveries[em] = [];
+      deliveries[em].push(entry);
+      saveDeliveries(deliveries);
+      const cloudOk = await pushDeliveryToCloud(em, entry);
+      return { entry, cloudOk, role: collab.role };
+    }
+
+    function getInboxForCurrentUser() {
+      const em = normalizeEmail(state.auth.user?.email);
+      if (!em) return [];
+      return getDeliveries()[em] || [];
+    }
+
+    function inboxCount() {
+      return getInboxForCurrentUser().length;
+    }
+
+    async function syncInboxFromCloud() {
+      const api = getShareApiUrl();
+      const em = normalizeEmail(state.auth.user?.email);
+      if (!api || !em) return 0;
+      try {
+        const res = await fetch(`${api}/inbox?to=${encodeURIComponent(em)}`);
+        if (!res.ok) return 0;
+        const remote = await res.json();
+        if (!Array.isArray(remote) || !remote.length) return 0;
+        const deliveries = getDeliveries();
+        const inbox = deliveries[em] || [];
+        const ids = new Set(inbox.map(i => i.id));
+        let added = 0;
+        remote.forEach(item => {
+          if (!item?.id || ids.has(item.id)) return;
+          inbox.push(item);
+          ids.add(item.id);
+          added++;
+        });
+        if (added) {
+          deliveries[em] = inbox;
+          saveDeliveries(deliveries);
+        }
+        return added;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    function dismissInboxItem(deliveryId) {
+      const em = normalizeEmail(state.auth.user?.email);
+      if (!em) return;
+      const deliveries = getDeliveries();
+      deliveries[em] = (deliveries[em] || []).filter(i => i.id !== deliveryId);
+      saveDeliveries(deliveries);
+      const api = getShareApiUrl();
+      if (api) {
+        fetch(`${api}/dismiss`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: em, id: deliveryId }),
+        }).catch(() => {});
+      }
+    }
+
+    function maybePromptInbox() {
+      if (!state.ready || state.modal || !state.auth.user) return;
+      const inbox = getInboxForCurrentUser();
+      if (!inbox.length) return;
+      const latest = inbox[inbox.length - 1];
+      state.modal = { type: 'import-share', delivery: latest, payload: latest.payload, deliveryId: latest.id };
+      render();
+    }
+
+    function openShareDeckModal(deckId) {
+      const d = deckById(deckId);
+      if (!d || !canShareDeck(d)) {
+        showToast('Only the deck owner can manage sharing');
+        return;
+      }
+      state.modal = { type: 'share-deck', deckId, shareRole: 'viewer', shareMoreOpen: false };
+      render();
+    }
+
+    function collabInitial(email) {
+      return String(email || '?').charAt(0).toUpperCase();
+    }
+
+    function renderCollaboratorsList(d) {
+      const collabs = d.sharing?.collaborators || [];
+      if (!collabs.length) return '';
+      return `
+        <div class="share-section" id="share-collab-section">
+          <div class="share-section-title">People with access</div>
+          <div class="collab-list">
+            ${collabs.map((c, i) => `
+              <div class="collab-item">
+                <span class="collab-avatar">${esc(collabInitial(c.email))}</span>
+                <div class="collab-info">
+                  <span class="collab-email">${esc(c.email)}</span>
+                  <span class="collab-role-label">${esc(DECK_ROLES[c.role]?.label || c.role)}</span>
+                </div>
+                <select class="collab-role-select" data-update-collab-idx="${i}" aria-label="Change access for ${esc(c.email)}">
+                  <option value="viewer" ${c.role === 'viewer' ? 'selected' : ''}>View</option>
+                  <option value="editor" ${c.role === 'editor' ? 'selected' : ''}>Edit</option>
+                </select>
+                <button type="button" class="collab-remove" data-revoke-collab-idx="${i}" title="Remove access" aria-label="Remove ${esc(c.email)}">✕</button>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function renderDeviceUserChips(users) {
+      if (!users.length) return '<div data-share-device-anchor></div>';
+      return `
+        <div class="share-section" data-share-device-anchor>
+          <div class="share-section-title">On this device</div>
+          <div class="device-chips">
+            ${users.map(u => `
+              <button type="button" class="device-chip" data-send-deck-user="${esc(u.email)}" title="Send to ${esc(u.email)}">
+                <span class="avatar">${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : esc((u.name || u.email).charAt(0).toUpperCase())}</span>
+                ${esc(u.name || u.email.split('@')[0])}
+              </button>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function importSharedDeckFromText(text) {
+      const raw = String(text || '').trim();
+      if (!raw) return;
+      let payload = null;
+      try {
+        if (raw.startsWith('{')) payload = parseDeckSharePayload(JSON.parse(raw));
+        else {
+          const url = new URL(raw);
+          const share = url.searchParams.get('share');
+          if (share) payload = parseDeckSharePayload(decodeSharePayload(share));
+        }
+      } catch (e) {}
+      if (!payload) payload = parseDeckSharePayload(decodeSharePayload(raw));
+      if (!payload) {
+        showToast('Could not read shared deck');
+        return;
+      }
+      state.modal = { type: 'import-share', payload };
+      render();
+    }
+
+    function importSharedDeckFile(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          const payload = parseDeckSharePayload(data);
+          if (!payload) throw new Error('invalid');
+          state.modal = { type: 'import-share', payload };
+          render();
+        } catch (e) {
+          showToast('Not a valid shared deck file');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function captureShareFromUrl() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const share = params.get('share');
+        if (!share) return;
+        const payload = parseDeckSharePayload(decodeSharePayload(share));
+        if (payload) state.pendingShare = payload;
+        const clean = new URL(location.href);
+        clean.searchParams.delete('share');
+        history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+      } catch (e) {}
+    }
+
+    function maybePromptPendingShare() {
+      if (!state.pendingShare || !state.ready || state.modal) return;
+      state.modal = { type: 'import-share', payload: state.pendingShare };
+      state.pendingShare = null;
+      render();
+    }
+
+    function renderInboxPanel() {
+      const items = getInboxForCurrentUser();
+      if (!items.length) return '';
+      return `
+        <div class="panel-card inbox-panel">
+          <h2>Decks sent to you<span class="inbox-count">${items.length}</span></h2>
+          <p class="hint" style="margin:0 0 4px">Accept to open with the access level the owner chose.</p>
+          <div class="inbox-list">
+            ${items.slice().reverse().map(item => {
+              const role = item.role || 'viewer';
+              const roleLabel = DECK_ROLES[role]?.label || role;
+              return `
+              <div class="inbox-item">
+                <div class="inbox-item-main">
+                  <strong>${esc(item.deckName || 'Shared deck')}</strong>
+                  <span class="hint" style="margin:0">from ${esc(item.fromName || 'Someone')} · ${esc(roleLabel)}</span>
+                </div>
+                <div class="inbox-actions">
+                  <button type="button" class="btn-primary btn-sm" data-accept-inbox="${esc(item.id)}">Accept</button>
+                  <button type="button" class="btn-outline btn-sm" data-dismiss-inbox="${esc(item.id)}">Dismiss</button>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }
+
+    function renderShareImportPanel() {
+      return `
+        <div class="panel-card">
+          <h2>Import from file</h2>
+          <p class="hint" style="margin:0 0 12px">Have a deck file from someone? Import it here.</p>
+          <label class="btn-outline" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0;width:100%">
+            Choose file<input type="file" id="import-share-file" accept="application/json,.json" hidden />
+          </label>
+        </div>`;
+    }
+
+    async function completeLogin(user) {
+      if (!state.auth.user) persistAppData();
+      state.auth.user = user;
+      state.userName = user.name || user.email.split('@')[0];
+      saveSession(user);
+      setAuthError('');
+      load();
+      mergeGuestDataIntoAccount() || migrateGuestDataIfEmpty();
+      save();
+      await syncInboxFromCloud();
+      await syncAllSharedDecks();
+      if (state.tab === 'account') state.authMode = 'signin';
+      render();
+      initGoogleButton();
+      if (inboxCount()) maybePromptInbox();
+    }
+
+    async function registerWithEmail(name, email, password) {
+      const em = normalizeEmail(email);
+      if (!em || !password || password.length < 8) {
+        setAuthError('Use a valid email and password (8+ characters).');
+        return;
+      }
+      state.authBusy = true;
+      setAuthError('');
+      if (state.ready) render();
+      const db = getAccountsDb();
+      if (Object.values(db.users).some(u => u.email === em)) {
+        setAuthError('An account with this email already exists.');
+        state.authBusy = false;
+        return;
+      }
+      const { hash, salt } = await hashPassword(password);
+      const id = `email_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      db.users[id] = {
+        id, email: em, name: (name || em.split('@')[0]).trim(), provider: 'email',
+        passwordHash: hash, salt, avatar: null, createdAt: new Date().toISOString(),
+      };
+      saveAccountsDb(db);
+      await completeLogin({ id, email: em, name: db.users[id].name, provider: 'email', avatar: null });
+      state.authBusy = false;
+    }
+
+    async function signInWithEmail(email, password) {
+      state.authBusy = true;
+      if (state.ready) render();
+      const em = normalizeEmail(email);
+      const db = getAccountsDb();
+      const user = Object.values(db.users).find(u => u.email === em && u.provider === 'email');
+      if (!user) {
+        setAuthError('No account found for this email.');
+        state.authBusy = false;
+        return;
+      }
+      const { hash } = await hashPassword(password, user.salt);
+      if (hash !== user.passwordHash) {
+        setAuthError('Incorrect password.');
+        state.authBusy = false;
+        return;
+      }
+      await completeLogin({ id: user.id, email: user.email, name: user.name, provider: 'email', avatar: user.avatar });
+      state.authBusy = false;
+    }
+
+    function handleGoogleCredential(response) {
+      try {
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        const em = normalizeEmail(payload.email);
+        const id = `google_${payload.sub}`;
+        const db = getAccountsDb();
+        if (!db.users[id]) {
+          db.users[id] = {
+            id, email: em, name: payload.name || em.split('@')[0], provider: 'google',
+            avatar: payload.picture || null, createdAt: new Date().toISOString(),
+          };
+        } else {
+          db.users[id].name = payload.name || db.users[id].name;
+          db.users[id].avatar = payload.picture || db.users[id].avatar;
+        }
+        saveAccountsDb(db);
+        completeLogin({
+          id, email: em, name: db.users[id].name, provider: 'google', avatar: db.users[id].avatar,
+        }).then(() => { if (!state.splashDone) finishSplash(); });
+      } catch (e) {
+        setAuthError('Google sign-in failed. Try again.');
+        render();
+      }
+    }
+
+    const GOOGLE_LOGO_SVG = '<svg class="g-logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+
+    function renderPageHeader(opts) {
+      const { title, subtitle, backAction, actions } = opts;
+      if (backAction) {
+        return `<header class="app-header">
+          <button class="icon-btn" data-${backAction}>←</button>
+          <div style="flex:1;min-width:0">
+            <div class="page-title">${title}</div>
+            ${subtitle ? `<div class="page-sub">${subtitle}</div>` : ''}
+          </div>
+          ${actions || ''}
+        </header>`;
+      }
+      return `<header class="app-header">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">✨</div>
+          <div style="min-width:0">
+            <div class="page-title">${title}</div>
+            ${subtitle ? `<div class="page-sub">${subtitle}</div>` : ''}
+          </div>
+        </div>
+        ${actions || ''}
+      </header>`;
+    }
+
+    function renderGoogleOneClickBtn(extraClass) {
+      return `<button type="button" class="btn-google-oneclick ${extraClass || ''}" data-google-oneclick aria-label="Continue with Google">
+        ${GOOGLE_LOGO_SVG}
+        <span>Continue with Google</span>
+      </button>
+      <div id="google-signin-fallback" class="google-fallback-host"></div>`;
+    }
+
+    function initGoogleAuth() {
+      const clientId = getGoogleClientId();
+      if (!clientId || !window.google?.accounts?.id) return false;
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        itp_support: true,
+      });
+      return true;
+    }
+
+    function openGoogleAccountChooser() {
+      const el = document.getElementById('google-signin-fallback')
+        || document.getElementById('google-signin-fallback-splash');
+      if (!el || !initGoogleAuth()) return;
+      el.innerHTML = '';
+      el.style.marginTop = '12px';
+      google.accounts.id.renderButton(el, {
+        type: 'standard',
+        theme: 'filled_blue',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        width: Math.min(360, el.parentElement?.offsetWidth || 360),
+      });
+    }
+
+    function triggerGoogleOneClick() {
+      if (state.auth.user) return;
+      const clientId = getGoogleClientId();
+      if (!clientId) {
+        setAuthError('Add your Google Client ID below, tap Save, then try again.');
+        state.tab = 'account';
+        state.view = 'home';
+        if (state.ready) render();
+        else finishSplash();
+        document.querySelector('.schedule-fold')?.setAttribute('open', '');
+        return;
+      }
+      if (!window.google?.accounts?.id) {
+        setAuthError('Google Sign-In is loading… try again in a moment.');
+        if (state.ready) render();
+        setTimeout(triggerGoogleOneClick, 600);
+        return;
+      }
+      setAuthError('');
+      initGoogleAuth();
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          openGoogleAccountChooser();
+        }
+      });
+    }
+
+    function initGoogleButton() {
+      if (state.auth.user) return;
+      const clientId = getGoogleClientId();
+      if (!clientId || !window.google?.accounts?.id) {
+        if (clientId) setTimeout(initGoogleButton, 400);
+      }
+    }
+
+    window.handleGoogleCredential = handleGoogleCredential;
+
+    function signOut() {
+      persistAppData();
+      state.auth.user = null;
+      saveSession(null);
+      setAuthError('');
+      load();
+      state.view = 'home';
+      state.tab = 'account';
+      render();
+      initGoogleButton();
+    }
+
+    state.auth.user = loadSession();
+    if (state.auth.user) {
+      state.userName = state.auth.user.name || state.auth.user.email?.split('@')[0] || '';
+    } else {
+      try {
+        state.userName = localStorage.getItem('shine_user') || localStorage.getItem('flashcards_user') || '';
+      } catch (e) {}
+    }
+
+    // ── Date helpers ──
+    function todayStr() {
+      const d = new Date();
+      return fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    }
+    function fmt(y, m, d) { return `${y}-${pad(m)}-${pad(d)}`; }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function parseDate(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+    function addDaysStr(s, n) {
+      const d = parseDate(s); d.setDate(d.getDate() + n);
+      return fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    }
+    function formatDate(s) {
+      return parseDate(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+    function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+
+    // ── Deck model ──
+    function newDeckSR() {
+      return { repetitions: 0, ease: DEFAULT_ALGO.initialEase, stability: DEFAULT_ALGO.initialStability, intervalDays: 0, lastReview: null };
+    }
+    function newScheduleEntry(date, source = 'auto') {
+      return { id: Date.now() + Math.random(), date, source, completed: false };
+    }
+
+    function cardFront(c) { return c.front || c.en || ''; }
+    function cardBack(c) { return c.back || c.de || ''; }
+
+    function initCard(c) {
+      return {
+        id: c.id,
+        front: cardFront(c),
+        back: cardBack(c),
+        en: cardFront(c),
+        de: cardBack(c),
+        color: c.color || null,
+        leitnerBox: c.leitnerBox || 1,
+        sm2: c.sm2 || { repetitions: 0, easeFactor: 2.5, intervalDays: 0 },
+      };
+    }
+
+    function initCluster(c) {
+      return { id: c.id, name: c.name || 'Cluster', emoji: c.emoji || '📁' };
+    }
+
+    function deckOwnership(d) {
+      if (d?.ownership) return d.ownership;
+      const u = state.auth.user;
+      return {
+        userId: u?.id || 'guest',
+        email: u?.email || null,
+        name: u?.name || state.userName || 'Guest',
+      };
+    }
+
+    function initDeck(d) {
+      return {
+        ...d,
+        clusterId: d.clusterId ?? null,
+        ownership: deckOwnership(d),
+        sharing: d.sharing || { collaborators: [] },
+        access: d.access || null,
+        commerce: d.commerce || { forSale: false, priceCents: null, currency: 'USD', listingId: null },
+        cards: (d.cards || []).map(initCard),
+        sr: d.sr || newDeckSR(),
+        schedule: d.schedule || [],
+        ebbinghaus: d.ebbinghaus === true || (d.algo && d.algo.enabled === true),
+        algo: { ...DEFAULT_ALGO, ...(d.algo || {}), enabled: d.ebbinghaus === true || (d.algo && d.algo.enabled === true) },
+      };
+    }
+
+    function migrateLegacyClusters(decks, clusters) {
+      if (Array.isArray(clusters) && clusters.length) return clusters.map(initCluster);
+      const legacy = [{ id: 1, name: 'Languages', emoji: '🌍' }];
+      decks.forEach(d => { if (d.clusterId == null) d.clusterId = 1; });
+      return legacy.map(initCluster);
+    }
+
+    function loadSampleData() {
+      state.clusters = SAMPLE_CLUSTERS.map(initCluster);
+      state.decks = SAMPLE_DECKS.map(initDeck);
+    }
+
+    function load() {
+      try {
+        const key = activeStorageKey();
+        let stored = localStorage.getItem(key);
+        if (!stored && !state.auth.user) {
+          for (const k of LEGACY_KEYS) {
+            const legacy = localStorage.getItem(k);
+            if (legacy) { stored = legacy; break; }
+          }
+        }
+        const raw = JSON.parse(stored || 'null');
+        if (raw && Array.isArray(raw.decks)) {
+          applyAppData(raw);
+        } else if (!state.auth.user && isOnboarded()) {
+          state.decks = [];
+          state.clusters = [];
+        } else if (!state.auth.user && !isOnboarded()) {
+          state.decks = [];
+          state.clusters = [];
+        } else if (!state.auth.user) {
+          loadSampleData();
+        } else {
+          state.decks = [];
+          state.clusters = [];
+        }
+        if (!state.auth.user && (raw || isOnboarded())) save();
+      } catch (e) {
+        console.warn('Load failed, using defaults', e);
+        if (!state.auth.user) loadSampleData();
+      }
+    }
+    function save() {
+      persistAppData();
+      state.decks.filter(d => isDeckOwner(d) && d.sharing?.collaborators?.length).forEach(d => {
+        d.sharing.collaborators.forEach(c => pushGrantToCloud(c.grantId, d, c.role));
+      });
+    }
+    function clusterById(id) { return state.clusters.find(c => c.id === id); }
+    function decksInCluster(clusterId) {
+      return state.decks.filter(d => clusterId == null ? d.clusterId == null : d.clusterId === clusterId);
+    }
+    function deck() { return state.decks.find(d => d.id === state.deckId); }
+    function deckAlgo(d) { return { ...state.algo, ...(d.algo || {}) }; }
+    function nextId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; }
+
+    // ── Ebbinghaus full implementation ──
+    // Retention R(t) = e^(-t / S)  where S = memory stability (days)
+    function retentionAt(stability, daysSince) {
+      return Math.exp(-daysSince / Math.max(stability, 0.1));
+    }
+
+    function intervalFromStability(S, algo) {
+      // Find t where R(t) = retentionTarget: t = -S * ln(R)
+      const t = -S * Math.log(Math.max(0.01, Math.min(0.99, algo.retentionTarget)));
+      return Math.max(1, Math.round(t * algo.curveSteepness));
+    }
+
+    function getAlgorithm(d) {
+      return deckAlgo(d).algorithm || 'ebbinghaus';
+    }
+
+    function computeEbbinghaus(deck, recallScore) {
+      const algo = deckAlgo(deck);
+      const sr = deck.sr;
+      const passed = recallScore >= 0.6;
+      if (!passed) {
+        sr.repetitions = 0;
+        sr.stability = Math.max(0.5, sr.stability * 0.5);
+        sr.ease = Math.max(algo.minEase, sr.ease - algo.easePenalty);
+        sr.intervalDays = algo.failIntervalDays;
+      } else {
+        const rep = sr.repetitions;
+        if (rep < algo.intervals.length) sr.intervalDays = algo.intervals[rep];
+        else sr.intervalDays = intervalFromStability(sr.stability, algo);
+        sr.stability = sr.stability * (1 + sr.ease * recallScore);
+        sr.ease = Math.min(algo.maxEase, sr.ease + algo.easeBonus * recallScore);
+        sr.repetitions = rep + 1;
+      }
+      sr.lastReview = todayStr();
+      return { nextDate: addDaysStr(todayStr(), sr.intervalDays), intervalDays: sr.intervalDays };
+    }
+
+    function leitnerDaysForBox(box) {
+      return LEITNER_DAYS[Math.max(0, Math.min(4, (box || 1) - 1))];
+    }
+
+    function onCardLeitner(card, recalled) {
+      card.leitnerBox = recalled ? Math.min(5, (card.leitnerBox || 1) + 1) : 1;
+    }
+
+    function onCardSM2(card, recalled) {
+      const q = recalled ? 4 : 1;
+      const sm = card.sm2 || { repetitions: 0, easeFactor: 2.5, intervalDays: 0 };
+      if (q < 3) {
+        sm.repetitions = 0;
+        sm.intervalDays = 1;
+      } else {
+        if (sm.repetitions === 0) sm.intervalDays = 1;
+        else if (sm.repetitions === 1) sm.intervalDays = 6;
+        else sm.intervalDays = Math.round(sm.intervalDays * sm.easeFactor);
+        sm.repetitions += 1;
+        sm.easeFactor = Math.max(1.3, sm.easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+      }
+      card.sm2 = sm;
+    }
+
+    function computeLeitner(deck) {
+      const boxes = deck.cards.map(c => c.leitnerBox || 1);
+      const avg = boxes.reduce((a, b) => a + b, 0) / Math.max(1, boxes.length);
+      const days = leitnerDaysForBox(Math.round(avg));
+      deck.sr.intervalDays = days;
+      deck.sr.lastReview = todayStr();
+      return { nextDate: addDaysStr(todayStr(), days), intervalDays: days };
+    }
+
+    function computeSM2(deck) {
+      const days = Math.max(1, ...deck.cards.map(c => c.sm2?.intervalDays || 1));
+      deck.sr.intervalDays = days;
+      deck.sr.lastReview = todayStr();
+      return { nextDate: addDaysStr(todayStr(), days), intervalDays: days };
+    }
+
+    function computeNextReview(deck, recallScore) {
+      const kind = getAlgorithm(deck);
+      if (kind === 'leitner') return computeLeitner(deck);
+      if (kind === 'sm2') return computeSM2(deck);
+      return computeEbbinghaus(deck, recallScore);
+    }
+
+    function onCardReview(card, deck, recalled) {
+      const kind = getAlgorithm(deck);
+      if (kind === 'leitner') onCardLeitner(card, recalled);
+      else if (kind === 'sm2') onCardSM2(card, recalled);
+    }
+
+    function fillLuminance(hex) {
+      if (!hex || hex[0] !== '#') return 1;
+      const n = hex.length === 4
+        ? hex.slice(1).split('').map(ch => parseInt(ch + ch, 16))
+        : [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map(h => parseInt(h, 16));
+      const [r, g, b] = n.map(v => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    function isDarkFill(hex) {
+      return fillLuminance(hex) < 0.45;
+    }
+
+    function getCardColor(colorId) {
+      return CARD_COLORS.find(x => x.id === colorId) || CARD_COLORS[0];
+    }
+
+    function cardColorStyle(colorId) {
+      const c = getCardColor(colorId);
+      if (!c.hex) return 'border-left:4px solid var(--border)';
+      const dark = isDarkFill(c.hex);
+      const text = dark ? ';color:#fff' : '';
+      return `border-left:4px solid ${c.border};background:${c.hex}${text}`;
+    }
+
+    function cardColorClass(colorId) {
+      const c = getCardColor(colorId);
+      return c.hex && isDarkFill(c.hex) ? 'card-fill-dark' : '';
+    }
+
+    function flipColorStyle(colorId, face) {
+      const c = getCardColor(colorId);
+      if (!c.hex) return face === 'back' ? 'background:var(--blue-light)' : 'background:var(--white)';
+      const dark = isDarkFill(c.hex);
+      const text = dark ? ';color:#fff' : '';
+      return `background:${c.hex};border:2px solid ${c.border}${text}`;
+    }
+
+    function flipColorClass(colorId) {
+      const c = getCardColor(colorId);
+      return c.hex && isDarkFill(c.hex) ? 'flip-fill-dark' : '';
+    }
+
+    function scheduleReview(deck, date, source = 'auto') {
+      if (!deck.schedule) deck.schedule = [];
+      deck.schedule.push(newScheduleEntry(date, source));
+    }
+
+    function sessionsOn(deck, date) {
+      return (deck.schedule || []).filter(s => s.date === date && !s.completed);
+    }
+
+    function completedOn(deck, date) {
+      return (deck.schedule || []).filter(s => s.date === date && s.completed);
+    }
+
+    function nextScheduled(deck) {
+      const upcoming = (deck.schedule || []).filter(s => !s.completed).map(s => s.date).sort();
+      return upcoming[0] || null;
+    }
+
+    function isDue(deck) {
+      return sessionsOn(deck, todayStr()).length > 0;
+    }
+
+    function getOverloadDays(deck) {
+      const algo = deckAlgo(deck);
+      const counts = {};
+      (deck.schedule || []).filter(s => !s.completed).forEach(s => {
+        counts[s.date] = (counts[s.date] || 0) + 1;
+      });
+      return Object.entries(counts).filter(([, c]) => c > algo.maxSessionsPerDay).map(([date, count]) => ({ date, count }));
+    }
+
+    function spreadOverload(deck) {
+      const algo = deckAlgo(deck);
+      const byDate = {};
+      (deck.schedule || []).filter(s => !s.completed).forEach(s => {
+        if (!byDate[s.date]) byDate[s.date] = [];
+        byDate[s.date].push(s);
+      });
+      Object.entries(byDate).forEach(([date, sessions]) => {
+        if (sessions.length <= algo.maxSessionsPerDay) return;
+        sessions.slice(algo.maxSessionsPerDay).forEach(sess => {
+          for (let i = 1; i <= 60; i++) {
+            const target = addDaysStr(date, i);
+            if (sessionsOn(deck, target).length < algo.maxSessionsPerDay) {
+              sess.date = target;
+              break;
+            }
+          }
+        });
+      });
+      save();
+    }
+
+    function clearDay(deck, date) {
+      deck.schedule = (deck.schedule || []).filter(s => s.date !== date || s.completed);
+      save();
+    }
+
+    function rescheduleDay(deck, fromDate, toDate) {
+      sessionsOn(deck, fromDate).forEach(s => { s.date = toDate; });
+      save();
+    }
+
+    function allSessionsOn(date) {
+      const out = [];
+      state.decks.forEach(d => {
+        sessionsOn(d, date).forEach(s => out.push({ deck: d, session: s }));
+      });
+      return out;
+    }
+
+    function countSessionsOn(date) {
+      return state.decks.reduce((n, d) => n + sessionsOn(d, date).length, 0);
+    }
+
+    function globalOverloadDays() {
+      const counts = {};
+      state.decks.forEach(d => {
+        (d.schedule || []).filter(s => !s.completed).forEach(s => {
+          counts[s.date] = (counts[s.date] || 0) + 1;
+        });
+      });
+      const max = state.globalMaxSessionsPerDay;
+      return Object.entries(counts).filter(([, c]) => c > max).map(([date, count]) => ({ date, count }));
+    }
+
+    function spreadGlobalOverload() {
+      const max = state.globalMaxSessionsPerDay;
+      globalOverloadDays().forEach(({ date }) => {
+        const items = allSessionsOn(date);
+        items.slice(max).forEach(({ deck, session }) => {
+          for (let i = 1; i <= 60; i++) {
+            const target = addDaysStr(date, i);
+            if (countSessionsOn(target) < max) {
+              session.date = target;
+              break;
+            }
+          }
+        });
+      });
+      save();
+    }
+
+    function clearGlobalDay(date) {
+      state.decks.forEach(d => clearDay(d, date));
+      save();
+    }
+
+    function deckById(id) { return state.decks.find(d => d.id === id); }
+
+    const DECK_ROLES = {
+      viewer: { label: 'Can view', short: 'View', desc: 'Study and browse' },
+      editor: { label: 'Can edit', short: 'Edit', desc: 'Edit cards and settings' },
+      owner: { label: 'Owner', short: 'Owner', desc: 'Full control' },
+    };
+
+    function deckRole(d) {
+      if (!d) return null;
+      if (d.access?.role) return d.access.role;
+      return 'owner';
+    }
+
+    function isSharedDeck(d) { return !!(d?.access); }
+    function isDeckOwner(d) { return deckRole(d) === 'owner'; }
+    function canEditDeck(d) { return ['owner', 'editor'].includes(deckRole(d)); }
+    function canShareDeck(d) { return isDeckOwner(d); }
+    function canDeleteDeck(d) { return isDeckOwner(d); }
+    function canLeaveDeck(d) { return isSharedDeck(d); }
+    function canChangeDeckSettings(d) { return canEditDeck(d); }
+
+    function ownedDecks() { return state.decks.filter(d => !d.access); }
+    function sharedWithMeDecks() { return state.decks.filter(d => d.access); }
+
+    function renderAccessBadge(d) {
+      const role = deckRole(d);
+      if (role === 'owner') {
+        if (d.sharing?.collaborators?.length) return '<span class="badge-access badge-shared">Shared</span>';
+        return '';
+      }
+      const cls = role === 'editor' ? 'badge-editor' : 'badge-viewer';
+      return `<span class="badge-access ${cls}">${DECK_ROLES[role]?.short || role}</span>`;
+    }
+
+    function isSmartScheduleOn(d) { return !!(d.ebbinghaus || deckAlgo(d).enabled); }
+    function isEbbinghausOn(d) { return isSmartScheduleOn(d); }
+
+    function getDeckPreset(d) {
+      const p = deckAlgo(d).preset;
+      if (p && PRESETS[p]) return p;
+      const r = deckAlgo(d).retentionTarget;
+      if (r >= 0.93) return 'intensive';
+      if (r <= 0.87) return 'relaxed';
+      return 'normal';
+    }
+
+    function applyPreset(d, key) {
+      if (!canChangeDeckSettings(d)) return;
+      const p = PRESETS[key];
+      if (!p) return;
+      const { label, desc, ...algoFields } = p;
+      d.algo = { ...deckAlgo(d), ...algoFields, preset: key, enabled: isEbbinghausOn(d) };
+      save();
+    }
+
+    function seedSmartSchedule(d) {
+      if (!isSmartScheduleOn(d)) return;
+      if (nextScheduled(d)) return;
+      const today = todayStr();
+      scheduleReview(d, today, 'auto');
+      save();
+    }
+
+    function setScheduleMode(d, auto) {
+      if (!canChangeDeckSettings(d)) return;
+      d.ebbinghaus = auto;
+      const a = deckAlgo(d);
+      d.algo = { ...a, enabled: auto };
+      if (auto) {
+        if (!a.preset) applyPreset(d, 'normal');
+        seedSmartSchedule(d);
+      } else save();
+    }
+
+    // ── Splash ──
+    function finishSplash() {
+      if (state.splashDone) return;
+      state.splashDone = true;
+      const splash = document.getElementById('splash');
+      if (splash) splash.classList.add('hide');
+      state.ready = true;
+      try {
+        if (state.pendingShare) maybePromptPendingShare();
+        else if (!isOnboarded() && !state.auth.user) state.modal = { type: 'onboard' };
+        if (state.auth.user) {
+          syncInboxFromCloud().then((added) => {
+            if (added && !state.modal) maybePromptInbox();
+            else if (added) render();
+          });
+        }
+        render();
+      } catch (e) {
+        console.error(e);
+        document.getElementById('app').innerHTML = '<main style="padding:24px"><h2>Something went wrong</h2><p>Please refresh the page.</p></main>';
+      }
+    }
+
+    let splashSceneIndex = 0;
+
+    function pickSplashScene(avoidIndex) {
+      if (SPLASH_SCENES.length <= 1) return 0;
+      let i;
+      do { i = Math.floor(Math.random() * SPLASH_SCENES.length); }
+      while (i === avoidIndex);
+      return i;
+    }
+
+    function splashPersonalLine() {
+      return state.userName
+        ? `${state.userName}, this moment is yours.`
+        : 'This moment is yours.';
+    }
+
+    function preloadSplashImage(url) {
+      const img = new Image();
+      img.src = url;
+    }
+
+    function applySplashScene(index) {
+      const scene = SPLASH_SCENES[index];
+      if (!scene) return;
+      splashSceneIndex = index;
+      try { localStorage.setItem(SPLASH_LAST_SCENE_KEY, String(index)); } catch (e) {}
+
+      const photo = document.getElementById('splash-photo');
+      const content = document.getElementById('splash-content');
+      const nextIndex = pickSplashScene(index);
+      preloadSplashImage(SPLASH_SCENES[nextIndex].image);
+
+      if (photo) {
+        const url = scene.image;
+        photo.style.backgroundImage = `url("${url}")`;
+        photo.classList.remove('is-loading');
+        photo.classList.add('is-ready');
+        const probe = new Image();
+        probe.onerror = () => {
+          photo.style.backgroundImage = 'linear-gradient(145deg,#1e1b4b,#5b5ef7)';
+        };
+        probe.src = url;
+      }
+
+      const essence = document.getElementById('splash-essence');
+      const headline = document.getElementById('splash-headline');
+      const subline = document.getElementById('splash-subline');
+      const personal = document.getElementById('splash-personal');
+      const credit = document.getElementById('splash-credit');
+      if (essence) essence.textContent = scene.essence;
+      if (headline) headline.textContent = scene.headline;
+      if (subline) subline.textContent = scene.subline;
+      if (personal) personal.textContent = splashPersonalLine();
+      if (credit) credit.textContent = scene.credit;
+
+      if (content) {
+        content.classList.remove('splash-in');
+        void content.offsetWidth;
+        content.classList.add('splash-in');
+      }
+    }
+
+    function cycleSplashScene() {
+      applySplashScene(pickSplashScene(splashSceneIndex));
+    }
+
+    function startSplash() {
+      let startIndex = pickSplashScene(-1);
+      try {
+        const saved = parseInt(localStorage.getItem(SPLASH_LAST_SCENE_KEY), 10);
+        if (!Number.isNaN(saved) && saved >= 0 && saved < SPLASH_SCENES.length) {
+          startIndex = pickSplashScene(saved);
+        }
+      } catch (e) {}
+      applySplashScene(startIndex);
+
+      const goGuest = (e) => { e?.preventDefault?.(); e?.stopPropagation?.(); finishSplash(); };
+      window.finishSplash = finishSplash;
+      document.getElementById('splash-begin')?.addEventListener('click', goGuest);
+      document.getElementById('splash-continue')?.addEventListener('click', goGuest);
+      document.getElementById('splash-refresh')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        cycleSplashScene();
+      });
+      document.querySelector('#splash [data-google-oneclick]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerGoogleOneClick();
+      });
+    }
+
+    // ── Render ──
+    function render() {
+      if (!state.ready) return;
+      const app = document.getElementById('app');
+      try {
+        if (state.view === 'study') app.innerHTML = renderStudy();
+        else if (state.view === 'deck') app.innerHTML = renderDeck();
+        else if (state.tab === 'calendar') app.innerHTML = renderGlobalCalendar();
+        else if (state.tab === 'account') app.innerHTML = renderAccount();
+        else app.innerHTML = renderHome();
+        renderModalLayer();
+        if (state.view === 'home' || state.view === 'deck') app.innerHTML += renderBottomNav();
+        paintToast(state.toast);
+        bind();
+        ShineViewport.layout();
+        if (state.modal?.type === 'share-deck') bindShareModalHandlers();
+        if (state.tab === 'account') setTimeout(initGoogleButton, 50);
+      } catch (e) {
+        console.error('Render error', e);
+        app.innerHTML = '<main style="padding:24px"><h2>Something went wrong</h2><p>Please refresh the page.</p></main>';
+      }
+    }
+
+    const NAV_ICONS = {
+      decks: '<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+      calendar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+      account: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+    };
+
+    function renderBottomNav() {
+      return `
+        <nav class="bottom-nav">
+          <button class="${state.tab === 'decks' ? 'active' : ''}" data-tab="decks"><span class="ni">${NAV_ICONS.decks}</span>Decks</button>
+          <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar"><span class="ni">${NAV_ICONS.calendar}</span>Calendar</button>
+          <button class="${state.tab === 'account' ? 'active' : ''}" data-tab="account"><span class="ni">${NAV_ICONS.account}</span>Account${inboxCount() ? `<span class="nav-badge">${inboxCount()}</span>` : ''}</button>
+        </nav>`;
+    }
+
+    function renderAccount() {
+      const u = state.auth.user;
+      if (u) {
+        const avatar = u.avatar
+          ? `<img src="${esc(u.avatar)}" alt="">`
+          : (u.name || '✨').charAt(0).toUpperCase();
+        return `
+          ${renderPageHeader({ title: 'Account', subtitle: 'Your profile on this device' })}
+          <main>
+            <div class="account-card">
+              <div class="account-card-top">
+                <div class="account-avatar">${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : esc(avatar)}</div>
+              </div>
+              <div class="account-card-body">
+                <h2>${esc(u.name)}</h2>
+                <div class="email">${esc(u.email)}</div>
+                <span class="account-badge">${u.provider === 'google' ? 'Signed in with Gmail' : 'Email account'}</span>
+              </div>
+            </div>
+            <div class="panel-card">
+              <h2>Your library</h2>
+              <p class="hint" style="margin:0">${state.clusters.length} cluster${state.clusters.length !== 1 ? 's' : ''} · ${state.decks.length} deck${state.decks.length !== 1 ? 's' : ''} saved on this device</p>
+            </div>
+            ${renderInboxPanel()}
+            ${renderShareImportPanel()}
+            <div class="panel-card">
+              <h2>Backup</h2>
+              <p class="hint" style="margin:0 0 12px">Export your clusters and decks as JSON. Import on another browser or after clearing data.</p>
+              <div class="backup-row">
+                <button type="button" class="btn-outline" data-export-backup>Export</button>
+                <label class="btn-outline" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0">
+                  Import<input type="file" id="import-backup" accept="application/json,.json" hidden />
+                </label>
+              </div>
+            </div>
+            <button class="btn-outline" data-sign-out style="margin-top:10px;color:var(--danger);border-color:#fecaca">Sign out</button>
+          </main>`;
+      }
+
+      const mode = state.authMode;
+      return `
+        ${renderPageHeader({ title: 'Account', subtitle: 'Sign in to keep your library' })}
+        <main>
+          <div class="auth-panel">
+            <h2>Join Shine</h2>
+            <p class="hint">Sign in with Gmail or create an email account. Your library is saved securely on this device.</p>
+            ${state.authError ? `<p style="color:var(--danger);font-size:.82rem;margin-bottom:12px">${esc(state.authError)}</p>` : ''}
+            ${renderGoogleOneClickBtn()}
+            <div class="auth-divider">or continue with email</div>
+            <div class="auth-tabs">
+              <button type="button" class="${mode === 'signin' ? 'active' : ''}" data-auth-mode="signin">Sign in</button>
+              <button type="button" class="${mode === 'register' ? 'active' : ''}" data-auth-mode="register">Create account</button>
+            </div>
+            ${mode === 'register' ? '<input id="auth-name" placeholder="Your name" />' : ''}
+            <input id="auth-email" type="email" placeholder="Email address" autocomplete="username" />
+            <input id="auth-password" type="password" placeholder="Password (8+ characters)" autocomplete="${mode === 'register' ? 'new-password' : 'current-password'}" />
+            <button class="btn-primary" data-auth-submit style="margin-top:12px" ${state.authBusy ? 'disabled' : ''}>${state.authBusy ? 'Please wait…' : (mode === 'register' ? 'Create account' : 'Sign in')}</button>
+            <p class="hint" style="margin-top:14px;margin-bottom:0">Guest mode works too — sign in anytime to keep a personal profile on this device.</p>
+          </div>
+          ${renderShareImportPanel()}
+        </main>`;
+    }
+
+    function renderDeckCard(d) {
+      const due = isDue(d);
+      const next = nextScheduled(d);
+      const shareBtn = canShareDeck(d)
+        ? `<button type="button" class="share" data-share-deck-card="${d.id}" title="Share deck">↗</button>`
+        : '';
+      const removeBtn = canDeleteDeck(d)
+        ? `<button type="button" class="delete" data-del-deck="${d.id}" title="Delete deck">✕</button>`
+        : (canLeaveDeck(d) ? `<button type="button" class="delete" data-leave-deck="${d.id}" title="Leave deck">✕</button>` : '');
+      return `
+        <div class="deck-card" data-open-deck="${d.id}">
+          ${shareBtn}
+          ${removeBtn}
+          <h2>${esc(d.name)}${renderAccessBadge(d)}${isSmartScheduleOn(d) ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}</h2>
+          <p>${esc(d.description || '')}</p>
+          <div class="meta">
+            <span class="due">${due ? 'Scheduled today' : 'On track'}</span>
+            <span class="next">${d.cards.length} cards · ${next ? formatDate(next) : 'Use Calendar'}</span>
+          </div>
+        </div>`;
+    }
+
+    function renderClusterSection(cluster, decks, isOther) {
+      const id = cluster.id;
+      const count = decks.length;
+      return `
+        <details class="cluster-section" open>
+          <summary>
+            <span class="cluster-chip">${cluster.emoji || '📁'}</span>
+            <span>${esc(cluster.name)}</span>
+            <span class="cluster-meta">${count} deck${count !== 1 ? 's' : ''}</span>
+            ${!isOther ? `<span class="cluster-actions" onclick="event.stopPropagation()">
+              <button type="button" data-add-deck-cluster="${id}" title="Add deck">+</button>
+              <button type="button" data-edit-cluster="${id}" title="Edit cluster">✎</button>
+              <button type="button" data-del-cluster="${id}" title="Delete cluster" style="color:var(--danger)">✕</button>
+            </span>` : ''}
+          </summary>
+          <div class="cluster-decks">
+            ${count ? decks.map(renderDeckCard).join('') : `<div class="cluster-empty">No decks yet — tap + to add one.</div>`}
+          </div>
+        </details>`;
+    }
+
+    function ownedInCluster(clusterId) {
+      return ownedDecks().filter(d => clusterId == null ? d.clusterId == null : d.clusterId === clusterId);
+    }
+
+    function renderHome() {
+      const dueDecks = state.decks.filter(isDue);
+      const sections = state.clusters.map(cl => renderClusterSection(cl, ownedInCluster(cl.id))).join('');
+      const other = ownedInCluster(null);
+      const otherSection = other.length ? renderClusterSection({ id: null, name: 'Other', emoji: '📋' }, other, true) : '';
+      const shared = sharedWithMeDecks();
+      const sharedSection = shared.length
+        ? renderClusterSection({ id: 'shared', name: 'Shared with me', emoji: '🤝' }, shared, true)
+        : '';
+      const headerActions = `<div class="header-actions">
+            <button class="icon-btn" data-go-account title="Account">${state.auth.user?.avatar
+              ? `<img src="${esc(state.auth.user.avatar)}" alt="" style="width:22px;height:22px;border-radius:50%">`
+              : '👤'}</button>
+            <button class="icon-btn" data-new-cluster title="New cluster">📁</button>
+          </div>`;
+      return `
+        ${renderPageHeader({ title: 'Shine', subtitle: 'Your knowledge, organized in clusters', actions: headerActions })}
+        <main>
+          ${dueDecks.length ? `<div class="due-hero">
+            <h3>${dueDecks.length} deck${dueDecks.length>1?'s':''} due today</h3>
+            <p>Ready when you are — pick a deck to review.</p>
+            <div class="due-actions">
+              ${dueDecks.map(d => `<button type="button" data-start-deck="${d.id}">Study ${esc(d.name)}</button>`).join('')}
+            </div>
+          </div>` : ''}
+          ${sections || '<div class="empty"><div class="empty-icon">📁</div><p>Create a cluster to organize your decks</p></div>'}
+          ${otherSection}
+          ${sharedSection}
+        </main>
+        <button class="fab" data-new-deck title="New deck">+</button>`;
+    }
+
+    function renderGlobalCalendar() {
+      const y = state.calMonth.getFullYear();
+      const m = state.calMonth.getMonth();
+      const first = new Date(y, m, 1).getDay();
+      const dim = daysInMonth(y, m);
+      const monthName = new Date(y, m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      const selected = state.calSelected || todayStr();
+      const overload = globalOverloadDays();
+
+      let cells = '';
+      for (let i = 0; i < first; i++) cells += '<div class="cal-day blank"></div>';
+      for (let day = 1; day <= dim; day++) {
+        const ds = fmt(y, m + 1, day);
+        const items = allSessionsOn(ds);
+        const doneCount = state.decks.reduce((n, d) => n + completedOn(d, ds).length, 0);
+        const overloaded = items.length > state.globalMaxSessionsPerDay;
+        let cls = 'cal-day';
+        if (ds === todayStr()) cls += ' today';
+        if (ds === selected) cls += ' selected';
+        if (overloaded) cls += ' overload';
+        const badges = items.slice(0, 2).map(({ deck }) =>
+          `<span class="sess deck">${esc(deck.name.slice(0, 8))}</span>`
+        ).join('') + (items.length > 2 ? `<span class="sess">+${items.length - 2}</span>` : '');
+        cells += `<div class="${cls}" data-pick-day="${ds}"><span class="num">${day}</span>${badges}</div>`;
+      }
+
+      const selItems = allSessionsOn(selected);
+      const deckOpts = state.decks.map(d =>
+        `<option value="${d.id}" ${state.scheduleDeckId == d.id ? 'selected' : ''}>${esc(d.name)}</option>`
+      ).join('');
+
+      return `
+        ${renderPageHeader({ title: 'Study Calendar', subtitle: 'Plan reviews across all decks' })}
+        <main>
+          ${overload.length ? `
+            <div class="overload-box">
+              <h3>⚠ ${overload.length} busy day${overload.length > 1 ? 's' : ''}</h3>
+              <p style="font-size:.82rem;color:#92400e;margin-bottom:8px">More than ${state.globalMaxSessionsPerDay} deck sessions on one day.</p>
+              <button class="btn-warn" data-spread-global>Spread sessions out</button>
+              ${overload.map(o => `<button class="btn-warn" style="margin-top:6px" data-clear-global="${o.date}">Clear ${formatDate(o.date)} (${o.count})</button>`).join('')}
+            </div>` : ''}
+          <div class="cal-wrap">
+            <div class="cal-header">
+              <button data-cal-prev>‹</button>
+              <h2>${monthName}</h2>
+              <button data-cal-next>›</button>
+            </div>
+            <div class="cal-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+            <div class="cal-grid">${cells}</div>
+            <div class="cal-legend">
+              <span><i style="background:var(--blue)"></i>Deck scheduled</span>
+              <span><i style="border:2px solid var(--danger);background:#fef2f2"></i>Too many</span>
+            </div>
+          </div>
+          <div class="day-panel">
+            <h3>${formatDate(selected)}</h3>
+            ${selItems.length ? selItems.map(({ deck, session }) => `
+              <div class="session-row">
+                <span>${esc(deck.name)} <small style="color:var(--muted)">(${session.source})</small></span>
+                <span>
+                  ${selected <= todayStr() ? `<button class="btn-danger-sm" style="margin-right:6px;background:var(--blue-light);color:var(--blue);border-color:var(--blue-soft)" data-start-deck="${deck.id}">Study</button>` : ''}
+                  <button class="btn-danger-sm" data-rm-session="${session.id}" data-rm-deck="${deck.id}">Remove</button>
+                </span>
+              </div>`).join('') : '<p style="font-size:.85rem;color:var(--muted)">Nothing scheduled — add a deck below</p>'}
+            <div class="field" style="margin-top:12px">
+              <label>Which deck?</label>
+              <select id="sched-deck">${deckOpts || '<option value="">No decks</option>'}</select>
+            </div>
+            <button class="btn-primary" data-add-global-session="${selected}">Add study session</button>
+            ${selItems.length ? `<button class="btn-warn" data-clear-global="${selected}">Clear this day</button>` : ''}
+          </div>
+          <details class="schedule-fold" id="cal-settings-fold" ${state.calSettingsOpen ? 'open' : ''}>
+            <summary>Calendar options <span class="sched-line">Busy-day limit: ${state.globalMaxSessionsPerDay}</span></summary>
+            <div class="sched-body">
+              <p class="hint" style="margin-bottom:10px">Warn when more than this many decks land on the same day.</p>
+              <div class="stepper">
+                <button data-max-dec>−</button>
+                <span class="val">${state.globalMaxSessionsPerDay}</span>
+                <button data-max-inc>+</button>
+                <span style="font-size:.85rem;color:var(--muted)">decks / day</span>
+              </div>
+            </div>
+          </details>
+        </main>`;
+    }
+
+    function renderClusterOptions(selectedId) {
+      const opts = `<option value="">Other (no cluster)</option>` + state.clusters.map(c =>
+        `<option value="${c.id}" ${selectedId === c.id ? 'selected' : ''}>${c.emoji} ${esc(c.name)}</option>`
+      ).join('');
+      return opts;
+    }
+
+    function renderDeck() {
+      const d = deck();
+      if (!d) return '';
+      const ebbOn = isEbbinghausOn(d);
+      const cl = clusterById(d.clusterId);
+      const role = deckRole(d);
+      const deckTitle = `${esc(d.name)}${renderAccessBadge(d)}${ebbOn ? `<span class="badge-ebb">${ALGORITHMS[getAlgorithm(d)]?.short || 'Auto'}</span>` : ''}`;
+      const accessBanner = isSharedDeck(d)
+        ? `<div class="access-banner">${role === 'viewer'
+          ? `<strong>View only</strong> — shared by ${esc(d.access.ownerName || d.access.ownerEmail || 'someone')}. You can study but not edit.`
+          : `<strong>Can edit</strong> — shared by ${esc(d.access.ownerName || d.access.ownerEmail || 'someone')}. You can change cards and settings.`}</div>`
+        : '';
+      const clusterField = canChangeDeckSettings(d) ? `
+          <div class="field" style="margin-bottom:14px">
+            <label>Cluster</label>
+            <select id="deck-cluster">${renderClusterOptions(d.clusterId)}</select>
+          </div>` : '';
+      const fab = canEditDeck(d) ? `<button class="fab" data-new-card>+</button>` : '';
+      return `
+        ${renderPageHeader({
+          title: deckTitle,
+          subtitle: cl ? `${cl.emoji} ${esc(cl.name)}` : (isSharedDeck(d) ? 'Shared deck' : 'Other'),
+          backAction: 'go-home'
+        })}
+        <main>
+          ${accessBanner}
+          ${clusterField}
+          ${canChangeDeckSettings(d) ? renderScheduleCard(d) : ''}
+          ${renderDeckCards(d)}
+          ${canLeaveDeck(d) ? `<button type="button" class="btn-outline" data-leave-deck="${d.id}" style="margin-top:14px;color:var(--danger);border-color:#fecaca;width:100%">Leave shared deck</button>` : ''}
+        </main>
+        ${fab}`;
+    }
+
+    function scheduleSummary(d) {
+      if (!isSmartScheduleOn(d)) return '📅 Manual · use Calendar tab';
+      const alg = ALGORITHMS[getAlgorithm(d)]?.label || 'Smart';
+      const next = nextScheduled(d);
+      const extra = getAlgorithm(d) === 'ebbinghaus' ? ' · ' + PRESETS[getDeckPreset(d)].label : '';
+      return `🧠 ${alg}${extra}${next ? ' · ' + formatDate(next) : ''}`;
+    }
+
+    function renderScheduleCard(d) {
+      const ebbOn = isEbbinghausOn(d);
+      const preset = getDeckPreset(d);
+      const next = nextScheduled(d);
+      return `
+        <details class="schedule-fold" id="deck-schedule-fold" ${state.deckScheduleOpen ? 'open' : ''}>
+          <summary>Review schedule <span class="sched-line">${scheduleSummary(d)}</span></summary>
+          <div class="sched-body">
+          <h3>When should you review?</h3>
+          <p class="hint">Optional — defaults work for most people.</p>
+          <div class="mode-pick">
+            <button type="button" class="mode-opt ${!ebbOn ? 'active' : ''}" data-set-mode="manual">
+              <div class="mo-icon">📅</div>
+              <strong>I'll pick the dates</strong>
+              <span>Use the Calendar tab to schedule study days yourself.</span>
+            </button>
+            <button type="button" class="mode-opt ${ebbOn ? 'active' : ''}" data-set-mode="auto">
+              <div class="mo-icon">🧠</div>
+              <strong>Smart schedule</strong>
+              <span>After each session, the app picks your next review day.</span>
+            </button>
+          </div>
+          ${ebbOn ? `
+            <p style="font-size:.78rem;font-weight:600;color:var(--muted);margin:14px 0 8px">ALGORITHM</p>
+            <div class="algo-pick">
+              ${Object.entries(ALGORITHMS).map(([k, a]) => `
+                <button type="button" class="algo-opt ${getAlgorithm(d) === k ? 'active' : ''}" data-set-algorithm="${k}">
+                  <strong>${a.label}</strong>
+                  <span>${a.desc}</span>
+                </button>`).join('')}
+            </div>
+            ${getAlgorithm(d) === 'ebbinghaus' ? `
+            <p style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px">HOW OFTEN (Ebbinghaus)</p>
+            <div class="preset-row">
+              ${Object.entries(PRESETS).map(([k, p]) =>
+                `<button type="button" class="preset-btn ${preset === k ? 'active' : ''}" data-preset="${k}" title="${p.desc}">${p.label}</button>`
+              ).join('')}
+            </div>
+            <p style="font-size:.75rem;color:var(--muted);margin-top:8px">${PRESETS[preset].desc}</p>` : `
+            <p style="font-size:.75rem;color:var(--muted);margin-top:4px">${ALGORITHMS[getAlgorithm(d)].desc}</p>
+            ${getAlgorithm(d) === 'leitner' ? '<p class="card-meta">Each card moves through 5 boxes (1→14 days). Got it = up, Missed = back to box 1.</p>' : ''}
+            ${getAlgorithm(d) === 'sm2' ? '<p class="card-meta">Each card gets its own ease factor. Intervals grow: 1d → 6d → then × ease.</p>' : ''}`}
+            ${next ? `<p style="font-size:.8rem;color:var(--blue);margin-top:10px">Next scheduled: <strong>${formatDate(next)}</strong></p>` : ''}
+            <details class="advanced">
+              <summary>Advanced tuning</summary>
+              ${renderAdvancedFields(d)}
+            </details>` : `
+            <p style="font-size:.8rem;color:var(--muted);margin-top:10px">Go to <strong>Calendar</strong> (bottom) to add this deck to a day.</p>`}
+          </div>
+        </details>`;
+    }
+
+    function renderAdvancedFields(d) {
+      const a = deckAlgo(d);
+      return `
+        <div class="field" style="margin-top:12px"><label>Days between reviews (first few rounds)</label>
+          <input id="a-intervals" value="${a.intervals.join(', ')}" />
+          <small>Comma-separated, e.g. 1, 2, 4, 7, 15</small>
+        </div>
+        <div class="field"><label>Days to wait after a missed session</label>
+          <input id="a-fail" type="number" min="1" max="14" value="${a.failIntervalDays}" />
+        </div>
+        <button class="btn-outline" data-save-advanced>Apply advanced settings</button>`;
+    }
+
+    function renderColorPicker(selected) {
+      return `<div class="color-pick">${CARD_COLORS.map(c => {
+        const dark = c.hex && isDarkFill(c.hex);
+        return `<button type="button" class="color-swatch ${c.id === 'none' ? 'none' : ''} ${dark ? 'swatch-dark' : ''} ${(selected || 'none') === c.id ? 'active' : ''}"
+          data-pick-color="${c.id}" title="${c.label || c.id}"
+          style="${c.hex ? 'background:' + c.hex + ';border-color:' + c.border + (dark ? ';color:#fff' : '') : ''}">${dark ? 'A' : ''}</button>`;
+      }).join('')}</div>`;
+    }
+
+    function shuffleArray(items) {
+      const a = [...items];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function shuffleDeck(d) {
+      d.cards = shuffleArray(d.cards);
+      save();
+    }
+
+    function syncCardOrderFromDom() {
+      const list = document.getElementById('card-list');
+      const d = deck();
+      if (!list || !d) return;
+      const order = [...list.querySelectorAll('.card-item')].map(el => +el.dataset.cardId);
+      d.cards.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+      save();
+    }
+
+    function flipReorder(list, mutate) {
+      const nodes = [...list.children];
+      const tops = new Map(nodes.map(c => [c, c.getBoundingClientRect().top]));
+      mutate();
+      nodes.forEach(c => {
+        if (!list.contains(c)) return;
+        const dy = tops.get(c) - c.getBoundingClientRect().top;
+        if (!dy) return;
+        c.style.transition = 'none';
+        c.style.transform = `translateY(${dy}px)`;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            c.style.transition = '';
+            c.style.transform = '';
+          });
+        });
+      });
+    }
+
+    function placeholderTarget(list, placeholder, clientY) {
+      const siblings = [...list.children].filter(c => c !== placeholder);
+      for (const sib of siblings) {
+        const rect = sib.getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) return sib;
+      }
+      return null;
+    }
+
+    function movePlaceholder(list, placeholder, clientY) {
+      const target = placeholderTarget(list, placeholder, clientY);
+      if (target) {
+        if (placeholder.nextElementSibling === target) return;
+        flipReorder(list, () => list.insertBefore(placeholder, target));
+      } else if (placeholder !== list.lastElementChild) {
+        flipReorder(list, () => list.appendChild(placeholder));
+      }
+    }
+
+    function clearDragStyles(item) {
+      item.classList.remove('drag-lifted');
+      ['position', 'left', 'top', 'width', 'margin', 'zIndex', 'transition', 'transform'].forEach(k => { item.style[k] = ''; });
+    }
+
+    function bindCardReorder() {
+      const list = document.getElementById('card-list');
+      if (!list) return;
+
+      let drag = null;
+
+      const cleanupListeners = () => {
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', endDrag);
+        document.removeEventListener('pointercancel', endDrag);
+      };
+
+      const finishDrop = () => {
+        if (!drag) return;
+        const { item, list, placeholder, moved } = drag;
+        list.classList.remove('is-dragging');
+        cleanupListeners();
+
+        if (!moved) {
+          if (placeholder) placeholder.remove();
+          if (item.parentElement === document.body) list.appendChild(item);
+          clearDragStyles(item);
+          drag = null;
+          return;
+        }
+
+        const targetTop = placeholder.getBoundingClientRect().top;
+        item.style.transition = 'top .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease';
+        item.style.top = `${targetTop}px`;
+
+        let settled = false;
+        const settle = () => {
+          if (settled) return;
+          settled = true;
+          list.insertBefore(item, placeholder);
+          placeholder.remove();
+          clearDragStyles(item);
+          syncCardOrderFromDom();
+          drag = null;
+        };
+
+        const onDone = (ev) => {
+          if (ev.propertyName !== 'top') return;
+          item.removeEventListener('transitionend', onDone);
+          settle();
+        };
+        item.addEventListener('transitionend', onDone);
+        setTimeout(settle, 280);
+      };
+
+      const endDrag = (e) => {
+        if (!drag) return;
+        if (e && e.pointerId != null && e.pointerId !== drag.pointerId) return;
+        finishDrop();
+      };
+
+      const onPointerMove = (e) => {
+        if (!drag || e.pointerId !== drag.pointerId) return;
+        if (!drag.moved && Math.abs(e.clientY - drag.startY) < 6) return;
+
+        if (!drag.moved) {
+          drag.moved = true;
+          const { item, list } = drag;
+          const rect = item.getBoundingClientRect();
+          const placeholder = document.createElement('div');
+          placeholder.className = 'card-placeholder';
+          placeholder.style.height = `${rect.height}px`;
+          list.insertBefore(placeholder, item);
+          drag.placeholder = placeholder;
+          list.classList.add('is-dragging');
+          item.classList.add('drag-lifted');
+          document.body.appendChild(item);
+          Object.assign(item.style, {
+            position: 'fixed',
+            left: `${rect.left}px`,
+            top: `${rect.top}px`,
+            width: `${rect.width}px`,
+            margin: '0',
+            zIndex: '1000',
+          });
+        }
+
+        e.preventDefault();
+        drag.item.style.top = `${e.clientY - drag.offsetY}px`;
+        movePlaceholder(drag.list, drag.placeholder, e.clientY);
+      };
+
+      list.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        if (e.target.closest('.card-actions') || e.target.closest('button')) return;
+        const item = e.target.closest('.card-item');
+        if (!item || !list.contains(item)) return;
+
+        const rect = item.getBoundingClientRect();
+        drag = {
+          item,
+          list,
+          placeholder: null,
+          pointerId: e.pointerId,
+          startY: e.clientY,
+          offsetY: e.clientY - rect.top,
+          moved: false,
+        };
+
+        document.addEventListener('pointermove', onPointerMove, { passive: false });
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
+      });
+    }
+
+    function renderDeckCards(d) {
+      const alg = getAlgorithm(d);
+      const editable = canEditDeck(d);
+      const cards = d.cards.map(c => `
+        <div class="card-item ${cardColorClass(c.color)}" style="${cardColorStyle(c.color)}" data-card-id="${c.id}">
+          <div class="en">${esc(cardFront(c))}</div>
+          <div class="de">${esc(cardBack(c))}</div>
+          ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
+          ${isSmartScheduleOn(d) && alg === 'sm2' ? `<div class="card-meta">SM-2 · ${c.sm2?.intervalDays || 0}d interval · ease ${(c.sm2?.easeFactor || 2.5).toFixed(1)}</div>` : ''}
+          ${editable ? `<div class="card-actions">
+            <button data-edit-card="${c.id}">Edit</button>
+            <button data-del-card="${c.id}" style="color:var(--danger)">Delete</button>
+          </div>` : ''}
+        </div>`).join('');
+      const shareBtn = canShareDeck(d) ? `<button type="button" class="btn-outline" data-share-deck>↗ Share</button>` : '';
+      return `
+        <div class="deck-toolbar">
+          ${d.cards.length ? `<button class="btn-primary" data-study-now>Study now (${d.cards.length} cards)</button>` : ''}
+          ${shareBtn}
+          ${d.cards.length && editable ? `<button type="button" class="btn-outline btn-shuffle" data-shuffle-deck>🔀 Shuffle cards</button>` : ''}
+        </div>
+        ${cards ? `<div class="card-list" id="card-list">${cards}</div>` : `<div class="empty"><div class="empty-icon">🃏</div><p>${editable ? 'No cards yet — tap + to add your first one' : 'No cards in this deck yet'}</p></div>`}`;
+    }
+
+    function renderStudy() {
+      const s = state.study;
+      if (!s) return '';
+      const d = deck();
+      if (s.done) {
+        const total = s.correct + s.incorrect;
+        const score = total ? s.correct / total : 0;
+        const pct = Math.round(score * 100);
+        return `
+          ${renderPageHeader({ title: 'Session complete', subtitle: esc(d.name), backAction: 'end-study' })}
+          <main style="text-align:center;padding-top:12px">
+            <div class="study-result">
+              <div class="score">${pct}%</div>
+              <p class="stats">Got it ${s.correct} · Missed ${s.incorrect}</p>
+            </div>
+            ${isSmartScheduleOn(d)
+              ? `<p style="color:var(--muted);margin-bottom:20px;line-height:1.5">${ALGORITHMS[getAlgorithm(d)].label} scheduled your next review in <strong>${d.sr.intervalDays} day(s)</strong>.</p>`
+              : '<p style="color:var(--muted);margin-bottom:20px;line-height:1.5">Add your next study day on the <strong>Calendar</strong> tab.</p>'}
+            <button class="btn-primary" data-end-study>Back to deck</button>
+          </main>`;
+      }
+      const c = s.cards[s.index];
+      const prog = ((s.index + (s.flipped ? .5 : 0)) / s.cards.length) * 100;
+      return `
+        ${renderPageHeader({ title: 'Review', subtitle: `${s.index + 1} of ${s.cards.length}`, backAction: 'end-study' })}
+        <main>
+          <div class="progress-row"><span>Card ${s.index + 1}</span><span>${s.flipped ? 'Answer' : 'Question'}</span></div>
+          <div class="progress-bar"><div style="width:${prog}%"></div></div>
+          <div class="flip-card ${s.flipped?'flipped':''}" data-flip>
+            <div class="flip-inner">
+              <div class="flip-face flip-front ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'front')}">${esc(cardFront(c))}</div>
+              <div class="flip-face flip-back ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'back')}">${esc(cardBack(c))}</div>
+            </div>
+          </div>
+          ${s.flipped ? `<div class="study-actions">
+            <button class="missed" data-ans="0">Missed</button>
+            <button class="got-it" data-ans="1">Got it</button>
+          </div>` : `<button class="show-answer" data-flip>Show answer</button>`}
+        </main>`;
+    }
+
+    function renderModal() {
+      const m = state.modal;
+      if (m.type === 'onboard') return `<div class="modal-bg"><div class="modal">
+        <h2>Welcome to Shine ✨</h2>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;line-height:1.45">How would you like to start?</p>
+        <button class="btn-primary" data-onboard-demo style="margin-bottom:10px">Explore with sample decks</button>
+        <button class="btn-outline" data-onboard-empty>Start with an empty library</button>
+      </div></div>`;
+      if (m.type === 'welcome') return `<div class="modal-bg"><div class="modal">
+        <h2>Welcome to Shine</h2>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:10px">Your name appears on your opening landing page.</p>
+        <input id="welcome-name" placeholder="Your name" value="${esc(state.userName || '')}" />
+        <div class="modal-actions"><button class="confirm" data-save-welcome>Continue</button></div>
+      </div></div>`;
+      if (m.type === 'cluster') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+        <h2>${m.edit ? 'Edit' : 'New'} cluster</h2>
+        <input id="m-cluster-name" placeholder="Cluster name" value="${esc(m.name || '')}" />
+        <input id="m-cluster-emoji" placeholder="Emoji (e.g. 🌍)" value="${esc(m.emoji || '📁')}" maxlength="4" />
+        <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-cluster>Save</button></div>
+      </div></div>`;
+      if (m.type === 'deck') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+        <h2>New deck</h2>
+        <div class="field"><label>Cluster</label>
+          <select id="m-cluster">${renderClusterOptions(m.clusterId ?? null)}</select>
+        </div>
+        <input id="m-name" placeholder="Deck name" />
+        <textarea id="m-desc" placeholder="What knowledge lives here?" rows="2"></textarea>
+        <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-deck>Save</button></div>
+      </div></div>`;
+      if (m.type === 'card') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+        <h2>${m.edit?'Edit':'New'} card</h2>
+        <input id="m-front" placeholder="Question / front" value="${esc(m.front || m.en || '')}" />
+        <input id="m-back" placeholder="Answer / back" value="${esc(m.back || m.de || '')}" />
+        <label style="font-size:.78rem;font-weight:600;color:var(--muted)">Card color</label>
+        ${renderColorPicker(m.color || 'none')}
+        <input type="hidden" id="m-color" value="${esc(m.color || 'none')}" />
+        <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-card>Save</button></div>
+      </div></div>`;
+      if (m.type === 'share-deck') {
+        const d = deckById(m.deckId);
+        const cardCount = d?.cards.length || 0;
+        const shareRole = m.shareRole || 'viewer';
+        const link = shareDeckLink(m.deckId);
+        const canLink = link && link.length <= SHARE_URL_MAX;
+        return `<div class="modal-bg modal-bg-sheet" data-close><div class="modal modal-share" onclick="event.stopPropagation()">
+          <div class="share-sheet-handle" aria-hidden="true"></div>
+          <button type="button" class="modal-close" data-close aria-label="Close">✕</button>
+          <div class="share-header">
+            <h2>Share deck</h2>
+            <p class="share-deck-name">${esc(d?.name || 'Deck')}</p>
+            <p class="share-meta">${cardCount} card${cardCount !== 1 ? 's' : ''}</p>
+          </div>
+          <div class="share-sheet-body">
+            <div class="share-section">
+              <div class="share-section-title">Invite someone</div>
+              <div class="role-segment">
+                <button type="button" class="${shareRole === 'viewer' ? 'active' : ''}" data-pick-role="viewer">
+                  Can view<span>${DECK_ROLES.viewer.desc}</span>
+                </button>
+                <button type="button" class="${shareRole === 'editor' ? 'active' : ''}" data-pick-role="editor">
+                  Can edit<span>${DECK_ROLES.editor.desc}</span>
+                </button>
+              </div>
+              <div class="share-invite-row">
+                <input id="share-deck-email" type="email" placeholder="Email address" autocomplete="email" inputmode="email" value="${esc(m.recipientEmail || '')}" />
+                <button type="button" class="btn-send" data-send-deck-email>Send</button>
+              </div>
+              <p class="share-hint-inline">They&apos;ll accept in Account with the access you choose.</p>
+            </div>
+            ${renderCollaboratorsList(d)}
+            ${renderDeviceUserChips(listDeviceUsers())}
+            <div class="share-more">
+              <button type="button" class="share-more-toggle" aria-expanded="${m.shareMoreOpen ? 'true' : 'false'}">Other ways to share</button>
+              <div class="share-more-panel${m.shareMoreOpen ? ' open' : ''}">
+                <div class="share-more-body">
+                  ${typeof navigator !== 'undefined' && (navigator.share || window.ShineAndroid) ? '<button type="button" class="btn-outline" data-native-share-deck>Send file via Messages or Mail</button>' : ''}
+                  <button type="button" class="btn-outline" data-download-share-deck>Download deck file</button>
+                  ${canLink ? '<button type="button" class="btn-outline" data-copy-share-link>Copy share link</button>' : ''}
+                  ${!canLink ? '<p class="share-note">This deck is too large for a link — use email invite or download.</p>' : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>`;
+      }
+      if (m.type === 'import-share') {
+        const delivery = m.delivery || {};
+        const payload = m.payload || delivery.payload;
+        const src = payload?.deck || {};
+        const cardCount = (src.cards || []).length;
+        const role = delivery.role || payload?.access?.role || 'viewer';
+        const roleLabel = DECK_ROLES[role]?.label || role;
+        const hint = payload?.cluster;
+        const matched = clusterHintMatch(hint);
+        const defaultCluster = matched?.id ?? (hint?.name ? '__new__' : (state.clusters[0]?.id ?? null));
+        const createOpt = hint?.name && !matched
+          ? `<option value="__new__" ${defaultCluster === '__new__' ? 'selected' : ''}>${esc(hint.emoji || '📁')} Create “${esc(hint.name)}”</option>`
+          : '';
+        return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+          <h2>Accept shared deck</h2>
+          <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;line-height:1.45">
+            <strong>${esc(src.name || delivery.deckName || 'Shared deck')}</strong> · ${cardCount} card${cardCount !== 1 ? 's' : ''}
+            <br><span style="font-size:.8rem">Access: <strong>${esc(roleLabel)}</strong>${delivery.fromName ? ` · from ${esc(delivery.fromName)}` : ''}</span>
+          </p>
+          <div class="field">
+            <label>Save to cluster</label>
+            <select id="import-share-cluster">${createOpt}${renderClusterOptions(typeof defaultCluster === 'number' ? defaultCluster : null)}</select>
+          </div>
+          <div class="modal-actions">
+            <button class="cancel" data-close>Cancel</button>
+            <button class="confirm" data-confirm-import-share>Accept deck</button>
+          </div>
+        </div></div>`;
+      }
+      return '';
+    }
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+    function startStudy(d) {
+      state.study = { cards: [...d.cards].sort(() => Math.random() - .5), index: 0, flipped: false, correct: 0, incorrect: 0, done: false };
+      state.view = 'study';
+      render();
+    }
+
+    function finishStudy() {
+      const s = state.study;
+      const d = deck();
+      if (!s || !d) return;
+      const total = s.correct + s.incorrect;
+      const score = total ? s.correct / total : 0.5;
+      const today = todayStr();
+
+      sessionsOn(d, today).forEach(sess => { sess.completed = true; });
+
+      if (isSmartScheduleOn(d)) {
+        const { nextDate } = computeNextReview(d, score);
+        scheduleReview(d, nextDate, 'auto');
+      }
+      save();
+    }
+
+    function bind() {
+      document.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', () => {
+        state.tab = el.dataset.tab;
+        state.view = 'home';
+        state.deckId = null;
+        if (state.tab === 'calendar') state.calSelected = todayStr();
+        render();
+      }));
+      document.querySelector('[data-go-account]')?.addEventListener('click', () => {
+        state.tab = 'account';
+        state.view = 'home';
+        state.deckId = null;
+        render();
+      });
+      document.querySelectorAll('[data-auth-mode]').forEach(el => el.addEventListener('click', () => {
+        state.authMode = el.dataset.authMode;
+        setAuthError('');
+        render();
+      }));
+      const submitAuth = async () => {
+        if (state.authBusy) return;
+        const email = document.getElementById('auth-email')?.value;
+        const password = document.getElementById('auth-password')?.value;
+        const name = document.getElementById('auth-name')?.value;
+        if (state.authMode === 'register') await registerWithEmail(name, email, password);
+        else await signInWithEmail(email, password);
+        render();
+      };
+      document.querySelector('[data-auth-submit]')?.addEventListener('click', submitAuth);
+      document.getElementById('auth-password')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitAuth();
+      });
+      document.querySelector('[data-onboard-demo]')?.addEventListener('click', () => {
+        loadSampleData();
+        markOnboarded();
+        save();
+        state.modal = null;
+        showToast('Sample decks loaded — explore and edit freely');
+        render();
+      });
+      document.querySelector('[data-onboard-empty]')?.addEventListener('click', () => {
+        state.decks = [];
+        state.clusters = [];
+        markOnboarded();
+        save();
+        state.modal = null;
+        showToast('Empty library — create your first cluster');
+        render();
+      });
+      document.querySelector('[data-export-backup]')?.addEventListener('click', exportUserData);
+      document.getElementById('import-backup')?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) importUserData(file);
+        e.target.value = '';
+      });
+      document.getElementById('import-share-file')?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) importSharedDeckFile(file);
+        e.target.value = '';
+      });
+      document.querySelectorAll('[data-share-deck-card]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        openShareDeckModal(+el.dataset.shareDeckCard);
+      }));
+      document.querySelector('[data-share-deck]')?.addEventListener('click', () => {
+        const d = deck();
+        if (d) openShareDeckModal(d.id);
+      });
+      document.querySelector('[data-confirm-import-share]')?.addEventListener('click', () => {
+        const delivery = state.modal?.delivery || {
+          payload: state.modal?.payload,
+          role: state.modal?.payload?.access?.role,
+          grantId: state.modal?.payload?.access?.grantId,
+        };
+        if (!delivery.payload) return;
+        const val = document.getElementById('import-share-cluster')?.value;
+        const clusterId = val === '__new__' ? '__new__' : (val ? parseInt(val, 10) : null);
+        try {
+          const deckId = acceptSharedDeck(delivery, { clusterId });
+          if (state.modal?.deliveryId) dismissInboxItem(state.modal.deliveryId);
+          state.modal = null;
+          state.deckId = deckId;
+          state.view = 'deck';
+          const roleLabel = DECK_ROLES[deckRole(deckById(deckId))]?.label || 'access';
+          showToast(`Deck added · ${roleLabel}`);
+          render();
+        } catch (e) {
+          showToast(e.message || 'Could not accept deck');
+        }
+      });
+      document.querySelectorAll('[data-accept-inbox]').forEach(el => el.addEventListener('click', () => {
+        const item = getInboxForCurrentUser().find(i => i.id === el.dataset.acceptInbox);
+        if (!item) return;
+        state.modal = { type: 'import-share', delivery: item, payload: item.payload, deliveryId: item.id };
+        render();
+      }));
+      document.querySelectorAll('[data-dismiss-inbox]').forEach(el => el.addEventListener('click', () => {
+        dismissInboxItem(el.dataset.dismissInbox);
+        showToast('Deck dismissed');
+        render();
+      }));
+      document.querySelector('[data-sign-out]')?.addEventListener('click', () => {
+        if (confirm('Sign out of Shine?')) signOut();
+      });
+      document.querySelectorAll('[data-google-oneclick]').forEach(el => el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerGoogleOneClick();
+      }));
+      document.querySelector('[data-go-home]')?.addEventListener('click', () => { state.view = 'home'; state.deckId = null; render(); });
+      document.querySelectorAll('[data-open-deck]').forEach(el => el.addEventListener('click', e => {
+        if (e.target.closest('[data-del-deck]') || e.target.closest('[data-leave-deck]') || e.target.closest('[data-share-deck-card]')) return;
+        state.deckId = +el.dataset.openDeck;
+        state.view = 'deck';
+        const d = deckById(state.deckId);
+        if (d?.access?.grantId) {
+          syncSharedDeckFromGrant(d).then(() => render());
+        } else {
+          render();
+        }
+      }));
+      document.querySelectorAll('[data-del-deck]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        const d = deckById(+el.dataset.delDeck);
+        if (!d || !canDeleteDeck(d)) return;
+        if (confirm('Delete deck?')) { state.decks = state.decks.filter(x => x.id !== d.id); save(); render(); }
+      }));
+      document.querySelectorAll('[data-leave-deck]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = +el.dataset.leaveDeck;
+        if (!confirm('Leave this shared deck? Your study progress for it will be removed.')) return;
+        leaveSharedDeck(id);
+        if (state.deckId === id) { state.deckId = null; state.view = 'home'; }
+        showToast('Left shared deck');
+        render();
+      }));
+      document.querySelector('[data-new-deck]')?.addEventListener('click', () => {
+        state.modal = { type: 'deck', clusterId: state.clusters[0]?.id ?? null };
+        render();
+      });
+      document.querySelector('[data-new-cluster]')?.addEventListener('click', () => { state.modal = { type: 'cluster' }; render(); });
+      document.querySelectorAll('[data-add-deck-cluster]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        state.modal = { type: 'deck', clusterId: +el.dataset.addDeckCluster };
+        render();
+      }));
+      document.querySelectorAll('[data-edit-cluster]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        const cl = clusterById(+el.dataset.editCluster);
+        if (cl) state.modal = { type: 'cluster', edit: cl.id, name: cl.name, emoji: cl.emoji };
+        render();
+      }));
+      document.querySelectorAll('[data-del-cluster]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = +el.dataset.delCluster;
+        const count = decksInCluster(id).length;
+        const msg = count
+          ? `Delete this cluster? ${count} deck(s) will move to Other.`
+          : 'Delete this empty cluster?';
+        if (!confirm(msg)) return;
+        state.decks.forEach(d => { if (d.clusterId === id) d.clusterId = null; });
+        state.clusters = state.clusters.filter(c => c.id !== id);
+        save();
+        render();
+      }));
+      document.getElementById('deck-cluster')?.addEventListener('change', (e) => {
+        const d = deck();
+        if (!d) return;
+        const val = e.target.value;
+        d.clusterId = val ? parseInt(val, 10) : null;
+        save();
+        render();
+      });
+      document.querySelector('[data-new-card]')?.addEventListener('click', () => {
+        if (!canEditDeck(deck())) { showToast('View-only access'); return; }
+        state.modal = { type: 'card' }; render();
+      });
+      document.getElementById('deck-schedule-fold')?.addEventListener('toggle', (e) => {
+        state.deckScheduleOpen = e.target.open;
+      });
+      document.getElementById('cal-settings-fold')?.addEventListener('toggle', (e) => {
+        state.calSettingsOpen = e.target.open;
+      });
+      document.querySelectorAll('[data-set-mode]').forEach(el => el.addEventListener('click', () => {
+        state.deckScheduleOpen = true;
+        setScheduleMode(deck(), el.dataset.setMode === 'auto');
+        render();
+      }));
+      document.querySelectorAll('[data-preset]').forEach(el => el.addEventListener('click', () => {
+        state.deckScheduleOpen = true;
+        applyPreset(deck(), el.dataset.preset);
+        render();
+      }));
+      document.querySelectorAll('[data-set-algorithm]').forEach(el => el.addEventListener('click', () => {
+        state.deckScheduleOpen = true;
+        const d = deck();
+        d.algo = { ...deckAlgo(d), algorithm: el.dataset.setAlgorithm, enabled: true };
+        d.ebbinghaus = true;
+        save();
+        render();
+      }));
+      document.querySelectorAll('[data-pick-color]').forEach(el => el.addEventListener('click', () => {
+        const inp = document.getElementById('m-color');
+        if (inp) inp.value = el.dataset.pickColor;
+        document.querySelectorAll('[data-pick-color]').forEach(s => s.classList.toggle('active', s.dataset.pickColor === el.dataset.pickColor));
+      }));
+      document.querySelector('[data-cal-prev]')?.addEventListener('click', () => {
+        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() - 1, 1); render();
+      });
+      document.querySelector('[data-cal-next]')?.addEventListener('click', () => {
+        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() + 1, 1); render();
+      });
+      document.querySelectorAll('[data-pick-day]').forEach(el => el.addEventListener('click', () => {
+        state.calSelected = el.dataset.pickDay; render();
+      }));
+      document.querySelectorAll('[data-add-global-session]').forEach(el => el.addEventListener('click', () => {
+        const deckId = parseInt(document.getElementById('sched-deck')?.value, 10);
+        const d = deckById(deckId);
+        if (!d) return;
+        scheduleReview(d, el.dataset.addGlobalSession, 'manual');
+        save(); render();
+      }));
+      document.querySelectorAll('[data-rm-session]').forEach(el => el.addEventListener('click', () => {
+        const id = +el.dataset.rmSession;
+        const d = deckById(+el.dataset.rmDeck) || deck();
+        if (d) { d.schedule = d.schedule.filter(s => s.id !== id); save(); render(); }
+      }));
+      document.querySelectorAll('[data-clear-global]').forEach(el => el.addEventListener('click', () => {
+        if (confirm('Remove all deck sessions on this day?')) { clearGlobalDay(el.dataset.clearGlobal); render(); }
+      }));
+      document.querySelector('[data-spread-global]')?.addEventListener('click', () => { spreadGlobalOverload(); render(); });
+      document.querySelector('[data-max-inc]')?.addEventListener('click', () => {
+        state.globalMaxSessionsPerDay = Math.min(10, state.globalMaxSessionsPerDay + 1);
+        save(); render();
+      });
+      document.querySelector('[data-max-dec]')?.addEventListener('click', () => {
+        state.globalMaxSessionsPerDay = Math.max(1, state.globalMaxSessionsPerDay - 1);
+        save(); render();
+      });
+      document.querySelectorAll('[data-start-deck]').forEach(el => el.addEventListener('click', () => {
+        const d = deckById(+el.dataset.startDeck);
+        if (d) { state.deckId = d.id; startStudy(d); }
+      }));
+      document.querySelector('[data-study-now]')?.addEventListener('click', () => startStudy(deck()));
+      document.querySelector('[data-shuffle-deck]')?.addEventListener('click', () => {
+        const d = deck();
+        if (!canEditDeck(d)) return;
+        shuffleDeck(d);
+        render();
+      });
+      if (canEditDeck(deck())) bindCardReorder();
+      document.querySelectorAll('[data-end-study]').forEach(el => el.addEventListener('click', () => {
+        const s = state.study;
+        if (s && !s.done && (s.correct + s.incorrect) > 0) {
+          if (!confirm('End session early? Your progress will be saved.')) return;
+          if (!s.applied) { finishStudy(); s.applied = true; }
+        }
+        state.study = null;
+        state.view = 'deck';
+        render();
+      }));
+      document.querySelector('[data-save-advanced]')?.addEventListener('click', () => {
+        state.deckScheduleOpen = true;
+        const d = deck();
+        const intervals = document.getElementById('a-intervals').value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => n > 0);
+        d.algo = {
+          ...deckAlgo(d),
+          intervals: intervals.length ? intervals : deckAlgo(d).intervals,
+          failIntervalDays: parseInt(document.getElementById('a-fail').value, 10) || 1,
+          enabled: true,
+        };
+        save(); render();
+      });
+      document.querySelectorAll('[data-edit-card]').forEach(el => el.addEventListener('click', () => {
+        const d = deck();
+        if (!canEditDeck(d)) return;
+        const c = d.cards.find(x => x.id === +el.dataset.editCard);
+        state.modal = { type: 'card', edit: c.id, front: cardFront(c), back: cardBack(c), color: c.color || 'none' }; render();
+      }));
+      document.querySelectorAll('[data-del-card]').forEach(el => el.addEventListener('click', () => {
+        const d = deck();
+        if (!canEditDeck(d)) return;
+        if (confirm('Delete card?')) { d.cards = d.cards.filter(c => c.id !== +el.dataset.delCard); save(); render(); }
+      }));
+      document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => { state.modal = null; render(); }));
+      document.querySelector('[data-save-welcome]')?.addEventListener('click', () => {
+        const n = document.getElementById('welcome-name').value.trim();
+        if (n) {
+          state.userName = n;
+          try { localStorage.setItem('shine_user', n); } catch (_) {}
+        }
+        state.modal = null; render();
+      });
+      document.querySelector('[data-save-cluster]')?.addEventListener('click', () => {
+        const name = document.getElementById('m-cluster-name').value.trim();
+        if (!name) return;
+        const emoji = document.getElementById('m-cluster-emoji').value.trim() || '📁';
+        if (state.modal.edit) {
+          const cl = clusterById(state.modal.edit);
+          if (cl) { cl.name = name; cl.emoji = emoji; }
+        } else {
+          state.clusters.push(initCluster({ id: nextId(state.clusters), name, emoji }));
+        }
+        save(); state.modal = null; render();
+      });
+      document.querySelector('[data-save-deck]')?.addEventListener('click', () => {
+        const name = document.getElementById('m-name').value.trim();
+        if (!name) return;
+        const desc = document.getElementById('m-desc').value.trim();
+        const clusterVal = document.getElementById('m-cluster')?.value;
+        const clusterId = clusterVal ? parseInt(clusterVal, 10) : null;
+        state.decks.unshift(initDeck({ id: nextId(state.decks), name, description: desc, clusterId, cards: [] }));
+        save(); state.modal = null; render();
+      });
+      document.querySelector('[data-save-card]')?.addEventListener('click', () => {
+        const front = document.getElementById('m-front').value.trim();
+        const back = document.getElementById('m-back').value.trim();
+        if (!front || !back) return;
+        const d = deck();
+        if (!canEditDeck(d)) return;
+        const colorVal = document.getElementById('m-color')?.value || 'none';
+        const color = colorVal === 'none' ? null : colorVal;
+        if (state.modal.edit) {
+          const c = d.cards.find(x => x.id === state.modal.edit);
+          Object.assign(c, initCard({ ...c, front, back, color }));
+        } else {
+          d.cards.push(initCard({ id: nextId(d.cards), front, back, color }));
+        }
+        save(); state.modal = null; render();
+      });
+      const flip = () => { if (state.study && !state.study.done) { state.study.flipped = !state.study.flipped; render(); } };
+      document.querySelector('[data-flip]')?.addEventListener('click', flip);
+      document.querySelectorAll('[data-ans]').forEach(el => el.addEventListener('click', () => {
+        const ok = el.dataset.ans === '1';
+        const d = deck();
+        const cardRef = state.study.cards[state.study.index];
+        const real = d?.cards.find(c => c.id === cardRef.id);
+        if (real && d) onCardReview(real, d, ok);
+        if (ok) state.study.correct++; else state.study.incorrect++;
+        state.study.flipped = false;
+        if (state.study.index + 1 >= state.study.cards.length) {
+          state.study.done = true;
+          if (!state.study.applied) { finishStudy(); state.study.applied = true; }
+        } else state.study.index++;
+        render();
+      }));
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (!state.ready) return;
+      const key = activeStorageKey();
+      if (e.key === key || e.key === SESSION_KEY) {
+        if (e.key === SESSION_KEY) state.auth.user = loadSession();
+        load();
+        render();
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+        .then(() => navigator.serviceWorker.register('sw.js?v=10'))
+        .catch(() => {});
+    }
+
+  </script>
+  <script>
+    const ShineViewport = {
+      shell: null,
+      scrollEl: null,
+      raf: 0,
+      modalObserver: null,
+      pollTimer: null,
+
+      init() {
+        this.shell = document.getElementById('shine-viewport');
+        this.scrollEl = document.getElementById('shine-scroll');
+        const root = document.documentElement;
+        if (window.ShineAndroid) root.classList.add('is-android');
+        if (window.matchMedia('(max-width: 720px)').matches || 'ontouchstart' in window) {
+          root.classList.add('is-mobile');
+        }
+        this.applyNativeMetrics();
+        const schedule = () => {
+          cancelAnimationFrame(this.raf);
+          this.raf = requestAnimationFrame(() => this.layout());
+        };
+        window.visualViewport?.addEventListener('resize', schedule);
+        window.visualViewport?.addEventListener('scroll', schedule);
+        window.addEventListener('resize', schedule);
+        window.addEventListener('orientationchange', () => setTimeout(schedule, 160));
+        if (window.ShineAndroid) {
+          this.pollTimer = setInterval(schedule, 400);
+        }
+        schedule();
+      },
+
+      applyNativeMetrics() {
+        try {
+          const insets = JSON.parse(window.ShineAndroid?.getInsets?.() || 'null');
+          if (insets) applyShineInsets(insets.top, insets.bottom, insets.left, insets.right);
+        } catch (e) {}
+        try {
+          const vp = JSON.parse(window.ShineAndroid?.getViewport?.() || 'null');
+          if (vp?.width > 0 && vp?.height > 0) {
+            document.documentElement.style.setProperty('--native-vw', `${vp.width}px`);
+            document.documentElement.style.setProperty('--native-vh', `${vp.height}px`);
+          }
+        } catch (e) {}
+      },
+
+      readMetrics() {
+        const root = document.documentElement;
+        const vv = window.visualViewport;
+        let width = vv?.width ?? window.innerWidth;
+        let height = vv?.height ?? window.innerHeight;
+        let top = vv?.offsetTop ?? 0;
+        let left = vv?.offsetLeft ?? 0;
+        const nativeW = parseFloat(getComputedStyle(root).getPropertyValue('--native-vw'));
+        const nativeH = parseFloat(getComputedStyle(root).getPropertyValue('--native-vh'));
+        if (nativeW > 0) width = Math.min(width, nativeW);
+        if (nativeH > 0 && (!vv || height > nativeH)) height = Math.min(height, nativeH);
+        const safeTop = parseFloat(getComputedStyle(root).getPropertyValue('--safe-top')) || 0;
+        const safeBottom = parseFloat(getComputedStyle(root).getPropertyValue('--safe-bottom')) || 0;
+        const safeLeft = parseFloat(getComputedStyle(root).getPropertyValue('--safe-left')) || 0;
+        const safeRight = parseFloat(getComputedStyle(root).getPropertyValue('--safe-right')) || 0;
+        const keyboard = Math.max(0, window.innerHeight - height - top);
+        return { width, height, top, left, safeTop, safeBottom, safeLeft, safeRight, keyboard };
+      },
+
+      layout() {
+        if (!this.shell) return;
+        const m = this.readMetrics();
+        const root = document.documentElement;
+        this.shell.style.width = `${m.width}px`;
+        this.shell.style.height = `${m.height}px`;
+        this.shell.style.transform = `translate3d(${m.left}px, ${m.top}px, 0)`;
+        root.style.setProperty('--vv-width', `${m.width}px`);
+        root.style.setProperty('--vv-height', `${m.height}px`);
+        root.style.setProperty('--app-vh', `${m.height}px`);
+        root.style.setProperty('--vv-top', `${m.top}px`);
+        root.style.setProperty('--vv-left', `${m.left}px`);
+        root.style.setProperty('--keyboard-gap', `${m.keyboard}px`);
+        const inner = Math.max(200, m.height - m.safeTop - m.safeBottom);
+        root.style.setProperty('--modal-max-h', `${inner}px`);
+        root.style.setProperty('--share-sheet-max-h', `${Math.max(160, m.height - m.safeTop - 4)}px`);
+        this.layoutShareSheet();
+        this.layoutChrome();
+      },
+
+      layoutShareSheet() {
+        const modal = document.querySelector('.modal-share');
+        const body = document.querySelector('.share-sheet-body');
+        if (!modal || !body) return;
+        const m = this.readMetrics();
+        const header = modal.querySelector('.share-header');
+        const handle = modal.querySelector('.share-sheet-handle');
+        const chrome = (handle?.offsetHeight || 0) + (header?.offsetHeight || 0) + 6;
+        const sheetMax = Math.max(140, m.height - m.safeTop - 2);
+        const bodyMax = Math.max(80, sheetMax - chrome - m.safeBottom);
+        modal.style.maxHeight = `${sheetMax}px`;
+        body.style.maxHeight = `${bodyMax}px`;
+      },
+
+      layoutChrome() {
+        const m = this.readMetrics();
+        const navW = Math.max(200, Math.min(452, m.width - 28));
+        document.querySelectorAll('.bottom-nav').forEach((nav) => {
+          nav.style.width = `${navW}px`;
+          nav.style.maxWidth = `${navW}px`;
+        });
+      },
+
+      onModalOpen() {
+        this.layout();
+        this.modalObserver?.disconnect();
+        const modal = document.querySelector('.modal-share');
+        if (modal && window.ResizeObserver) {
+          this.modalObserver = new ResizeObserver(() => this.layoutShareSheet());
+          this.modalObserver.observe(modal);
+        }
+      },
+
+      onModalClose() {
+        this.modalObserver?.disconnect();
+        this.modalObserver = null;
+      },
+    };
+
+    function applyShineInsets(top, bottom, left, right) {
+      const root = document.documentElement;
+      root.style.setProperty('--safe-top', `${top || 0}px`);
+      root.style.setProperty('--safe-bottom', `${bottom || 0}px`);
+      root.style.setProperty('--safe-left', `${left || 0}px`);
+      root.style.setProperty('--safe-right', `${right || 0}px`);
+      ShineViewport.layout();
+    }
+    window.applyShineInsets = applyShineInsets;
+
+    window.applyShineViewport = () => {
+      ShineViewport.applyNativeMetrics();
+      ShineViewport.layout();
+    };
+
+    ShineViewport.init();
+    captureShareFromUrl();
+    startSplash();
+    load();
+  </script>
+</body>
+</html>
