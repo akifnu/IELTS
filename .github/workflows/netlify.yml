@@ -22,6 +22,7 @@ jobs:
       - name: Prepare web config
         run: |
           cp flashcards/web/auth-config.example.js flashcards/web/auth-config.js
+          sed -i 's/\r$//' flashcards/web/.gitignore
           sed -i '/^auth-config\.js$/d' flashcards/web/.gitignore
 
       - name: Deploy to Netlify

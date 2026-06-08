@@ -24,7 +24,8 @@ jobs:
       - name: Prepare web config
         run: |
           cp flashcards/web/auth-config.example.js flashcards/web/auth-config.js
-          # peaceiris skips gitignored files; allow auth-config.js in the gh-pages commit
+          # peaceiris skips gitignored files; .gitignore may use CRLF on Windows
+          sed -i 's/\r$//' flashcards/web/.gitignore
           sed -i '/^auth-config\.js$/d' flashcards/web/.gitignore
 
       - name: Deploy to gh-pages
