@@ -304,6 +304,7 @@
     .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:300;animation:fadeIn .25s ease}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
     .modal{background:var(--surface);border-radius:24px;padding:24px;width:100%;max-width:400px;box-shadow:var(--shadow-lg);animation:modalIn .35s var(--ease);border:1px solid var(--glass-border)}
+    .modal-stable,.modal-bg.modal-stable{animation:none!important}
     @keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
     .modal h2{margin-bottom:12px;color:var(--text);font-size:1.2rem;font-weight:800;letter-spacing:-.02em}
     .modal input,.modal textarea,.auth-panel input{
@@ -866,11 +867,147 @@
       return false;
     }
 
+    function isShareModalOpen() {
+      return state.modal?.type === 'share-deck' && !!document.querySelector('.modal-share');
+    }
+
+    function paintToast(msg) {
+      let el = document.querySelector('.toast');
+      if (!msg) {
+        el?.remove();
+        return;
+      }
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'toast';
+        el.setAttribute('role', 'status');
+        document.getElementById('app')?.appendChild(el);
+      }
+      el.textContent = msg;
+    }
+
     function showToast(msg) {
       state.toast = msg;
-      if (state.ready) render();
+      if (state.ready) {
+        if (isShareModalOpen()) paintToast(msg);
+        else render();
+      }
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => { state.toast = null; if (state.ready) render(); }, 2800);
+      showToast._t = setTimeout(() => {
+        state.toast = null;
+        if (!state.ready) return;
+        if (isShareModalOpen()) paintToast(null);
+        else render();
+      }, 2800);
+    }
+
+    function captureShareModalUi() {
+      return {
+        scrollTop: document.querySelector('.modal-share')?.scrollTop ?? 0,
+        moreOpen: document.querySelector('.share-more')?.open ?? false,
+      };
+    }
+
+    function restoreShareModalUi(ui) {
+      if (!ui) return;
+      const modal = document.querySelector('.modal-share');
+      const bg = document.querySelector('.modal-bg');
+      modal?.classList.add('modal-stable');
+      bg?.classList.add('modal-stable');
+      if (modal) modal.scrollTop = ui.scrollTop;
+      const more = document.querySelector('.share-more');
+      if (more) more.open = ui.moreOpen;
+    }
+
+    function patchShareModal() {
+      if (state.modal?.type !== 'share-deck') {
+        render();
+        return;
+      }
+      const ui = captureShareModalUi();
+      render();
+      restoreShareModalUi(ui);
+    }
+
+    function bindShareCollaboratorHandlers() {
+      document.querySelectorAll('[data-update-collab-idx]').forEach(el => el.addEventListener('change', () => {
+        const deckId = state.modal?.deckId;
+        const d = deckById(deckId);
+        if (!d) return;
+        const collab = d.sharing?.collaborators?.[+el.dataset.updateCollabIdx];
+        if (!collab) return;
+        ensureCollaborator(deckId, collab.email, el.value);
+        const label = el.closest('.collab-item')?.querySelector('.collab-role-label');
+        if (label) label.textContent = DECK_ROLES[el.value]?.label || el.value;
+        showToast('Access updated');
+      }));
+      document.querySelectorAll('[data-revoke-collab-idx]').forEach(el => el.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        const d = deckById(deckId);
+        if (!d) return;
+        const collab = d.sharing?.collaborators?.[+el.dataset.revokeCollabIdx];
+        if (!collab) return;
+        if (!confirm(`Remove access for ${collab.email}?`)) return;
+        revokeCollaborator(deckId, collab.email);
+        const section = document.getElementById('share-collab-section');
+        el.closest('.collab-item')?.remove();
+        if (section && !section.querySelector('.collab-item')) section.remove();
+        showToast('Access removed');
+      }));
+    }
+
+    function bindShareModalHandlers() {
+      const getSelectedShareRole = () => {
+        const active = document.querySelector('[data-pick-role].active');
+        return active?.dataset.pickRole || state.modal?.shareRole || 'viewer';
+      };
+      const submitSendDeck = async (email) => {
+        const deckId = state.modal?.deckId;
+        if (!deckId) return;
+        const role = getSelectedShareRole();
+        try {
+          const { cloudOk, role: sentRole } = await sendDeckToUser(email, deckId, role);
+          const roleLabel = DECK_ROLES[sentRole]?.label || sentRole;
+          state.modal = { type: 'share-deck', deckId, shareRole: sentRole, recipientEmail: '' };
+          showToast(cloudOk || !getShareApiUrl()
+            ? `Invite sent · ${roleLabel}`
+            : `Saved on this device · ${roleLabel}`);
+          patchShareModal();
+        } catch (e) {
+          showToast(e.message || 'Could not send deck');
+        }
+      };
+      document.querySelectorAll('[data-pick-role]').forEach(el => el.addEventListener('click', () => {
+        if (state.modal?.type !== 'share-deck') return;
+        const role = el.dataset.pickRole;
+        if (state.modal.shareRole === role) return;
+        state.modal.shareRole = role;
+        document.querySelectorAll('[data-pick-role]').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.pickRole === role);
+        });
+      }));
+      document.querySelector('[data-send-deck-email]')?.addEventListener('click', () => {
+        submitSendDeck(document.getElementById('share-deck-email')?.value);
+      });
+      document.getElementById('share-deck-email')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitSendDeck(e.target.value);
+      });
+      document.querySelectorAll('[data-send-deck-user]').forEach(el => el.addEventListener('click', () => {
+        submitSendDeck(el.dataset.sendDeckUser);
+      }));
+      document.querySelector('[data-copy-share-link]')?.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) copyShareDeckLink(deckId);
+      });
+      document.querySelector('[data-download-share-deck]')?.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) shareDeckFile(deckId);
+      });
+      document.querySelector('[data-native-share-deck]')?.addEventListener('click', async () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) await shareDeckNative(deckId);
+      });
+      bindShareCollaboratorHandlers();
     }
 
     function isOnboarded() {
@@ -1386,7 +1523,7 @@
       const collabs = d.sharing?.collaborators || [];
       if (!collabs.length) return '';
       return `
-        <div class="share-section">
+        <div class="share-section" id="share-collab-section">
           <div class="share-section-title">People with access</div>
           <div class="collab-list">
             ${collabs.map((c, i) => `
@@ -2300,6 +2437,7 @@
         if (state.view === 'home' || state.view === 'deck') app.innerHTML += renderBottomNav();
         if (state.toast) app.innerHTML += `<div class="toast" role="status">${esc(state.toast)}</div>`;
         bind();
+        if (state.modal?.type === 'share-deck') bindShareModalHandlers();
         if (state.tab === 'account') setTimeout(initGoogleButton, 50);
       } catch (e) {
         console.error('Render error', e);
@@ -3119,77 +3257,6 @@
       document.querySelector('[data-share-deck]')?.addEventListener('click', () => {
         const d = deck();
         if (d) openShareDeckModal(d.id);
-      });
-      const getSelectedShareRole = () => {
-        const active = document.querySelector('[data-pick-role].active');
-        return active?.dataset.pickRole || state.modal?.shareRole || 'viewer';
-      };
-      const submitSendDeck = async (email) => {
-        const deckId = state.modal?.deckId;
-        if (!deckId) return;
-        const role = getSelectedShareRole();
-        try {
-          const { cloudOk, role: sentRole } = await sendDeckToUser(email, deckId, role);
-          const roleLabel = DECK_ROLES[sentRole]?.label || sentRole;
-          state.modal = { type: 'share-deck', deckId, shareRole: sentRole, recipientEmail: '' };
-          showToast(cloudOk || !getShareApiUrl()
-            ? `Invite sent · ${roleLabel}`
-            : `Saved on this device · ${roleLabel}`);
-          render();
-        } catch (e) {
-          showToast(e.message || 'Could not send deck');
-        }
-      };
-      document.querySelectorAll('[data-pick-role]').forEach(el => el.addEventListener('click', () => {
-        if (state.modal?.type !== 'share-deck') return;
-        const role = el.dataset.pickRole;
-        if (state.modal.shareRole === role) return;
-        state.modal.shareRole = role;
-        document.querySelectorAll('[data-pick-role]').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.pickRole === role);
-        });
-      }));
-      document.querySelectorAll('[data-update-collab-idx]').forEach(el => el.addEventListener('change', () => {
-        const deckId = state.modal?.deckId;
-        const d = deckById(deckId);
-        if (!d) return;
-        const collab = d.sharing?.collaborators?.[+el.dataset.updateCollabIdx];
-        if (!collab) return;
-        ensureCollaborator(deckId, collab.email, el.value);
-        showToast('Access updated');
-        render();
-      }));
-      document.querySelectorAll('[data-revoke-collab-idx]').forEach(el => el.addEventListener('click', () => {
-        const deckId = state.modal?.deckId;
-        const d = deckById(deckId);
-        if (!d) return;
-        const collab = d.sharing?.collaborators?.[+el.dataset.revokeCollabIdx];
-        if (!collab) return;
-        if (!confirm(`Remove access for ${collab.email}?`)) return;
-        revokeCollaborator(deckId, collab.email);
-        showToast('Access removed');
-        render();
-      }));
-      document.querySelector('[data-send-deck-email]')?.addEventListener('click', () => {
-        submitSendDeck(document.getElementById('share-deck-email')?.value);
-      });
-      document.getElementById('share-deck-email')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') submitSendDeck(e.target.value);
-      });
-      document.querySelectorAll('[data-send-deck-user]').forEach(el => el.addEventListener('click', () => {
-        submitSendDeck(el.dataset.sendDeckUser);
-      }));
-      document.querySelector('[data-copy-share-link]')?.addEventListener('click', () => {
-        const deckId = state.modal?.deckId;
-        if (deckId) copyShareDeckLink(deckId);
-      });
-      document.querySelector('[data-download-share-deck]')?.addEventListener('click', () => {
-        const deckId = state.modal?.deckId;
-        if (deckId) shareDeckFile(deckId);
-      });
-      document.querySelector('[data-native-share-deck]')?.addEventListener('click', async () => {
-        const deckId = state.modal?.deckId;
-        if (deckId) await shareDeckNative(deckId);
       });
       document.querySelector('[data-confirm-import-share]')?.addEventListener('click', () => {
         const delivery = state.modal?.delivery || {
