@@ -44,7 +44,17 @@
     .btn-outline{width:100%;padding:14px;background:var(--white);color:var(--blue);border:2px solid var(--blue);border-radius:14px;font-weight:600;cursor:pointer;margin-bottom:10px}
     .btn-warn{width:100%;padding:12px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:12px;font-weight:600;cursor:pointer;margin-top:8px}
     .btn-danger-sm{padding:8px 12px;background:#fef2f2;color:var(--danger);border:1px solid #fecaca;border-radius:10px;font-size:.8rem;font-weight:600;cursor:pointer}
-    .card-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+    .card-list{display:flex;flex-direction:column;gap:10px}
+    .deck-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+    .deck-toolbar .btn-primary{margin-bottom:0}
+    .btn-shuffle{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:0}
+    .card-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:0;transition:box-shadow .15s,opacity .15s}
+    .card-item.dragging{opacity:.92;box-shadow:0 8px 24px rgba(21,101,192,.2);z-index:2;position:relative}
+    .card-item.drag-over{box-shadow:0 0 0 2px var(--blue-soft)}
+    .card-row{display:flex;gap:10px;align-items:flex-start}
+    .drag-handle{flex-shrink:0;width:28px;height:36px;border:none;background:var(--bg);border-radius:8px;color:var(--muted);cursor:grab;font-size:1rem;line-height:1;padding:0;touch-action:none;user-select:none}
+    .drag-handle:active{cursor:grabbing;background:var(--blue-light);color:var(--blue)}
+    .card-body{flex:1;min-width:0}
     .card-item .en{font-weight:600} .card-item .de{color:var(--blue);margin-top:4px;font-size:1.05rem}
     .card-item.card-fill-dark .de{color:rgba(255,255,255,.92)}
     .card-item.card-fill-dark .card-meta{color:rgba(255,255,255,.75)}
@@ -894,22 +904,103 @@
       }).join('')}</div>`;
     }
 
+    function shuffleArray(items) {
+      const a = [...items];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function shuffleDeck(d) {
+      d.cards = shuffleArray(d.cards);
+      save();
+    }
+
+    function syncCardOrderFromDom() {
+      const list = document.getElementById('card-list');
+      const d = deck();
+      if (!list || !d) return;
+      const order = [...list.querySelectorAll('.card-item')].map(el => +el.dataset.cardId);
+      d.cards.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+      save();
+    }
+
+    function bindCardReorder() {
+      const list = document.getElementById('card-list');
+      if (!list) return;
+
+      list.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          const item = handle.closest('.card-item');
+          if (!item) return;
+          item.classList.add('dragging');
+          handle.setPointerCapture(e.pointerId);
+
+          const onMove = (ev) => {
+            const y = ev.clientY;
+            const siblings = [...list.querySelectorAll('.card-item')].filter(c => c !== item);
+            siblings.forEach(c => c.classList.remove('drag-over'));
+            let insertBefore = null;
+            for (const sib of siblings) {
+              const rect = sib.getBoundingClientRect();
+              if (y < rect.top + rect.height / 2) {
+                insertBefore = sib;
+                break;
+              }
+            }
+            if (insertBefore) {
+              insertBefore.classList.add('drag-over');
+              list.insertBefore(item, insertBefore);
+            } else if (siblings.length) {
+              siblings[siblings.length - 1].classList.add('drag-over');
+              list.appendChild(item);
+            }
+          };
+
+          const onEnd = () => {
+            item.classList.remove('dragging');
+            list.querySelectorAll('.card-item').forEach(c => c.classList.remove('drag-over'));
+            try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', onEnd);
+            handle.removeEventListener('pointercancel', onEnd);
+            syncCardOrderFromDom();
+          };
+
+          handle.addEventListener('pointermove', onMove);
+          handle.addEventListener('pointerup', onEnd);
+          handle.addEventListener('pointercancel', onEnd);
+        });
+      });
+    }
+
     function renderDeckCards(d) {
       const alg = getAlgorithm(d);
       const cards = d.cards.map(c => `
-        <div class="card-item ${cardColorClass(c.color)}" style="${cardColorStyle(c.color)}">
-          <div class="en">${esc(c.en)}</div>
-          <div class="de">${esc(c.de)}</div>
-          ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
-          ${isSmartScheduleOn(d) && alg === 'sm2' ? `<div class="card-meta">SM-2 · ${c.sm2?.intervalDays || 0}d interval · ease ${(c.sm2?.easeFactor || 2.5).toFixed(1)}</div>` : ''}
+        <div class="card-item ${cardColorClass(c.color)}" style="${cardColorStyle(c.color)}" data-card-id="${c.id}">
+          <div class="card-row">
+            <button type="button" class="drag-handle" aria-label="Drag to reorder">⠿</button>
+            <div class="card-body">
+              <div class="en">${esc(c.en)}</div>
+              <div class="de">${esc(c.de)}</div>
+              ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
+              ${isSmartScheduleOn(d) && alg === 'sm2' ? `<div class="card-meta">SM-2 · ${c.sm2?.intervalDays || 0}d interval · ease ${(c.sm2?.easeFactor || 2.5).toFixed(1)}</div>` : ''}
+            </div>
+          </div>
           <div class="card-actions">
             <button data-edit-card="${c.id}">Edit</button>
             <button data-del-card="${c.id}" style="color:var(--danger)">Delete</button>
           </div>
         </div>`).join('');
       return `
-        ${d.cards.length ? `<button class="btn-primary" data-study-now>Study now (${d.cards.length} cards)</button>` : ''}
-        ${cards || '<div class="empty"><p>No cards yet — tap + to add</p></div>'}`;
+        ${d.cards.length ? `<div class="deck-toolbar">
+          <button class="btn-primary" data-study-now>Study now (${d.cards.length} cards)</button>
+          <button type="button" class="btn-outline btn-shuffle" data-shuffle-deck>🔀 Shuffle cards</button>
+        </div>` : ''}
+        ${cards ? `<div class="card-list" id="card-list">${cards}</div>` : '<div class="empty"><p>No cards yet — tap + to add</p></div>'}`;
     }
 
     function renderStudy() {
@@ -1090,6 +1181,11 @@
         if (d) { state.deckId = d.id; startStudy(d); }
       }));
       document.querySelector('[data-study-now]')?.addEventListener('click', () => startStudy(deck()));
+      document.querySelector('[data-shuffle-deck]')?.addEventListener('click', () => {
+        shuffleDeck(deck());
+        render();
+      });
+      bindCardReorder();
       document.querySelectorAll('[data-end-study]').forEach(el => el.addEventListener('click', () => {
         state.study = null; state.view = 'deck'; render();
       }));
