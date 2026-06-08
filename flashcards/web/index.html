@@ -112,6 +112,24 @@
     .toggle input:checked+span::after{transform:translateX(20px)}
     .badge-ebb{font-size:.68rem;background:var(--blue-light);color:var(--blue);padding:2px 8px;border-radius:20px;font-weight:600;margin-left:6px}
     .cal-day .sess.deck{font-size:.55rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .settings-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+    .settings-card>h3{font-size:.95rem;color:var(--blue-dark);margin-bottom:4px}
+    .settings-card>.hint{font-size:.8rem;color:var(--muted);margin-bottom:14px;line-height:1.4}
+    .mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .mode-opt{border:2px solid var(--border);border-radius:14px;padding:14px 12px;cursor:pointer;background:var(--bg);text-align:left;transition:.15s}
+    .mode-opt.active{border-color:var(--blue);background:var(--blue-light)}
+    .mode-opt .mo-icon{font-size:1.4rem;margin-bottom:6px}
+    .mode-opt strong{display:block;font-size:.88rem;margin-bottom:4px}
+    .mode-opt span{font-size:.75rem;color:var(--muted);line-height:1.35}
+    .preset-row{display:flex;gap:8px;margin-top:14px}
+    .preset-btn{flex:1;padding:11px 6px;border:1px solid var(--border);border-radius:12px;background:var(--white);font-size:.78rem;font-weight:600;cursor:pointer;color:var(--text)}
+    .preset-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+    details.advanced{margin-top:14px;border-top:1px solid var(--border);padding-top:8px}
+    details.advanced summary{cursor:pointer;font-weight:600;font-size:.85rem;color:var(--blue);padding:8px 0;list-style:none}
+    details.advanced summary::-webkit-details-marker{display:none}
+    .stepper{display:flex;align-items:center;gap:12px;margin-top:8px}
+    .stepper button{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--white);font-size:1.2rem;cursor:pointer;color:var(--blue)}
+    .stepper .val{font-size:1.1rem;font-weight:700;min-width:2rem;text-align:center}
   </style>
 </head>
 <body>
@@ -128,8 +146,15 @@
   <script>
     const STORAGE_KEY = 'german_flashcards_v3';
 
+    const PRESETS = {
+      relaxed: { label: 'Relaxed', desc: 'Reviews spread further apart', intervals: [2, 4, 8, 16, 32, 64], retentionTarget: 0.85, failIntervalDays: 2 },
+      normal: { label: 'Normal', desc: 'Balanced spacing', intervals: [1, 2, 4, 7, 15, 30, 60], retentionTarget: 0.9, failIntervalDays: 1 },
+      intensive: { label: 'Intensive', desc: 'Review more frequently', intervals: [1, 1, 2, 4, 7, 14, 21], retentionTarget: 0.95, failIntervalDays: 1 },
+    };
+
     const DEFAULT_ALGO = {
       enabled: false,
+      preset: 'normal',
       intervals: [1, 2, 4, 7, 15, 30, 60, 120],
       initialStability: 1.0,
       initialEase: 2.5,
@@ -180,7 +205,6 @@
       view: 'home',
       tab: 'decks',
       deckId: null,
-      deckTab: 'cards',
       study: null,
       modal: null,
       calMonth: new Date(),
@@ -399,6 +423,30 @@
 
     function isEbbinghausOn(d) { return !!(d.ebbinghaus || deckAlgo(d).enabled); }
 
+    function getDeckPreset(d) {
+      const p = deckAlgo(d).preset;
+      if (p && PRESETS[p]) return p;
+      const r = deckAlgo(d).retentionTarget;
+      if (r >= 0.93) return 'intensive';
+      if (r <= 0.87) return 'relaxed';
+      return 'normal';
+    }
+
+    function applyPreset(d, key) {
+      const p = PRESETS[key];
+      if (!p) return;
+      d.algo = { ...deckAlgo(d), ...p, preset: key, enabled: isEbbinghausOn(d) };
+      save();
+    }
+
+    function setScheduleMode(d, auto) {
+      d.ebbinghaus = auto;
+      const a = deckAlgo(d);
+      d.algo = { ...a, enabled: auto };
+      if (auto && !a.preset) applyPreset(d, 'normal');
+      else save();
+    }
+
     // ── Splash ──
     function startSplash() {
       document.getElementById('splash-name').textContent = state.userName || 'Friend';
@@ -524,16 +572,21 @@
                 </span>
               </div>`).join('') : '<p style="font-size:.85rem;color:var(--muted)">Nothing scheduled — add a deck below</p>'}
             <div class="field" style="margin-top:12px">
-              <label>Schedule a deck</label>
+              <label>Which deck?</label>
               <select id="sched-deck">${deckOpts || '<option value="">No decks</option>'}</select>
             </div>
-            <button class="btn-outline" data-add-global-session="${selected}">+ Add to this day</button>
+            <button class="btn-primary" data-add-global-session="${selected}">Add study session</button>
             ${selItems.length ? `<button class="btn-warn" data-clear-global="${selected}">Clear this day</button>` : ''}
           </div>
-          <div class="field" style="margin-top:12px">
-            <label>Max deck sessions per day (overload limit)</label>
-            <input id="global-max" type="number" min="1" max="10" value="${state.globalMaxSessionsPerDay}" />
-            <button class="btn-outline" style="margin-top:8px" data-save-global-max>Save limit</button>
+          <div class="settings-card" style="margin-top:14px">
+            <h3>Busy days</h3>
+            <p class="hint">Warn me when more than this many decks are scheduled on the same day.</p>
+            <div class="stepper">
+              <button data-max-dec>−</button>
+              <span class="val" id="global-max-val">${state.globalMaxSessionsPerDay}</span>
+              <button data-max-inc>+</button>
+              <span style="font-size:.85rem;color:var(--muted)">decks / day</span>
+            </div>
           </div>
         </main>`;
     }
@@ -541,26 +594,70 @@
     function renderDeck() {
       const d = deck();
       if (!d) return '';
-      const tab = state.deckTab;
       const ebbOn = isEbbinghausOn(d);
       return `
         <header>
           <button class="icon-btn" data-go-home>←</button>
-          <h1>${esc(d.name)}${ebbOn ? '<span class="badge-ebb">Ebbinghaus</span>' : ''}</h1>
+          <h1>${esc(d.name)}${ebbOn ? '<span class="badge-ebb">Auto</span>' : ''}</h1>
         </header>
         <main>
-          <div class="deck-tabs">
-            <button class="${tab==='cards'?'active':''}" data-dtab="cards">🃏 Cards</button>
-            <button class="${tab==='settings'?'active':''}" data-dtab="settings">⚙️ Settings</button>
-          </div>
-          ${tab === 'cards' ? renderDeckCards(d) : ''}
-          ${tab === 'settings' ? renderDeckSettings(d) : ''}
+          ${renderScheduleCard(d)}
+          ${renderDeckCards(d)}
         </main>
-        ${tab === 'cards' ? '<button class="fab" data-new-card>+</button>' : ''}`;
+        <button class="fab" data-new-card>+</button>`;
+    }
+
+    function renderScheduleCard(d) {
+      const ebbOn = isEbbinghausOn(d);
+      const preset = getDeckPreset(d);
+      const next = nextScheduled(d);
+      return `
+        <div class="settings-card">
+          <h3>When should you review this deck?</h3>
+          <p class="hint">Pick one — you can change this anytime.</p>
+          <div class="mode-pick">
+            <button type="button" class="mode-opt ${!ebbOn ? 'active' : ''}" data-set-mode="manual">
+              <div class="mo-icon">📅</div>
+              <strong>I'll pick the dates</strong>
+              <span>Use the Calendar tab to schedule study days yourself.</span>
+            </button>
+            <button type="button" class="mode-opt ${ebbOn ? 'active' : ''}" data-set-mode="auto">
+              <div class="mo-icon">🧠</div>
+              <strong>Smart schedule</strong>
+              <span>After each session, the app picks the next best day (Ebbinghaus).</span>
+            </button>
+          </div>
+          ${ebbOn ? `
+            <p style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px">HOW OFTEN TO REVIEW</p>
+            <div class="preset-row">
+              ${Object.entries(PRESETS).map(([k, p]) =>
+                `<button type="button" class="preset-btn ${preset === k ? 'active' : ''}" data-preset="${k}" title="${p.desc}">${p.label}</button>`
+              ).join('')}
+            </div>
+            <p style="font-size:.75rem;color:var(--muted);margin-top:8px">${PRESETS[preset].desc}</p>
+            ${next ? `<p style="font-size:.8rem;color:var(--blue);margin-top:10px">Next scheduled: <strong>${formatDate(next)}</strong></p>` : ''}
+            <details class="advanced">
+              <summary>Advanced tuning</summary>
+              ${renderAdvancedFields(d)}
+            </details>` : `
+            <p style="font-size:.8rem;color:var(--muted);margin-top:10px">Go to <strong>Calendar</strong> (bottom) to add this deck to a day.</p>`}
+        </div>`;
+    }
+
+    function renderAdvancedFields(d) {
+      const a = deckAlgo(d);
+      return `
+        <div class="field" style="margin-top:12px"><label>Days between reviews (first few rounds)</label>
+          <input id="a-intervals" value="${a.intervals.join(', ')}" />
+          <small>Comma-separated, e.g. 1, 2, 4, 7, 15</small>
+        </div>
+        <div class="field"><label>Days to wait after a missed session</label>
+          <input id="a-fail" type="number" min="1" max="14" value="${a.failIntervalDays}" />
+        </div>
+        <button class="btn-outline" data-save-advanced>Apply advanced settings</button>`;
     }
 
     function renderDeckCards(d) {
-      const ebbOn = isEbbinghausOn(d);
       const cards = d.cards.map(c => `
         <div class="card-item">
           <div class="en">${esc(c.en)}</div>
@@ -571,62 +668,8 @@
           </div>
         </div>`).join('');
       return `
-        ${d.cards.length ? `<button class="btn-primary" data-study-now>Study all (${d.cards.length})</button>` : ''}
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Schedule reviews on the <strong>Calendar</strong> tab (bottom nav).</p>
-        ${cards || '<div class="empty"><p>No cards yet — tap +</p></div>'}`;
-    }
-
-    function renderDeckSettings(d) {
-      const a = deckAlgo(d);
-      const ebbOn = isEbbinghausOn(d);
-      return `
-        <div class="toggle-row">
-          <div><strong>Ebbinghaus algorithm</strong><small>Auto-schedule reviews after each session</small></div>
-          <label class="toggle"><input type="checkbox" id="ebb-toggle" ${ebbOn ? 'checked' : ''} /><span></span></label>
-        </div>
-        ${ebbOn ? `
-        <div class="algo-section">
-          <h3>Ebbinghaus parameters</h3>
-          <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Forgetting curve R = e^(−t/S). Tweak per deck.</p>
-          <div class="field"><label>Review intervals (days, comma-separated)</label>
-            <input id="a-intervals" value="${a.intervals.join(', ')}" />
-            <small>Early repetitions follow this sequence before stability formula kicks in.</small>
-          </div>
-          <div class="field"><label>Target retention (0–1)</label>
-            <input id="a-retention" type="number" step="0.01" min="0.5" max="0.99" value="${a.retentionTarget}" />
-            <small>Higher = review more often. 0.9 means 90% recall at review time.</small>
-          </div>
-          <div class="field"><label>Initial stability S (days)</label>
-            <input id="a-stability" type="number" step="0.1" min="0.1" value="${a.initialStability}" />
-          </div>
-          <div class="field"><label>Ease factor (start / min / max)</label>
-            <input id="a-ease" value="${a.initialEase}, ${a.minEase}, ${a.maxEase}" />
-          </div>
-          <div class="field"><label>Ease bonus / penalty (pass / fail)</label>
-            <input id="a-ease-delta" value="${a.easeBonus}, ${a.easePenalty}" />
-          </div>
-          <div class="field"><label>Max sessions per day</label>
-            <input id="a-max-day" type="number" min="1" max="5" value="${a.maxSessionsPerDay}" />
-            <small>Days exceeding this show as overloaded — use Spread or Clear to fix.</small>
-          </div>
-          <div class="field"><label>Fail interval (days)</label>
-            <input id="a-fail" type="number" min="1" value="${a.failIntervalDays}" />
-          </div>
-          <div class="field"><label>Curve steepness multiplier</label>
-            <input id="a-steep" type="number" step="0.1" min="0.5" max="3" value="${a.curveSteepness}" />
-          </div>
-          <button class="btn-primary" data-save-algo>Save parameters</button>
-          <button class="btn-outline" data-reset-algo>Reset to defaults</button>
-          <div class="formula">
-            <strong>Deck memory state</strong><br>
-            Repetitions: ${d.sr.repetitions} · Ease: ${d.sr.ease.toFixed(2)} · S: ${d.sr.stability.toFixed(1)}d<br>
-            Last: ${d.sr.lastReview || 'never'} · Retention: ${(retentionAt(d.sr.stability, d.sr.intervalDays)*100).toFixed(0)}%
-          </div>
-        </div>` : `
-        <div class="algo-section">
-          <p style="font-size:.88rem;color:var(--muted);line-height:1.5">Ebbinghaus is <strong>off</strong>. Use the global <strong>Calendar</strong> to manually schedule this deck. Turn on Ebbinghaus to auto-schedule the next review after each session.</p>
-        </div>`}
-      `;
+        ${d.cards.length ? `<button class="btn-primary" data-study-now>Study now (${d.cards.length} cards)</button>` : ''}
+        ${cards || '<div class="empty"><p>No cards yet — tap + to add</p></div>'}`;
     }
 
     function renderStudy() {
@@ -642,10 +685,9 @@
           <main style="text-align:center;padding-top:24px">
             <h2 style="font-size:2.5rem;color:var(--blue);margin:16px 0">${pct}%</h2>
             <p style="color:var(--muted);margin-bottom:20px">Got it: ${s.correct} · Missed: ${s.incorrect}</p>
-            ${isEbbinghausOn(d) ? `<div class="formula" style="text-align:left;margin-bottom:16px">
-              Ebbinghaus scheduled next review (score ${score.toFixed(2)})<br>
-              Next in ${d.sr.intervalDays} day(s) · S=${d.sr.stability.toFixed(1)}d — see Calendar
-            </div>` : '<p style="color:var(--muted);margin-bottom:16px">Schedule your next session on the Calendar tab.</p>'}
+            ${isEbbinghausOn(d)
+              ? `<p style="color:var(--muted);margin-bottom:16px">Next review auto-added to your <strong>Calendar</strong> in ${d.sr.intervalDays} day(s).</p>`
+              : '<p style="color:var(--muted);margin-bottom:16px">Add your next study day on the <strong>Calendar</strong> tab.</p>'}
             <button class="btn-primary" data-end-study>Back to deck</button>
           </main>`;
       }
@@ -730,7 +772,6 @@
         if (e.target.closest('[data-del-deck]')) return;
         state.deckId = +el.dataset.openDeck;
         state.view = 'deck';
-        state.deckTab = 'cards';
         render();
       }));
       document.querySelectorAll('[data-del-deck]').forEach(el => el.addEventListener('click', e => {
@@ -739,7 +780,14 @@
       }));
       document.querySelector('[data-new-deck]')?.addEventListener('click', () => { state.modal = { type: 'deck' }; render(); });
       document.querySelector('[data-new-card]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
-      document.querySelectorAll('[data-dtab]').forEach(el => el.addEventListener('click', () => { state.deckTab = el.dataset.dtab; render(); }));
+      document.querySelectorAll('[data-set-mode]').forEach(el => el.addEventListener('click', () => {
+        setScheduleMode(deck(), el.dataset.setMode === 'auto');
+        render();
+      }));
+      document.querySelectorAll('[data-preset]').forEach(el => el.addEventListener('click', () => {
+        applyPreset(deck(), el.dataset.preset);
+        render();
+      }));
       document.querySelector('[data-cal-prev]')?.addEventListener('click', () => {
         state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() - 1, 1); render();
       });
@@ -765,8 +813,12 @@
         if (confirm('Remove all deck sessions on this day?')) { clearGlobalDay(el.dataset.clearGlobal); render(); }
       }));
       document.querySelector('[data-spread-global]')?.addEventListener('click', () => { spreadGlobalOverload(); render(); });
-      document.querySelector('[data-save-global-max]')?.addEventListener('click', () => {
-        state.globalMaxSessionsPerDay = parseInt(document.getElementById('global-max').value, 10) || 3;
+      document.querySelector('[data-max-inc]')?.addEventListener('click', () => {
+        state.globalMaxSessionsPerDay = Math.min(10, state.globalMaxSessionsPerDay + 1);
+        save(); render();
+      });
+      document.querySelector('[data-max-dec]')?.addEventListener('click', () => {
+        state.globalMaxSessionsPerDay = Math.max(1, state.globalMaxSessionsPerDay - 1);
         save(); render();
       });
       document.querySelectorAll('[data-start-deck]').forEach(el => el.addEventListener('click', () => {
@@ -774,15 +826,20 @@
         if (d) { state.deckId = d.id; startStudy(d); }
       }));
       document.querySelector('[data-study-now]')?.addEventListener('click', () => startStudy(deck()));
-      document.getElementById('ebb-toggle')?.addEventListener('change', (e) => {
+      document.querySelectorAll('[data-end-study]').forEach(el => el.addEventListener('click', () => {
+        state.study = null; state.view = 'deck'; render();
+      }));
+      document.querySelector('[data-save-advanced]')?.addEventListener('click', () => {
         const d = deck();
-        d.ebbinghaus = e.target.checked;
-        d.algo = { ...deckAlgo(d), enabled: e.target.checked };
+        const intervals = document.getElementById('a-intervals').value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => n > 0);
+        d.algo = {
+          ...deckAlgo(d),
+          intervals: intervals.length ? intervals : deckAlgo(d).intervals,
+          failIntervalDays: parseInt(document.getElementById('a-fail').value, 10) || 1,
+          enabled: true,
+        };
         save(); render();
       });
-      document.querySelectorAll('[data-end-study]').forEach(el => el.addEventListener('click', () => {
-        state.study = null; state.view = 'deck'; state.deckTab = 'cards'; render();
-      }));
       document.querySelectorAll('[data-edit-card]').forEach(el => el.addEventListener('click', () => {
         const c = deck().cards.find(x => x.id === +el.dataset.editCard);
         state.modal = { type: 'card', edit: c.id, en: c.en, de: c.de }; render();
@@ -815,34 +872,6 @@
           d.cards.push({ id: nextId(d.cards), en, de });
         }
         save(); state.modal = null; render();
-      });
-      document.querySelector('[data-save-algo]')?.addEventListener('click', () => {
-        const d = deck();
-        const intervals = document.getElementById('a-intervals').value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => n > 0);
-        const easeParts = document.getElementById('a-ease').value.split(',').map(s => parseFloat(s.trim()));
-        const deltaParts = document.getElementById('a-ease-delta').value.split(',').map(s => parseFloat(s.trim()));
-        d.algo = {
-          enabled: isEbbinghausOn(d),
-          intervals: intervals.length ? intervals : DEFAULT_ALGO.intervals,
-          retentionTarget: parseFloat(document.getElementById('a-retention').value) || 0.9,
-          initialStability: parseFloat(document.getElementById('a-stability').value) || 1,
-          initialEase: easeParts[0] || 2.5,
-          minEase: easeParts[1] || 1.3,
-          maxEase: easeParts[2] || 3.0,
-          easeBonus: deltaParts[0] || 0.15,
-          easePenalty: deltaParts[1] || 0.25,
-          maxSessionsPerDay: parseInt(document.getElementById('a-max-day').value, 10) || 1,
-          failIntervalDays: parseInt(document.getElementById('a-fail').value, 10) || 1,
-          curveSteepness: parseFloat(document.getElementById('a-steep').value) || 1,
-        };
-        save(); alert('Algorithm saved'); render();
-      });
-      document.querySelector('[data-reset-algo]')?.addEventListener('click', () => {
-        if (confirm('Reset algorithm to defaults?')) {
-          const d = deck();
-          d.algo = { ...DEFAULT_ALGO, enabled: isEbbinghausOn(d) };
-          save(); render();
-        }
       });
       const flip = () => { if (state.study && !state.study.done) { state.study.flipped = !state.study.flipped; render(); } };
       document.querySelector('[data-flip]')?.addEventListener('click', flip);
