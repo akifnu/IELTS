@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcards</title>
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-dark: #1b5e20;
+      --primary-light: #c8e6c9;
+      --accent: #ffb300;
+      --bg: #f5f7f5;
+      --card: #fff;
+      --text: #1a1c1a;
+      --muted: #5c6b5c;
+      --danger: #c62828;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 600; flex: 1; }
+    button, .btn {
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .icon-btn {
+      background: transparent;
+      color: inherit;
+      font-size: 1.4rem;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+    main { padding: 16px; padding-bottom: 88px; }
+    .deck-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      position: relative;
+    }
+    .deck-card h2 { font-size: 1.05rem; margin-bottom: 4px; }
+    .deck-card p { color: var(--muted); font-size: .9rem; }
+    .deck-card .count { color: var(--primary); font-weight: 600; font-size: .85rem; margin-top: 8px; }
+    .deck-card .delete {
+      position: absolute; top: 8px; right: 8px;
+      color: var(--danger); background: none; font-size: 1.1rem;
+    }
+    .fab {
+      position: fixed; right: 20px; bottom: 24px;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--primary-dark); color: #fff;
+      font-size: 2rem; line-height: 56px; text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    }
+    .study-btn {
+      width: 100%; padding: 14px; margin-bottom: 16px;
+      background: var(--primary); color: #fff; font-weight: 600;
+    }
+    .card-item {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px; margin-bottom: 10px;
+    }
+    .card-item .back { color: var(--muted); margin-top: 6px; }
+    .card-actions { text-align: right; margin-top: 8px; }
+    .card-actions button { background: none; color: var(--muted); padding: 4px 8px; }
+    .card-actions .del { color: var(--danger); }
+    .empty {
+      text-align: center; padding: 48px 24px; color: var(--muted);
+    }
+    .empty .emoji { font-size: 3rem; margin-bottom: 12px; }
+    .progress-row {
+      display: flex; justify-content: space-between;
+      font-size: .85rem; color: var(--muted); margin-bottom: 8px;
+    }
+    .progress-bar {
+      height: 6px; background: #e0e0e0; border-radius: 3px;
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .progress-bar > div {
+      height: 100%; background: var(--primary);
+      transition: width .3s;
+    }
+    .flip-card {
+      perspective: 1000px;
+      min-height: 280px;
+      margin: 16px 0 24px;
+      cursor: pointer;
+    }
+    .flip-inner {
+      position: relative; width: 100%; height: 280px;
+      transition: transform .5s;
+      transform-style: preserve-3d;
+    }
+    .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
+    .flip-face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; text-align: center;
+      font-size: 1.35rem; font-weight: 500;
+      box-shadow: var(--shadow);
+    }
+    .flip-front { background: var(--primary-light); }
+    .flip-back {
+      background: #fff3e0;
+      transform: rotateY(180deg);
+    }
+    .study-actions { display: flex; gap: 12px; }
+    .study-actions button { flex: 1; padding: 14px; font-weight: 600; }
+    .missed { background: #fff; border: 2px solid #ccc; }
+    .got-it { background: var(--primary); color: #fff; }
+    .show-answer {
+      width: 100%; padding: 14px;
+      background: #fff; border: 2px solid var(--primary);
+      color: var(--primary); font-weight: 600;
+    }
+    .results { text-align: center; padding: 24px 0; }
+    .results .score {
+      font-size: 3rem; font-weight: 700;
+      color: var(--primary); margin: 16px 0;
+    }
+    .results .stats {
+      background: var(--card); border-radius: var(--radius);
+      padding: 20px; text-align: left; margin: 20px 0;
+      box-shadow: var(--shadow);
+    }
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,.4);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; z-index: 100;
+    }
+    .modal {
+      background: var(--card); border-radius: var(--radius);
+      padding: 24px; width: 100%; max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+    .modal h2 { margin-bottom: 16px; }
+    .modal input, .modal textarea {
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      border: 1px solid #ccc; border-radius: 10px; font: inherit;
+    }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-actions button { padding: 10px 18px; }
+    .cancel { background: #eee; }
+    .confirm { background: var(--primary); color: #fff; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const SAMPLE = [
+      { id: 1, name: 'Spanish Basics', description: 'Essential Spanish vocabulary', cards: [
+        { id: 1, front: 'Hello', back: 'Hola' },
+        { id: 2, front: 'Thank you', back: 'Gracias' },
+        { id: 3, front: 'Good morning', back: 'Buenos días' },
+        { id: 4, front: 'Goodbye', back: 'Adiós' },
+      ]},
+      { id: 2, name: 'Kotlin', description: 'Programming concepts in Kotlin', cards: [
+        { id: 1, front: 'val vs var', back: 'val is immutable, var is mutable' },
+        { id: 2, front: 'data class', back: 'Auto-generates equals, hashCode, copy, and toString' },
+        { id: 3, front: 'suspend fun', back: 'A function that can be paused and resumed (coroutine)' },
+        { id: 4, front: 'companion object', back: 'Static-like members scoped to a class' },
+      ]},
+    ];
+
+    let state = {
+      view: 'decks',
+      decks: JSON.parse(localStorage.getItem('flashcards') || 'null') || SAMPLE,
+      deckId: null,
+      study: null,
+      modal: null,
+    };
+
+    function save() { localStorage.setItem('flashcards', JSON.stringify(state.decks)); }
+    function deck() { return state.decks.find(d => d.id === state.deckId); }
+    function nextId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; }
+
+    function render() {
+      const app = document.getElementById('app');
+      if (state.view === 'decks') app.innerHTML = renderDecks();
+      else if (state.view === 'detail') app.innerHTML = renderDetail();
+      else if (state.view === 'study') app.innerHTML = renderStudy();
+      if (state.modal) app.innerHTML += renderModal();
+      bind();
+    }
+
+    function renderDecks() {
+      const list = state.decks.map(d => `
+        <div class="deck-card" data-deck="${d.id}">
+          <button class="delete" data-del-deck="${d.id}" title="Delete">🗑</button>
+          <h2>${esc(d.name)}</h2>
+          ${d.description ? `<p>${esc(d.description)}</p>` : ''}
+          <div class="count">${d.cards.length} card${d.cards.length === 1 ? '' : 's'}</div>
+        </div>`).join('');
+      return `
+        <header><h1>Flashcards</h1></header>
+        <main>${list || `<div class="empty"><div class="emoji">🃏</div><h2>No decks yet</h2><p>Tap + to create your first deck</p></div>`}</main>
+        <button class="fab" data-action="new-deck">+</button>`;
+    }
+
+    function renderDetail() {
+      const d = deck();
+      if (!d) return '';
+      const cards = d.cards.map(c => `
+        <div class="card-item">
+          <div class="front">${esc(c.front)}</div>
+          <div class="back">${esc(c.back)}</div>
+          <div class="card-actions">
+            <button data-edit-card="${c.id}">✏️ Edit</button>
+            <button class="del" data-del-card="${c.id}">🗑 Delete</button>
+          </div>
+        </div>`).join('');
+      return `
+        <header>
+          <button class="icon-btn" data-back>←</button>
+          <h1>${esc(d.name)}</h1>
+        </header>
+        <main>
+          ${d.cards.length ? `<button class="btn study-btn" data-study>▶ Study (${d.cards.length} cards)</button>` : ''}
+          ${cards || `<div class="empty"><div class="emoji">❓</div><h2>No cards in this deck</h2><p>Tap + to add your first flashcard</p></div>`}
+        </main>
+        <button class="fab" data-action="new-card">+</button>`;
+    }
+
+    function renderStudy() {
+      const s = state.study;
+      if (!s) return '';
+      if (s.done) {
+        const total = s.correct + s.incorrect;
+        const pct = total ? Math.round(s.correct / total * 100) : 0;
+        return `
+          <header><button class="icon-btn" data-back-detail>←</button><h1>Study Session</h1></header>
+          <main class="results">
+            <div class="emoji">🏆</div>
+            <h2>Session Complete!</h2>
+            <div class="score">${pct}% correct</div>
+            <div class="stats">
+              <div>Got it: ${s.correct}</div>
+              <div>Missed: ${s.incorrect}</div>
+              <div>Total: ${total}</div>
+            </div>
+            <button class="btn study-btn" data-restart>↻ Study Again</button>
+            <button class="btn show-answer" style="margin-top:8px" data-back-detail>Back to Deck</button>
+          </main>`;
+      }
+      const card = s.cards[s.index];
+      const progress = ((s.index + (s.flipped ? 0.5 : 0)) / s.cards.length) * 100;
+      return `
+        <header><button class="icon-btn" data-back-detail>←</button><h1>Study Session</h1></header>
+        <main>
+          <div class="progress-row"><span>${s.index + 1} / ${s.cards.length}</span><span>${s.flipped ? 'Answer' : 'Question'}</span></div>
+          <div class="progress-bar"><div style="width:${progress}%"></div></div>
+          <div class="flip-card ${s.flipped ? 'flipped' : ''}" data-flip>
+            <div class="flip-inner">
+              <div class="flip-face flip-front">${esc(card.front)}</div>
+              <div class="flip-face flip-back">${esc(card.back)}</div>
+            </div>
+          </div>
+          <p style="text-align:center;color:var(--muted);margin-bottom:16px">
+            ${s.flipped ? 'How did you do?' : 'Tap the card to reveal the answer'}
+          </p>
+          ${s.flipped ? `
+            <div class="study-actions">
+              <button class="missed" data-answer="0">✗ Missed</button>
+              <button class="got-it" data-answer="1">✓ Got it</button>
+            </div>` : `
+            <button class="show-answer" data-flip-btn>Show Answer</button>`}
+        </main>`;
+    }
+
+    function renderModal() {
+      const m = state.modal;
+      if (m.type === 'deck') return `
+        <div class="modal-bg" data-close-modal>
+          <div class="modal" onclick="event.stopPropagation()">
+            <h2>${m.edit ? 'Edit Deck' : 'New Deck'}</h2>
+            <input id="m-name" placeholder="Deck name" value="${esc(m.name || '')}" />
+            <textarea id="m-desc" placeholder="Description (optional)" rows="2">${esc(m.description || '')}</textarea>
+            <div class="modal-actions">
+              <button class="cancel" data-close-modal>Cancel</button>
+              <button class="confirm" data-save-deck>Save</button>
+            </div>
+          </div>
+        </div>`;
+      if (m.type === 'card') return `
+        <div class="modal-bg" data-close-modal>
+          <div class="modal" onclick="event.stopPropagation()">
+            <h2>${m.edit ? 'Edit Card' : 'New Card'}</h2>
+            <textarea id="m-front" placeholder="Front (question)" rows="2">${esc(m.front || '')}</textarea>
+            <textarea id="m-back" placeholder="Back (answer)" rows="2">${esc(m.back || '')}</textarea>
+            <div class="modal-actions">
+              <button class="cancel" data-close-modal>Cancel</button>
+              <button class="confirm" data-save-card>Save</button>
+            </div>
+          </div>
+        </div>`;
+      return '';
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    }
+
+    function bind() {
+      document.querySelector('[data-back]')?.addEventListener('click', () => { state.view = 'decks'; state.deckId = null; render(); });
+      document.querySelector('[data-back-detail]')?.addEventListener('click', () => { state.view = 'detail'; state.study = null; render(); });
+      document.querySelector('[data-action="new-deck"]')?.addEventListener('click', () => { state.modal = { type: 'deck' }; render(); });
+      document.querySelector('[data-action="new-card"]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
+      document.querySelector('[data-study]')?.addEventListener('click', startStudy);
+      document.querySelector('[data-restart]')?.addEventListener('click', startStudy);
+      document.querySelectorAll('[data-deck]').forEach(el => el.addEventListener('click', e => {
+        if (e.target.closest('[data-del-deck]')) return;
+        state.deckId = +el.dataset.deck; state.view = 'detail'; render();
+      }));
+      document.querySelectorAll('[data-del-deck]').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm('Delete this deck?')) {
+          state.decks = state.decks.filter(d => d.id !== +el.dataset.delDeck);
+          save(); render();
+        }
+      }));
+      document.querySelectorAll('[data-del-card]').forEach(el => el.addEventListener('click', () => {
+        if (confirm('Delete this card?')) {
+          const d = deck();
+          d.cards = d.cards.filter(c => c.id !== +el.dataset.delCard);
+          save(); render();
+        }
+      }));
+      document.querySelectorAll('[data-edit-card]').forEach(el => el.addEventListener('click', () => {
+        const c = deck().cards.find(x => x.id === +el.dataset.editCard);
+        state.modal = { type: 'card', edit: c.id, front: c.front, back: c.back }; render();
+      }));
+      document.querySelectorAll('[data-close-modal]').forEach(el => el.addEventListener('click', () => { state.modal = null; render(); }));
+      document.querySelector('[data-save-deck]')?.addEventListener('click', () => {
+        const name = document.getElementById('m-name').value.trim();
+        if (!name) return;
+        const desc = document.getElementById('m-desc').value.trim();
+        if (state.modal.edit) {
+          const d = state.decks.find(x => x.id === state.modal.edit);
+          d.name = name; d.description = desc;
+        } else {
+          state.decks.unshift({ id: nextId(state.decks), name, description: desc, cards: [] });
+        }
+        save(); state.modal = null; render();
+      });
+      document.querySelector('[data-save-card]')?.addEventListener('click', () => {
+        const front = document.getElementById('m-front').value.trim();
+        const back = document.getElementById('m-back').value.trim();
+        if (!front || !back) return;
+        const d = deck();
+        if (state.modal.edit) {
+          const c = d.cards.find(x => x.id === state.modal.edit);
+          c.front = front; c.back = back;
+        } else {
+          d.cards.push({ id: nextId(d.cards), front, back });
+        }
+        save(); state.modal = null; render();
+      });
+      const flip = () => { if (state.study && !state.study.done) { state.study.flipped = !state.study.flipped; render(); } };
+      document.querySelector('[data-flip]')?.addEventListener('click', flip);
+      document.querySelector('[data-flip-btn]')?.addEventListener('click', flip);
+      document.querySelectorAll('[data-answer]').forEach(el => el.addEventListener('click', () => {
+        const correct = el.dataset.answer === '1';
+        if (correct) state.study.correct++; else state.study.incorrect++;
+        state.study.flipped = false;
+        if (state.study.index + 1 >= state.study.cards.length) state.study.done = true;
+        else state.study.index++;
+        render();
+      }));
+    }
+
+    function startStudy() {
+      const d = deck();
+      state.study = {
+        cards: [...d.cards].sort(() => Math.random() - .5),
+        index: 0, flipped: false, correct: 0, incorrect: 0, done: false
+      };
+      state.view = 'study';
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
