@@ -180,7 +180,22 @@
     .header-actions{display:flex;gap:6px}
     .tagline{font-size:.78rem;color:var(--muted);font-weight:500;margin-top:2px}
     .deck-cluster-tag{font-size:.72rem;color:var(--muted);font-weight:500;margin-top:2px}
+    .account-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;text-align:center}
+    .account-avatar{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--blue-light);margin:0 auto 12px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--blue)}
+    .account-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+    .account-card h2{font-size:1.1rem;color:var(--blue-dark)}
+    .account-card .email{color:var(--muted);font-size:.85rem;margin-top:4px;word-break:break-all}
+    .account-badge{display:inline-block;margin-top:10px;font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--blue-light);color:var(--blue)}
+    .auth-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px}
+    .auth-panel h2{font-size:1.05rem;color:var(--blue-dark);margin-bottom:6px}
+    .auth-panel>.hint{font-size:.82rem;color:var(--muted);margin-bottom:16px;line-height:1.45}
+    .auth-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--bg);border-radius:12px;padding:4px}
+    .auth-tabs button{flex:1;border:none;background:none;padding:10px;border-radius:9px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer}
+    .auth-tabs button.active{background:var(--white);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-size:.75rem}
+    .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
   </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div id="splash" role="button" tabindex="0" aria-label="Continue to app">
@@ -194,9 +209,25 @@
     </div>
   </div>
   <div id="app"></div>
+  <script src="auth-config.js"></script>
   <script>
-    const STORAGE_KEY = 'shine_v1';
+    const GUEST_STORAGE_KEY = 'shine_v1';
     const LEGACY_KEYS = ['german_flashcards_v4', 'german_flashcards_v3', 'german_flashcards_v2', 'german_flashcards_v1'];
+    const SESSION_KEY = 'shine_session';
+    const ACCOUNTS_KEY = 'shine_accounts';
+    const GOOGLE_CLIENT_KEY = 'shine_google_client_id';
+    // Optional: set your Google OAuth Web Client ID here or in Account → settings
+    const GOOGLE_CLIENT_ID_DEFAULT = '';
+
+    function getGoogleClientId() {
+      try {
+        return localStorage.getItem(GOOGLE_CLIENT_KEY) || window.SHINE_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_DEFAULT || '';
+      } catch (e) { return GOOGLE_CLIENT_ID_DEFAULT || ''; }
+    }
+
+    function activeStorageKey() {
+      return state.auth.user ? `shine_data_${state.auth.user.id}` : GUEST_STORAGE_KEY;
+    }
 
     const CARD_COLORS = [
       { id: 'none', hex: '', border: 'var(--border)', label: 'None' },
@@ -302,13 +333,217 @@
       deckScheduleOpen: false,
       calSettingsOpen: false,
       userName: '',
+      auth: { user: null },
+      authMode: 'signin',
+      authError: '',
       ready: false,
       splashDone: false,
     };
 
-    try {
-      state.userName = localStorage.getItem('shine_user') || localStorage.getItem('flashcards_user') || '';
-    } catch (e) {}
+    // ── Auth ──
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    }
+
+    function saveSession(user) {
+      try {
+        if (user) localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        else localStorage.removeItem(SESSION_KEY);
+      } catch (e) {}
+    }
+
+    function getAccountsDb() {
+      try {
+        return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{"users":{}}');
+      } catch (e) { return { users: {} }; }
+    }
+
+    function saveAccountsDb(db) {
+      try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(db)); } catch (e) {}
+    }
+
+    function bytesToB64(bytes) {
+      return btoa(String.fromCharCode(...bytes));
+    }
+
+    function b64ToBytes(b64) {
+      return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+
+    async function hashPassword(password, saltB64) {
+      const enc = new TextEncoder();
+      const salt = saltB64 ? b64ToBytes(saltB64) : crypto.getRandomValues(new Uint8Array(16));
+      const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, key, 256);
+      return { hash: bytesToB64(new Uint8Array(bits)), salt: saltB64 || bytesToB64(salt) };
+    }
+
+    function normalizeEmail(email) {
+      return String(email || '').trim().toLowerCase();
+    }
+
+    function setAuthError(msg) {
+      state.authError = msg || '';
+    }
+
+    function snapshotAppData() {
+      return {
+        decks: state.decks,
+        clusters: state.clusters,
+        algo: state.algo,
+        globalMaxSessionsPerDay: state.globalMaxSessionsPerDay,
+      };
+    }
+
+    function applyAppData(raw) {
+      if (!raw) return false;
+      state.decks = (raw.decks || []).map(initDeck);
+      state.clusters = migrateLegacyClusters(state.decks, raw.clusters);
+      state.algo = { ...DEFAULT_ALGO, ...(raw.algo || {}) };
+      state.globalMaxSessionsPerDay = raw.globalMaxSessionsPerDay ?? 3;
+      return true;
+    }
+
+    function persistAppData() {
+      try {
+        localStorage.setItem(activeStorageKey(), JSON.stringify(snapshotAppData()));
+      } catch (e) { console.warn('Save failed', e); }
+    }
+
+    function migrateGuestDataIfEmpty() {
+      if (state.decks.length) return;
+      try {
+        const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
+        if (!guestRaw) return;
+        const guest = JSON.parse(guestRaw);
+        if (guest.decks?.length) applyAppData(guest);
+      } catch (e) {}
+    }
+
+    async function completeLogin(user) {
+      persistAppData();
+      state.auth.user = user;
+      state.userName = user.name || user.email.split('@')[0];
+      saveSession(user);
+      setAuthError('');
+      load();
+      migrateGuestDataIfEmpty();
+      save();
+      if (state.tab === 'account') state.authMode = 'signin';
+      render();
+      initGoogleButton();
+    }
+
+    async function registerWithEmail(name, email, password) {
+      const em = normalizeEmail(email);
+      if (!em || !password || password.length < 8) {
+        setAuthError('Use a valid email and password (8+ characters).');
+        return;
+      }
+      const db = getAccountsDb();
+      if (Object.values(db.users).some(u => u.email === em)) {
+        setAuthError('An account with this email already exists.');
+        return;
+      }
+      const { hash, salt } = await hashPassword(password);
+      const id = `email_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      db.users[id] = {
+        id, email: em, name: (name || em.split('@')[0]).trim(), provider: 'email',
+        passwordHash: hash, salt, avatar: null, createdAt: new Date().toISOString(),
+      };
+      saveAccountsDb(db);
+      await completeLogin({ id, email: em, name: db.users[id].name, provider: 'email', avatar: null });
+    }
+
+    async function signInWithEmail(email, password) {
+      const em = normalizeEmail(email);
+      const db = getAccountsDb();
+      const user = Object.values(db.users).find(u => u.email === em && u.provider === 'email');
+      if (!user) {
+        setAuthError('No account found for this email.');
+        return;
+      }
+      const { hash } = await hashPassword(password, user.salt);
+      if (hash !== user.passwordHash) {
+        setAuthError('Incorrect password.');
+        return;
+      }
+      await completeLogin({ id: user.id, email: user.email, name: user.name, provider: 'email', avatar: user.avatar });
+    }
+
+    function handleGoogleCredential(response) {
+      try {
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        const em = normalizeEmail(payload.email);
+        const id = `google_${payload.sub}`;
+        const db = getAccountsDb();
+        if (!db.users[id]) {
+          db.users[id] = {
+            id, email: em, name: payload.name || em.split('@')[0], provider: 'google',
+            avatar: payload.picture || null, createdAt: new Date().toISOString(),
+          };
+        } else {
+          db.users[id].name = payload.name || db.users[id].name;
+          db.users[id].avatar = payload.picture || db.users[id].avatar;
+        }
+        saveAccountsDb(db);
+        completeLogin({
+          id, email: em, name: db.users[id].name, provider: 'google', avatar: db.users[id].avatar,
+        });
+      } catch (e) {
+        setAuthError('Google sign-in failed. Try again.');
+        render();
+      }
+    }
+
+    function initGoogleAuth() {
+      const clientId = getGoogleClientId();
+      if (!clientId || !window.google?.accounts?.id) return false;
+      google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
+      return true;
+    }
+
+    function initGoogleButton() {
+      const el = document.getElementById('google-signin-btn');
+      if (!el) return;
+      el.innerHTML = '';
+      const clientId = getGoogleClientId();
+      if (!clientId) {
+        el.innerHTML = '<p style="font-size:.78rem;color:var(--muted);padding:8px 0">Add a Google Client ID in Account settings to enable Gmail sign-in.</p>';
+        return;
+      }
+      if (!window.google?.accounts?.id) {
+        el.innerHTML = '<p style="font-size:.78rem;color:var(--muted)">Loading Google Sign-In…</p>';
+        setTimeout(initGoogleButton, 400);
+        return;
+      }
+      initGoogleAuth();
+      google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', width: Math.min(320, el.offsetWidth || 320) });
+    }
+
+    function signOut() {
+      persistAppData();
+      state.auth.user = null;
+      saveSession(null);
+      setAuthError('');
+      load();
+      state.view = 'home';
+      state.tab = 'account';
+      render();
+      initGoogleButton();
+    }
+
+    state.auth.user = loadSession();
+    if (state.auth.user) {
+      state.userName = state.auth.user.name || state.auth.user.email?.split('@')[0] || '';
+    } else {
+      try {
+        state.userName = localStorage.getItem('shine_user') || localStorage.getItem('flashcards_user') || '';
+      } catch (e) {}
+    }
 
     // ── Date helpers ──
     function todayStr() {
@@ -381,8 +616,9 @@
 
     function load() {
       try {
-        let stored = localStorage.getItem(STORAGE_KEY);
-        if (!stored) {
+        const key = activeStorageKey();
+        let stored = localStorage.getItem(key);
+        if (!stored && !state.auth.user) {
           for (const k of LEGACY_KEYS) {
             const legacy = localStorage.getItem(k);
             if (legacy) { stored = legacy; break; }
@@ -390,30 +626,21 @@
         }
         const raw = JSON.parse(stored || 'null');
         if (raw && Array.isArray(raw.decks)) {
-          state.decks = raw.decks.map(initDeck);
-          state.clusters = migrateLegacyClusters(state.decks, raw.clusters);
-          state.algo = { ...DEFAULT_ALGO, ...raw.algo };
-          state.globalMaxSessionsPerDay = raw.globalMaxSessionsPerDay ?? 3;
-        } else {
+          applyAppData(raw);
+        } else if (!state.auth.user) {
           loadSampleData();
+        } else {
+          state.decks = [];
+          state.clusters = [];
         }
-        save();
+        if (!state.auth.user) save();
       } catch (e) {
         console.warn('Load failed, using defaults', e);
-        loadSampleData();
+        if (!state.auth.user) loadSampleData();
       }
     }
     function save() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          decks: state.decks,
-          clusters: state.clusters,
-          algo: state.algo,
-          globalMaxSessionsPerDay: state.globalMaxSessionsPerDay,
-        }));
-      } catch (e) {
-        console.warn('Save failed', e);
-      }
+      persistAppData();
     }
     function clusterById(id) { return state.clusters.find(c => c.id === id); }
     function decksInCluster(clusterId) {
@@ -729,10 +956,12 @@
         if (state.view === 'study') app.innerHTML = renderStudy();
         else if (state.view === 'deck') app.innerHTML = renderDeck();
         else if (state.tab === 'calendar') app.innerHTML = renderGlobalCalendar();
+        else if (state.tab === 'account') app.innerHTML = renderAccount();
         else app.innerHTML = renderHome();
         if (state.modal) app.innerHTML += renderModal();
         if (state.view === 'home') app.innerHTML += renderBottomNav();
         bind();
+        if (state.tab === 'account') setTimeout(initGoogleButton, 50);
       } catch (e) {
         console.error('Render error', e);
         app.innerHTML = '<main style="padding:24px"><h2>Something went wrong</h2><p>Please refresh the page.</p></main>';
@@ -744,7 +973,76 @@
         <nav class="bottom-nav">
           <button class="${state.tab === 'decks' ? 'active' : ''}" data-tab="decks"><span class="ni">📚</span>Decks</button>
           <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar"><span class="ni">📅</span>Calendar</button>
+          <button class="${state.tab === 'account' ? 'active' : ''}" data-tab="account"><span class="ni">👤</span>Account</button>
         </nav>`;
+    }
+
+    function renderAccount() {
+      const u = state.auth.user;
+      if (u) {
+        const avatar = u.avatar
+          ? `<img src="${esc(u.avatar)}" alt="">`
+          : (u.name || '✨').charAt(0).toUpperCase();
+        return `
+          <header><h1>Account</h1></header>
+          <main>
+            <div class="account-card">
+              <div class="account-avatar">${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : esc(avatar)}</div>
+              <h2>${esc(u.name)}</h2>
+              <div class="email">${esc(u.email)}</div>
+              <span class="account-badge">${u.provider === 'google' ? 'Signed in with Gmail' : 'Email account'}</span>
+            </div>
+            <div class="auth-panel" style="text-align:left">
+              <h2 style="font-size:.95rem">Your library</h2>
+              <p class="hint" style="margin:0">${state.clusters.length} cluster${state.clusters.length !== 1 ? 's' : ''} · ${state.decks.length} deck${state.decks.length !== 1 ? 's' : ''} synced to this account</p>
+            </div>
+            <details class="schedule-fold">
+              <summary>Settings</summary>
+              <div class="sched-body">
+                <div class="field">
+                  <label>Google OAuth Client ID</label>
+                  <input id="google-client-id" value="${esc(getGoogleClientId())}" placeholder="xxxx.apps.googleusercontent.com" />
+                  <small>Paste your Web Client ID from Google Cloud Console to enable Gmail sign-in.</small>
+                </div>
+                <button class="btn-outline" data-save-google-id>Save Google settings</button>
+              </div>
+            </details>
+            <button class="btn-outline" data-sign-out style="margin-top:10px;color:var(--danger);border-color:#fecaca">Sign out</button>
+          </main>`;
+      }
+
+      const mode = state.authMode;
+      return `
+        <header><h1>Account</h1></header>
+        <main>
+          <div class="auth-panel">
+            <h2>Join Shine</h2>
+            <p class="hint">Register with Gmail or a regular email account. Your clusters and decks are saved to your profile.</p>
+            ${state.authError ? `<p style="color:var(--danger);font-size:.82rem;margin-bottom:12px">${esc(state.authError)}</p>` : ''}
+            <div id="google-signin-btn" style="display:flex;justify-content:center;min-height:44px"></div>
+            <div class="auth-divider">or continue with email</div>
+            <div class="auth-tabs">
+              <button type="button" class="${mode === 'signin' ? 'active' : ''}" data-auth-mode="signin">Sign in</button>
+              <button type="button" class="${mode === 'register' ? 'active' : ''}" data-auth-mode="register">Create account</button>
+            </div>
+            ${mode === 'register' ? '<input id="auth-name" placeholder="Your name" />' : ''}
+            <input id="auth-email" type="email" placeholder="Email address" autocomplete="username" />
+            <input id="auth-password" type="password" placeholder="Password (8+ characters)" autocomplete="${mode === 'register' ? 'new-password' : 'current-password'}" />
+            <button class="btn-primary" data-auth-submit style="margin-top:12px">${mode === 'register' ? 'Create account' : 'Sign in'}</button>
+            <p class="hint" style="margin-top:14px;margin-bottom:0">You can browse as a guest without signing in. Create an account anytime to keep your knowledge safe.</p>
+          </div>
+          <details class="schedule-fold">
+            <summary>Gmail sign-in setup (optional)</summary>
+            <div class="sched-body">
+              <div class="field">
+                <label>Google OAuth Web Client ID</label>
+                <input id="google-client-id-guest" value="${esc(getGoogleClientId())}" placeholder="xxxx.apps.googleusercontent.com" />
+                <small>Create at console.cloud.google.com → APIs → Credentials → OAuth 2.0 Client IDs (Web).</small>
+              </div>
+              <button class="btn-outline" data-save-google-id>Save</button>
+            </div>
+          </details>
+        </main>`;
     }
 
     function renderDeckCard(d) {
@@ -795,6 +1093,9 @@
             <div class="tagline">Your knowledge, organized in clusters</div>
           </div>
           <div class="header-actions">
+            <button class="icon-btn" data-go-account title="Account">${state.auth.user?.avatar
+              ? `<img src="${esc(state.auth.user.avatar)}" alt="" style="width:22px;height:22px;border-radius:50%">`
+              : '👤'}</button>
             <button class="icon-btn" data-new-cluster title="New cluster">📁</button>
           </div>
         </header>
@@ -1312,6 +1613,34 @@
         if (state.tab === 'calendar') state.calSelected = todayStr();
         render();
       }));
+      document.querySelector('[data-go-account]')?.addEventListener('click', () => {
+        state.tab = 'account';
+        state.view = 'home';
+        state.deckId = null;
+        render();
+      });
+      document.querySelectorAll('[data-auth-mode]').forEach(el => el.addEventListener('click', () => {
+        state.authMode = el.dataset.authMode;
+        setAuthError('');
+        render();
+      }));
+      document.querySelector('[data-auth-submit]')?.addEventListener('click', async () => {
+        const email = document.getElementById('auth-email')?.value;
+        const password = document.getElementById('auth-password')?.value;
+        const name = document.getElementById('auth-name')?.value;
+        if (state.authMode === 'register') await registerWithEmail(name, email, password);
+        else await signInWithEmail(email, password);
+        render();
+      });
+      document.querySelector('[data-sign-out]')?.addEventListener('click', () => {
+        if (confirm('Sign out of Shine?')) signOut();
+      });
+      document.querySelector('[data-save-google-id]')?.addEventListener('click', () => {
+        const val = (document.getElementById('google-client-id') || document.getElementById('google-client-id-guest'))?.value.trim();
+        try { localStorage.setItem(GOOGLE_CLIENT_KEY, val); } catch (e) {}
+        alert(val ? 'Google Client ID saved. Gmail sign-in is now enabled.' : 'Google Client ID cleared.');
+        render();
+      });
       document.querySelector('[data-go-home]')?.addEventListener('click', () => { state.view = 'home'; state.deckId = null; render(); });
       document.querySelectorAll('[data-open-deck]').forEach(el => el.addEventListener('click', e => {
         if (e.target.closest('[data-del-deck]')) return;
