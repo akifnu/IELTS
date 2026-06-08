@@ -53,9 +53,15 @@
       overflow:hidden;-webkit-font-smoothing:antialiased;
     }
     #shine-app{
+      container-type:size;container-name:shine;
       display:flex;flex-direction:column;
-      width:100%;height:100%;height:100dvh;
-      max-width:100vw;margin:0 auto;position:relative;overflow:hidden;
+      width:100%;height:100%;max-height:100%;
+      max-width:100%;margin:0 auto;position:relative;overflow:hidden;
+    }
+    #app-shell{
+      flex:1 1 auto;min-height:0;width:100%;
+      display:flex;flex-direction:column;position:relative;z-index:1;
+      overflow:hidden;
     }
     #shine-app::before,#shine-app::after{
       content:'';position:absolute;pointer-events:none;z-index:0;border-radius:50%;filter:blur(60px);opacity:.55;
@@ -65,16 +71,22 @@
     #app{
       flex:1 1 auto;min-height:0;width:100%;max-width:100%;
       overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
-      display:flex;flex-direction:column;position:relative;z-index:1;
+      display:flex;flex-direction:column;position:relative;
       animation:pageIn .35s var(--ease);
     }
+    #chrome-footer{flex-shrink:0;position:relative;width:100%}
+    #nav-root{width:100%;max-width:min(100%,var(--shell-max));margin:0 auto}
+    body.modal-open #app-shell{overflow:hidden}
     body.modal-open #app{overflow:hidden}
-    #modal-root{position:absolute;inset:0;z-index:300;pointer-events:none;overflow:hidden}
+    #modal-root{
+      container-type:size;container-name:modal;
+      position:absolute;inset:0;z-index:300;pointer-events:none;overflow:hidden;
+    }
     #modal-root:not(:empty){pointer-events:auto}
     #toast-root{
-      position:absolute;left:50%;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));
-      transform:translateX(-50%);z-index:400;pointer-events:none;
-      max-width:min(90vw,var(--shell-max));width:max-content;
+      position:absolute;left:50%;bottom:100%;transform:translate(-50%,-0.65rem);
+      z-index:2;pointer-events:none;
+      max-width:min(92%,var(--shell-max));width:max-content;
     }
     @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
     #splash{position:absolute;inset:0;z-index:250;display:flex;align-items:flex-end;justify-content:center;background:#0a0a12;overflow:hidden;transition:opacity .6s var(--ease),visibility .6s;pointer-events:auto;width:100%;max-width:100%}
@@ -193,7 +205,8 @@
     .access-banner strong{color:var(--text)}
     body.modal-open{touch-action:none}
     .modal-bg{
-      position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;
+      position:absolute;inset:0;max-height:100%;
+      display:flex;flex-direction:column;justify-content:flex-end;min-height:0;
       background:rgba(15,23,42,.4);backdrop-filter:blur(6px);overflow:hidden;
       animation:fadeIn .25s ease;
     }
@@ -201,7 +214,7 @@
     .modal-bg:not(.modal-bg-sheet){justify-content:center;padding:var(--space-md)}
     .modal-share{
       display:flex;flex-direction:column;width:100%;max-width:100%;
-      max-height:min(92%,92dvh);overflow:hidden;padding:0;position:relative;
+      max-height:92%;max-height:92cqh;overflow:hidden;padding:0;position:relative;
       min-height:0;flex-shrink:1;border-radius:1.25rem 1.25rem 0 0;
     }
     .share-sheet-handle{width:2.5rem;height:0.25rem;border-radius:99px;background:rgba(15,23,42,.14);margin:0.6rem auto 0.4rem;flex-shrink:0}
@@ -213,7 +226,7 @@
     .share-header{flex-shrink:0;padding:0 var(--space-md);padding-right:3rem;margin-bottom:var(--space-sm)}
     .modal:not(.modal-share){
       width:100%;max-width:min(var(--shell-max),100%);
-      max-height:min(90%,90dvh);overflow-y:auto;overflow-x:hidden;
+      max-height:90%;max-height:90cqh;overflow-y:auto;overflow-x:hidden;
       border-radius:var(--radius);
     }
     .modal-bg:not(.modal-bg-sheet) .modal:not(.modal-share){border-radius:var(--radius)}
@@ -261,7 +274,7 @@
     .share-more-toggle::after{content:'▾';font-size:.85rem;transition:transform .2s var(--ease);flex-shrink:0}
     .share-more-toggle[aria-expanded="true"]::after{transform:rotate(180deg)}
     .share-more-panel{max-height:0;overflow:hidden;transition:max-height .28s var(--ease);pointer-events:none}
-    .share-more-panel.open{max-height:50vh;max-height:50dvh;pointer-events:auto}
+    .share-more-panel.open{max-height:40%;max-height:40cqh;pointer-events:auto}
     .share-more-body{padding:2px 0 8px;display:flex;flex-direction:column;gap:8px}
     .share-more .btn-outline{width:100%;margin-bottom:0;padding:11px 14px;font-size:.84rem}
     .share-more .share-note{font-size:.72rem;color:var(--muted);line-height:1.45;margin:0}
@@ -278,7 +291,7 @@
     }
     .fab{
       position:sticky;align-self:flex-end;margin-right:var(--space-md);margin-top:auto;
-      bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));width:3.6rem;height:3.6rem;border-radius:1.1rem;flex-shrink:0;
+      bottom:var(--space-md);width:3.6rem;height:3.6rem;border-radius:1.1rem;flex-shrink:0;
       background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;
       font-size:1.75rem;font-weight:300;line-height:1;cursor:pointer;
       box-shadow:0 12px 32px rgba(91,94,247,.45);transition:transform .2s var(--ease),box-shadow .2s;
@@ -390,7 +403,7 @@
     .cancel{background:var(--surface-2);color:var(--muted)}
     .confirm{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 6px 16px rgba(91,94,247,.3)}
     .bottom-nav{
-      flex-shrink:0;width:min(100%,var(--shell-max));max-width:calc(100% - 1.75rem);
+      flex-shrink:0;width:calc(100% - 1.75rem);max-width:var(--shell-max);
       margin:var(--space-sm) auto calc(var(--space-sm) + env(safe-area-inset-bottom,0px));
       background:rgba(255,255,255,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
       border:1px solid rgba(255,255,255,.9);border-radius:1.6rem;
@@ -638,9 +651,14 @@
       <p class="splash-credit" id="splash-credit"></p>
     </div>
   </div>
-  <div id="app"></div>
+  <div id="app-shell">
+    <div id="app"></div>
+    <div id="chrome-footer">
+      <div id="toast-root" role="status" aria-live="polite"></div>
+      <div id="nav-root"></div>
+    </div>
+  </div>
   <div id="modal-root" aria-live="polite"></div>
-  <div id="toast-root" role="status" aria-live="polite"></div>
   </div>
   <script>
     (function loadAuthConfig() {
@@ -2561,7 +2579,7 @@
         else if (state.tab === 'account') app.innerHTML = renderAccount();
         else app.innerHTML = renderHome();
         renderModalLayer();
-        if (state.view === 'home' || state.view === 'deck') app.innerHTML += renderBottomNav();
+        renderNavLayer();
         paintToast(state.toast);
         bind();
         if (state.modal?.type === 'share-deck') bindShareModalHandlers();
@@ -2585,6 +2603,13 @@
           <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar"><span class="ni">${NAV_ICONS.calendar}</span>Calendar</button>
           <button class="${state.tab === 'account' ? 'active' : ''}" data-tab="account"><span class="ni">${NAV_ICONS.account}</span>Account${inboxCount() ? `<span class="nav-badge">${inboxCount()}</span>` : ''}</button>
         </nav>`;
+    }
+
+    function renderNavLayer() {
+      const navRoot = document.getElementById('nav-root');
+      if (!navRoot) return;
+      const showNav = state.view === 'home' || state.view === 'deck';
+      navRoot.innerHTML = showNav ? renderBottomNav() : '';
     }
 
     function renderAccount() {
@@ -3681,7 +3706,7 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations()
         .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-        .then(() => navigator.serviceWorker.register('sw.js?v=11'))
+        .then(() => navigator.serviceWorker.register('sw.js?v=12'))
         .catch(() => {});
     }
 
