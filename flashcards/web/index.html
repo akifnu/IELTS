@@ -3141,8 +3141,13 @@
         }
       };
       document.querySelectorAll('[data-pick-role]').forEach(el => el.addEventListener('click', () => {
-        if (state.modal?.type === 'share-deck') state.modal.shareRole = el.dataset.pickRole;
-        render();
+        if (state.modal?.type !== 'share-deck') return;
+        const role = el.dataset.pickRole;
+        if (state.modal.shareRole === role) return;
+        state.modal.shareRole = role;
+        document.querySelectorAll('[data-pick-role]').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.pickRole === role);
+        });
       }));
       document.querySelectorAll('[data-update-collab-idx]').forEach(el => el.addEventListener('change', () => {
         const deckId = state.modal?.deckId;
