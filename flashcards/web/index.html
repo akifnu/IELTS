@@ -61,7 +61,7 @@
     @keyframes splashKen{to{transform:scale(1)}}
     .splash-scrim{
       position:absolute;inset:0;z-index:1;
-      background:linear-gradient(180deg,rgba(6,8,18,.5) 0%,rgba(8,10,20,.12) 35%,rgba(8,10,20,.25) 55%,rgba(8,10,20,.9) 78%,rgba(8,10,20,.97) 100%);
+      background:linear-gradient(180deg,rgba(6,8,18,.35) 0%,rgba(8,10,20,.08) 40%,rgba(8,10,20,.2) 58%,rgba(8,10,20,.82) 80%,rgba(8,10,20,.94) 100%);
     }
     .splash-topbar{
       position:absolute;top:0;left:0;right:0;z-index:3;display:flex;align-items:center;gap:11px;
@@ -523,14 +523,14 @@
     const GOOGLE_CLIENT_ID_DEFAULT = '';
 
     const SPLASH_SCENES = [
-      { image: 'images/splash/sunrise.jpg', position: 'center', hook: 'Begin again.' },
-      { image: 'images/splash/couple-dawn.jpg', position: 'center 40%', hook: 'A new day.' },
-      { image: 'images/splash/friends-hill.jpg', position: 'center 35%', hook: 'Rise together.' },
-      { image: 'images/splash/woman-sun.jpg', position: 'center 30%', hook: 'You\'re ready.' },
-      { image: 'images/splash/silhouette.jpg', position: 'center 45%', hook: 'Step forward.' },
-      { image: 'images/splash/winter-walk.jpg', position: 'center 40%', hook: 'Walk on.' },
-      { image: 'images/splash/open-road.jpg', position: 'center 50%', hook: 'Open road.' },
-      { image: 'images/splash/forest-path.jpg', position: 'center 55%', hook: 'Breathe. Begin.' },
+      { image: 'images/splash/forest-light.jpg', position: 'center 45%', hook: 'Toward the light.' },
+      { image: 'images/splash/golden-sea.jpg', position: 'center 40%', hook: 'Day breaks.' },
+      { image: 'images/splash/golden-field.jpg', position: 'center 35%', hook: 'Start again.' },
+      { image: 'images/splash/shore-line.jpg', position: 'center 50%', hook: 'Clean slate.' },
+      { image: 'images/splash/fog-peaks.jpg', position: 'center 30%', hook: 'Mist lifts.' },
+      { image: 'images/splash/alps-sunrise.jpg', position: 'center 45%', hook: 'Rise.' },
+      { image: 'images/splash/ocean-dawn.jpg', position: 'center 55%', hook: 'Wash away.' },
+      { image: 'images/splash/open-road.jpg', position: 'center 40%', hook: 'Go forward.' },
     ];
 
     function getGoogleClientId() {
@@ -2444,7 +2444,7 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations()
         .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-        .then(() => navigator.serviceWorker.register('sw.js?v=4'))
+        .then(() => navigator.serviceWorker.register('sw.js?v=5'))
         .catch(() => {});
     }
 
