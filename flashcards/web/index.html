@@ -167,7 +167,12 @@
     .badge-shared{background:#f3e8ff;color:#7c3aed}
     .access-banner{padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:14px;font-size:.8rem;color:var(--muted);line-height:1.45}
     .access-banner strong{color:var(--text)}
-    .modal-share{max-width:420px;max-height:min(90vh,640px);overflow-y:auto;padding:20px 22px 22px;position:relative}
+    body.modal-open{overflow:hidden;touch-action:none}
+    .modal-share{max-width:420px;max-height:min(88vh,640px);overflow-y:auto;overscroll-behavior:contain;padding:20px 22px calc(22px + env(safe-area-inset-bottom));position:relative;contain:layout style}
+    @media (max-width:520px){
+      .modal-bg{align-items:flex-end;padding:0}
+      .modal-share{max-width:100%;width:100%;border-radius:22px 22px 0 0;max-height:min(92vh,720px)}
+    }
     .modal-share .modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;font-size:.9rem;line-height:1;transition:background .15s,color .15s}
     .modal-share .modal-close:hover{background:var(--primary-light);color:var(--primary)}
     .share-header{padding-right:36px;margin-bottom:16px}
@@ -176,8 +181,8 @@
     .share-meta{font-size:.76rem;color:var(--muted);margin:4px 0 0}
     .share-section{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
     .share-section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
-    .role-segment{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:12px;gap:3px}
-    .role-segment button{flex:1;border:none;background:transparent;padding:9px 6px;border-radius:8px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;line-height:1.25;transition:background .15s,color .15s,box-shadow .15s}
+    .role-segment{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:12px;gap:3px;min-height:52px}
+    .role-segment button{flex:1;border:none;background:transparent;padding:9px 6px;border-radius:8px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;line-height:1.25;transition:background .15s,color .15s,box-shadow .15s;min-height:46px}
     .role-segment button.active{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 2px 10px rgba(91,94,247,.28)}
     .role-segment button span{display:block;font-size:.64rem;font-weight:500;opacity:.88;margin-top:2px}
     .share-invite-row{display:flex;gap:8px;align-items:stretch}
@@ -200,10 +205,13 @@
     .device-chip:hover{border-color:var(--primary);background:var(--primary-light)}
     .device-chip .avatar{width:22px;height:22px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;overflow:hidden;flex-shrink:0}
     .device-chip .avatar img{width:100%;height:100%;object-fit:cover}
-    .share-more{margin-top:2px}
-    .share-more summary{font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;padding:10px 0;list-style:none}
-    .share-more summary::-webkit-details-marker{display:none}
-    .share-more-body{padding:2px 0 4px;display:flex;flex-direction:column;gap:8px}
+    .share-more{margin-top:2px;border-top:1px solid var(--border);padding-top:4px}
+    .share-more-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;border:none;background:transparent;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;padding:12px 0;text-align:left;font-family:inherit}
+    .share-more-toggle::after{content:'▾';font-size:.85rem;transition:transform .2s var(--ease);flex-shrink:0}
+    .share-more-toggle[aria-expanded="true"]::after{transform:rotate(180deg)}
+    .share-more-panel{max-height:0;overflow:hidden;transition:max-height .28s var(--ease);pointer-events:none}
+    .share-more-panel.open{max-height:520px;pointer-events:auto}
+    .share-more-body{padding:2px 0 8px;display:flex;flex-direction:column;gap:8px}
     .share-more .btn-outline{width:100%;margin-bottom:0;padding:11px 14px;font-size:.84rem}
     .share-more .share-note{font-size:.72rem;color:var(--muted);line-height:1.45;margin:0}
     .fab{
@@ -416,7 +424,9 @@
     .btn-google-oneclick.splash-google{background:rgba(255,255,255,.95);border-color:rgba(255,255,255,.9)}
     .google-fallback-host{display:flex;justify-content:center;min-height:0;overflow:hidden}
     .google-fallback-host:empty{display:none}
-    .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.85rem;font-weight:500;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:90%;text-align:center;animation:fadeUp .3s ease}
+    #toast-root{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:450;pointer-events:none;max-width:90%}
+    .toast{background:#0f172a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.85rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:center;animation:fadeUp .3s ease}
+    .toast.toast-stable{animation:none}
     .due-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
     .backup-row{display:flex;gap:8px;margin-top:12px}
     .backup-row button,.backup-row label{flex:1}
@@ -567,6 +577,8 @@
     </div>
   </div>
   <div id="app"></div>
+  <div id="modal-root" aria-live="polite"></div>
+  <div id="toast-root" role="status" aria-live="polite"></div>
   <script>
     (function loadAuthConfig() {
       const finish = () => window.dispatchEvent(new Event('shine-auth-config-ready'));
@@ -883,65 +895,72 @@
     }
 
     function isShareModalOpen() {
-      return state.modal?.type === 'share-deck' && !!document.querySelector('.modal-share');
+      return state.modal?.type === 'share-deck' && !!document.getElementById('modal-root')?.querySelector('.modal-share');
     }
 
     function paintToast(msg) {
-      let el = document.querySelector('.toast');
+      const root = document.getElementById('toast-root');
+      if (!root) return;
       if (!msg) {
-        el?.remove();
+        root.innerHTML = '';
         return;
       }
-      if (!el) {
-        el = document.createElement('div');
-        el.className = 'toast';
-        el.setAttribute('role', 'status');
-        document.getElementById('app')?.appendChild(el);
-      }
-      el.textContent = msg;
+      const hadToast = !!root.querySelector('.toast');
+      root.innerHTML = `<div class="toast${hadToast ? ' toast-stable' : ''}">${esc(msg)}</div>`;
     }
 
     function showToast(msg) {
       state.toast = msg;
-      if (state.ready) {
-        if (isShareModalOpen()) paintToast(msg);
-        else render();
-      }
+      if (state.ready) paintToast(msg);
       clearTimeout(showToast._t);
       showToast._t = setTimeout(() => {
         state.toast = null;
-        if (!state.ready) return;
-        if (isShareModalOpen()) paintToast(null);
-        else render();
+        if (state.ready) paintToast(null);
       }, 2800);
     }
 
-    function captureShareModalUi() {
-      return {
-        scrollTop: document.querySelector('.modal-share')?.scrollTop ?? 0,
-        moreOpen: document.querySelector('.share-more')?.open ?? false,
-      };
+    function setModalOpen(open) {
+      document.body.classList.toggle('modal-open', !!open);
     }
 
-    function restoreShareModalUi(ui) {
-      if (!ui) return;
+    function refreshShareCollaboratorsPanel() {
+      const deckId = state.modal?.deckId;
+      const d = deckById(deckId);
       const modal = document.querySelector('.modal-share');
-      const bg = document.querySelector('.modal-bg');
-      modal?.classList.add('modal-stable');
-      bg?.classList.add('modal-stable');
-      if (modal) modal.scrollTop = ui.scrollTop;
-      const more = document.querySelector('.share-more');
-      if (more) more.open = ui.moreOpen;
+      if (!modal || !d) return;
+      const html = renderCollaboratorsList(d);
+      const existing = document.getElementById('share-collab-section');
+      const anchor = modal.querySelector('[data-share-device-anchor]');
+      if (html) {
+        if (existing) existing.outerHTML = html;
+        else if (anchor) anchor.insertAdjacentHTML('beforebegin', html);
+        else modal.querySelector('.share-section')?.insertAdjacentHTML('afterend', html);
+      } else {
+        existing?.remove();
+      }
+      bindShareCollaboratorHandlers();
     }
 
-    function patchShareModal() {
-      if (state.modal?.type !== 'share-deck') {
-        render();
+    function clearShareInviteField() {
+      const input = document.getElementById('share-deck-email');
+      if (input) input.value = '';
+      if (state.modal?.type === 'share-deck') state.modal.recipientEmail = '';
+    }
+
+    function renderModalLayer() {
+      const root = document.getElementById('modal-root');
+      if (!root) return;
+      if (!state.modal) {
+        root.innerHTML = '';
+        setModalOpen(false);
         return;
       }
-      const ui = captureShareModalUi();
-      render();
-      restoreShareModalUi(ui);
+      setModalOpen(true);
+      root.innerHTML = renderModal();
+      const modal = root.querySelector('.modal-share, .modal');
+      const bg = root.querySelector('.modal-bg');
+      modal?.classList.add('modal-stable');
+      bg?.classList.add('modal-stable');
     }
 
     function bindShareCollaboratorHandlers() {
@@ -980,16 +999,21 @@
         const deckId = state.modal?.deckId;
         if (!deckId) return;
         const role = getSelectedShareRole();
+        const sendBtn = document.querySelector('[data-send-deck-email]');
+        if (sendBtn) sendBtn.disabled = true;
         try {
           const { cloudOk, role: sentRole } = await sendDeckToUser(email, deckId, role);
           const roleLabel = DECK_ROLES[sentRole]?.label || sentRole;
-          state.modal = { type: 'share-deck', deckId, shareRole: sentRole, recipientEmail: '' };
+          state.modal.shareRole = sentRole;
+          clearShareInviteField();
+          refreshShareCollaboratorsPanel();
           showToast(cloudOk || !getShareApiUrl()
             ? `Invite sent · ${roleLabel}`
             : `Saved on this device · ${roleLabel}`);
-          patchShareModal();
         } catch (e) {
           showToast(e.message || 'Could not send deck');
+        } finally {
+          if (sendBtn) sendBtn.disabled = false;
         }
       };
       document.querySelectorAll('[data-pick-role]').forEach(el => el.addEventListener('click', () => {
@@ -1021,6 +1045,15 @@
       document.querySelector('[data-native-share-deck]')?.addEventListener('click', async () => {
         const deckId = state.modal?.deckId;
         if (deckId) await shareDeckNative(deckId);
+      });
+      document.querySelector('.share-more-toggle')?.addEventListener('click', () => {
+        const panel = document.querySelector('.share-more-panel');
+        const toggle = document.querySelector('.share-more-toggle');
+        if (!panel || !toggle) return;
+        const open = !panel.classList.contains('open');
+        panel.classList.toggle('open', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (state.modal?.type === 'share-deck') state.modal.shareMoreOpen = open;
       });
       bindShareCollaboratorHandlers();
     }
@@ -1371,15 +1404,28 @@
 
     async function shareDeckNative(deckId) {
       const d = deckById(deckId);
-      if (!d || !navigator.share) return false;
+      if (!d) return false;
       const payload = buildDeckSharePayload(d);
       const json = JSON.stringify(payload, null, 2);
       const slug = (d.name || 'deck').replace(/[^\w\-]+/g, '-').replace(/-+/g, '-').toLowerCase() || 'deck';
       const filename = `shine-deck-${slug}.json`;
+      if (window.ShineAndroid?.shareFile) {
+        try {
+          window.ShineAndroid.shareFile(filename, json, `Shine: ${d.name}`);
+          return true;
+        } catch (e) {
+          showToast('Could not share');
+        }
+        return false;
+      }
+      if (!navigator.share) {
+        shareDeckFile(deckId);
+        return false;
+      }
       try {
         const file = new File([json], filename, { type: 'application/json' });
         if (!navigator.canShare?.({ files: [file] })) {
-          showToast('Your device cannot share files from the browser');
+          shareDeckFile(deckId);
           return false;
         }
         await navigator.share({
@@ -1526,7 +1572,7 @@
         showToast('Only the deck owner can manage sharing');
         return;
       }
-      state.modal = { type: 'share-deck', deckId, shareRole: 'viewer' };
+      state.modal = { type: 'share-deck', deckId, shareRole: 'viewer', shareMoreOpen: false };
       render();
     }
 
@@ -1559,9 +1605,9 @@
     }
 
     function renderDeviceUserChips(users) {
-      if (!users.length) return '';
+      if (!users.length) return '<div data-share-device-anchor></div>';
       return `
-        <div class="share-section">
+        <div class="share-section" data-share-device-anchor>
           <div class="share-section-title">On this device</div>
           <div class="device-chips">
             ${users.map(u => `
@@ -2448,9 +2494,9 @@
         else if (state.tab === 'calendar') app.innerHTML = renderGlobalCalendar();
         else if (state.tab === 'account') app.innerHTML = renderAccount();
         else app.innerHTML = renderHome();
-        if (state.modal) app.innerHTML += renderModal();
+        renderModalLayer();
         if (state.view === 'home' || state.view === 'deck') app.innerHTML += renderBottomNav();
-        if (state.toast) app.innerHTML += `<div class="toast" role="status">${esc(state.toast)}</div>`;
+        paintToast(state.toast);
         bind();
         if (state.modal?.type === 'share-deck') bindShareModalHandlers();
         if (state.tab === 'account') setTimeout(initGoogleButton, 50);
@@ -3136,16 +3182,17 @@
           </div>
           ${renderCollaboratorsList(d)}
           ${renderDeviceUserChips(listDeviceUsers())}
-          <details class="share-more">
-            <summary>Other ways to share</summary>
-            <div class="share-more-body">
-              ${typeof navigator !== 'undefined' && navigator.share ? '<button type="button" class="btn-outline" data-native-share-deck>Send file via Messages or Mail</button>' : ''}
-              <button type="button" class="btn-outline" data-download-share-deck>Download deck file</button>
-              ${canLink ? '<button type="button" class="btn-outline" data-copy-share-link>Copy share link</button>' : ''}
-              ${!canLink ? '<p class="share-note">This deck is too large for a link — use email invite or download.</p>' : ''}
-              <p class="share-note">Selling decks is coming soon — permissions are already set up for paid listings.</p>
+          <div class="share-more">
+            <button type="button" class="share-more-toggle" aria-expanded="${m.shareMoreOpen ? 'true' : 'false'}">Other ways to share</button>
+            <div class="share-more-panel${m.shareMoreOpen ? ' open' : ''}">
+              <div class="share-more-body">
+                ${typeof navigator !== 'undefined' && (navigator.share || window.ShineAndroid) ? '<button type="button" class="btn-outline" data-native-share-deck>Send file via Messages or Mail</button>' : ''}
+                <button type="button" class="btn-outline" data-download-share-deck>Download deck file</button>
+                ${canLink ? '<button type="button" class="btn-outline" data-copy-share-link>Copy share link</button>' : ''}
+                ${!canLink ? '<p class="share-note">This deck is too large for a link — use email invite or download.</p>' : ''}
+              </div>
             </div>
-          </details>
+          </div>
         </div></div>`;
       }
       if (m.type === 'import-share') {
@@ -3565,7 +3612,7 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations()
         .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-        .then(() => navigator.serviceWorker.register('sw.js?v=7'))
+        .then(() => navigator.serviceWorker.register('sw.js?v=8'))
         .catch(() => {});
     }
 

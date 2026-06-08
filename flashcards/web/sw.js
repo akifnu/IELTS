@@ -1,4 +1,4 @@
-const CACHE = 'shine-v7';
+const CACHE = 'shine-v8';
 const SHELL = [
   './manifest.json',
   './icons/icon.svg',
