@@ -523,46 +523,14 @@
     const GOOGLE_CLIENT_ID_DEFAULT = '';
 
     const SPLASH_SCENES = [
-      {
-        image: 'https://images.unsplash.com/photo-1534447676618-7a4b71b094bb?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 40%',
-        hook: 'Begin again.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1519837156-67b1b6f59690?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 35%',
-        hook: 'You\'re ready.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1493246507819-60e85c19337f?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 45%',
-        hook: 'Rise.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1494783367193-95abf392f1ad?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 30%',
-        hook: 'Leap forward.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1464822759023-fed230ff075c?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 50%',
-        hook: 'Walk on.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1502680390469-beacf1ae37fa?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 40%',
-        hook: 'Today is yours.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1473495013490-061887a3e151?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 55%',
-        hook: 'Breathe. Begin.',
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1493663284031-b7e3a86f8ca8?auto=format&fit=crop&w=1400&q=90',
-        position: 'center 50%',
-        hook: 'Step inside.',
-      },
+      { image: 'images/splash/sunrise.jpg', position: 'center', hook: 'Begin again.' },
+      { image: 'images/splash/couple-dawn.jpg', position: 'center 40%', hook: 'A new day.' },
+      { image: 'images/splash/friends-hill.jpg', position: 'center 35%', hook: 'Rise together.' },
+      { image: 'images/splash/woman-sun.jpg', position: 'center 30%', hook: 'You\'re ready.' },
+      { image: 'images/splash/silhouette.jpg', position: 'center 45%', hook: 'Step forward.' },
+      { image: 'images/splash/winter-walk.jpg', position: 'center 40%', hook: 'Walk on.' },
+      { image: 'images/splash/open-road.jpg', position: 'center 50%', hook: 'Open road.' },
+      { image: 'images/splash/forest-path.jpg', position: 'center 55%', hook: 'Breathe. Begin.' },
     ];
 
     function getGoogleClientId() {
@@ -1474,21 +1442,16 @@
       preloadSplashImage(SPLASH_SCENES[nextIndex].image);
 
       if (photo) {
-        photo.classList.remove('is-ready');
-        photo.classList.add('is-loading');
-        const img = new Image();
-        img.onload = () => {
-          photo.style.backgroundImage = `url("${scene.image}")`;
-          photo.style.backgroundPosition = scene.position || 'center';
-          photo.classList.remove('is-loading');
-          photo.classList.add('is-ready');
-        };
-        img.onerror = () => {
+        const url = scene.image;
+        photo.style.backgroundImage = `url("${url}")`;
+        photo.style.backgroundPosition = scene.position || 'center';
+        photo.classList.remove('is-loading');
+        photo.classList.add('is-ready');
+        const probe = new Image();
+        probe.onerror = () => {
           photo.style.backgroundImage = 'linear-gradient(145deg,#1e1b4b,#5b5ef7)';
-          photo.classList.remove('is-loading');
-          photo.classList.add('is-ready');
         };
-        img.src = scene.image;
+        probe.src = url;
       }
 
       const hero = document.getElementById('splash-hero');
@@ -2481,7 +2444,7 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations()
         .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-        .then(() => navigator.serviceWorker.register('sw.js?v=3'))
+        .then(() => navigator.serviceWorker.register('sw.js?v=4'))
         .catch(() => {});
     }
 

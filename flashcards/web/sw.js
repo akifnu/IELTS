@@ -1,5 +1,17 @@
-const CACHE = 'shine-v3';
-const SHELL = ['./manifest.json', './icons/icon.svg', './auth-config.js'];
+const CACHE = 'shine-v4';
+const SHELL = [
+  './manifest.json',
+  './icons/icon.svg',
+  './auth-config.js',
+  './images/splash/sunrise.jpg',
+  './images/splash/couple-dawn.jpg',
+  './images/splash/friends-hill.jpg',
+  './images/splash/woman-sun.jpg',
+  './images/splash/silhouette.jpg',
+  './images/splash/winter-walk.jpg',
+  './images/splash/open-road.jpg',
+  './images/splash/forest-path.jpg',
+];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
