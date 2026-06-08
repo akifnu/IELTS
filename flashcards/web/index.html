@@ -361,7 +361,10 @@
     .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.85rem;font-weight:500;z-index:400;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:90%;text-align:center;animation:fadeUp .3s ease}
     .due-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
     .backup-row{display:flex;gap:8px;margin-top:12px}
-    .backup-row button{flex:1}
+    .backup-row button,.backup-row label{flex:1}
+    .share-link-row{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+    .share-link-row input{flex:1;min-width:0;font-size:.78rem;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--white)}
+    .share-hint{font-size:.75rem;color:var(--muted);margin-top:8px;line-height:1.4}
     .btn-primary:disabled,.btn-outline:disabled{opacity:.55;cursor:not-allowed}
     .page-title{font-size:1.12rem;font-weight:800;letter-spacing:-.02em;color:var(--text)}
     .page-sub{font-size:.78rem;color:var(--muted);font-weight:500;margin-top:2px}
@@ -698,6 +701,7 @@
       toast: null,
       ready: false,
       splashDone: false,
+      pendingShare: null,
     };
 
     // ── Auth ──
@@ -839,6 +843,296 @@
         }
       };
       reader.readAsText(file);
+    }
+
+    const SHARE_URL_MAX = 1800;
+
+    function encodeSharePayload(obj) {
+      const json = JSON.stringify(obj);
+      const bytes = new TextEncoder().encode(json);
+      let bin = '';
+      bytes.forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function decodeSharePayload(encoded) {
+      try {
+        let b64 = String(encoded || '').trim().replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return JSON.parse(new TextDecoder().decode(bytes));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function buildDeckSharePayload(d) {
+      const cl = clusterById(d.clusterId);
+      const algo = deckAlgo(d);
+      return {
+        shine: 1,
+        kind: 'deck',
+        v: 1,
+        sharedAt: todayStr(),
+        cluster: cl ? { name: cl.name, emoji: cl.emoji } : null,
+        deck: {
+          name: d.name,
+          description: d.description || '',
+          ebbinghaus: isEbbinghausOn(d),
+          algo: {
+            algorithm: algo.algorithm,
+            preset: algo.preset,
+            enabled: isEbbinghausOn(d),
+            intervals: algo.intervals,
+            initialStability: algo.initialStability,
+            initialEase: algo.initialEase,
+            minEase: algo.minEase,
+            maxEase: algo.maxEase,
+            easeBonus: algo.easeBonus,
+            easePenalty: algo.easePenalty,
+            retentionTarget: algo.retentionTarget,
+            maxSessionsPerDay: algo.maxSessionsPerDay,
+            failIntervalDays: algo.failIntervalDays,
+            curveSteepness: algo.curveSteepness,
+          },
+          cards: d.cards.map(c => ({
+            front: cardFront(c),
+            back: cardBack(c),
+            color: c.color || null,
+          })),
+        },
+      };
+    }
+
+    function parseDeckSharePayload(data) {
+      if (!data) return null;
+      if (data.kind === 'deck' && data.shine === 1 && data.deck) return data;
+      if (data.name && Array.isArray(data.cards) && !data.decks) {
+        return { shine: 1, kind: 'deck', v: 1, deck: data };
+      }
+      return null;
+    }
+
+    function uniqueDeckName(name) {
+      const base = String(name || '').trim() || 'Shared deck';
+      const names = new Set(state.decks.map(d => d.name));
+      if (!names.has(base)) return base;
+      let i = 2;
+      while (names.has(`${base} (${i})`)) i++;
+      return `${base} (${i})`;
+    }
+
+    function clusterHintMatch(hint) {
+      if (!hint?.name) return null;
+      return state.clusters.find(c => c.name.toLowerCase() === hint.name.toLowerCase()) || null;
+    }
+
+    function resolveClusterForShare(hint, preferredId) {
+      if (preferredId === '__new__' && hint?.name) {
+        const created = initCluster({ id: nextId(state.clusters), name: hint.name, emoji: hint.emoji || '📁' });
+        state.clusters.push(created);
+        return created.id;
+      }
+      if (preferredId != null && preferredId !== '__new__' && clusterById(preferredId)) return preferredId;
+      const match = clusterHintMatch(hint);
+      if (match) return match.id;
+      if (hint?.name) {
+        const created = initCluster({ id: nextId(state.clusters), name: hint.name, emoji: hint.emoji || '📁' });
+        state.clusters.push(created);
+        return created.id;
+      }
+      return state.clusters[0]?.id ?? null;
+    }
+
+    function importSharedDeck(payload, options = {}) {
+      const parsed = parseDeckSharePayload(payload);
+      if (!parsed?.deck) throw new Error('Invalid shared deck');
+      const src = parsed.deck;
+      const clusterId = resolveClusterForShare(parsed.cluster, options.clusterId);
+      let cardId = Date.now();
+      const cards = (src.cards || []).map(c => initCard({
+        id: cardId++,
+        front: cardFront(c),
+        back: cardBack(c),
+        color: c.color || null,
+      }));
+      const newDeck = initDeck({
+        id: nextId(state.decks),
+        name: uniqueDeckName(src.name),
+        description: src.description || '',
+        clusterId,
+        ebbinghaus: src.ebbinghaus,
+        algo: src.algo || {},
+        cards,
+      });
+      state.decks.unshift(newDeck);
+      markOnboarded();
+      save();
+      return newDeck.id;
+    }
+
+    function shareDeckLink(deckId) {
+      const d = deckById(deckId);
+      if (!d) return null;
+      const encoded = encodeSharePayload(buildDeckSharePayload(d));
+      const url = new URL(location.href);
+      url.search = '';
+      url.hash = '';
+      url.searchParams.set('share', encoded);
+      return url.toString();
+    }
+
+    function shareDeckFile(deckId) {
+      const d = deckById(deckId);
+      if (!d) return;
+      const payload = buildDeckSharePayload(d);
+      const slug = (d.name || 'deck').replace(/[^\w\-]+/g, '-').replace(/-+/g, '-').toLowerCase() || 'deck';
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `shine-deck-${slug}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('Share file downloaded');
+    }
+
+    async function copyShareDeckLink(deckId) {
+      const link = shareDeckLink(deckId);
+      if (!link) return false;
+      if (link.length > SHARE_URL_MAX) {
+        showToast('Deck is too large for a link — download the file instead');
+        return false;
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast('Share link copied');
+        return true;
+      } catch (e) {
+        showToast('Could not copy link');
+        return false;
+      }
+    }
+
+    async function shareDeckNative(deckId) {
+      const d = deckById(deckId);
+      if (!d || !navigator.share) return false;
+      const payload = buildDeckSharePayload(d);
+      const json = JSON.stringify(payload, null, 2);
+      const slug = (d.name || 'deck').replace(/[^\w\-]+/g, '-').replace(/-+/g, '-').toLowerCase() || 'deck';
+      const filename = `shine-deck-${slug}.json`;
+      try {
+        const file = new File([json], filename, { type: 'application/json' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({
+            title: `Shine: ${d.name}`,
+            text: `Import this deck in Shine`,
+            files: [file],
+          });
+          return true;
+        }
+        const link = shareDeckLink(deckId);
+        if (link && link.length <= SHARE_URL_MAX) {
+          await navigator.share({
+            title: `Shine: ${d.name}`,
+            text: `Import this deck in Shine`,
+            url: link,
+          });
+          return true;
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') showToast('Could not share');
+      }
+      return false;
+    }
+
+    function openShareDeckModal(deckId) {
+      const d = deckById(deckId);
+      if (!d) return;
+      const link = shareDeckLink(deckId);
+      state.modal = {
+        type: 'share-deck',
+        deckId: d.id,
+        link: link && link.length <= SHARE_URL_MAX ? link : null,
+        linkTooLong: !!(link && link.length > SHARE_URL_MAX),
+      };
+      render();
+    }
+
+    function importSharedDeckFromText(text) {
+      const raw = String(text || '').trim();
+      if (!raw) return;
+      let payload = null;
+      try {
+        if (raw.startsWith('{')) payload = parseDeckSharePayload(JSON.parse(raw));
+        else {
+          const url = new URL(raw);
+          const share = url.searchParams.get('share');
+          if (share) payload = parseDeckSharePayload(decodeSharePayload(share));
+        }
+      } catch (e) {}
+      if (!payload) payload = parseDeckSharePayload(decodeSharePayload(raw));
+      if (!payload) {
+        showToast('Could not read shared deck');
+        return;
+      }
+      state.modal = { type: 'import-share', payload };
+      render();
+    }
+
+    function importSharedDeckFile(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          const payload = parseDeckSharePayload(data);
+          if (!payload) throw new Error('invalid');
+          state.modal = { type: 'import-share', payload };
+          render();
+        } catch (e) {
+          showToast('Not a valid shared deck file');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function captureShareFromUrl() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const share = params.get('share');
+        if (!share) return;
+        const payload = parseDeckSharePayload(decodeSharePayload(share));
+        if (payload) state.pendingShare = payload;
+        const clean = new URL(location.href);
+        clean.searchParams.delete('share');
+        history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+      } catch (e) {}
+    }
+
+    function maybePromptPendingShare() {
+      if (!state.pendingShare || !state.ready || state.modal) return;
+      state.modal = { type: 'import-share', payload: state.pendingShare };
+      state.pendingShare = null;
+      render();
+    }
+
+    function renderShareImportPanel() {
+      return `
+        <div class="panel-card">
+          <h2>Shared decks</h2>
+          <p class="hint" style="margin:0 0 12px">Import a deck someone shared. Sharing only sends cards and settings — not your study history.</p>
+          <div class="field" style="margin-bottom:10px">
+            <label>Paste share link</label>
+            <input id="import-share-link" placeholder="https://…?share=…" />
+          </div>
+          <div class="backup-row">
+            <button type="button" class="btn-primary" data-import-share-paste>Import</button>
+            <label class="btn-outline" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0">
+              From file<input type="file" id="import-share-file" accept="application/json,.json" hidden />
+            </label>
+          </div>
+        </div>`;
     }
 
     async function completeLogin(user) {
@@ -1451,7 +1745,8 @@
       if (splash) splash.classList.add('hide');
       state.ready = true;
       try {
-        if (!isOnboarded() && !state.auth.user) state.modal = { type: 'onboard' };
+        if (state.pendingShare) maybePromptPendingShare();
+        else if (!isOnboarded() && !state.auth.user) state.modal = { type: 'onboard' };
         render();
       } catch (e) {
         console.error(e);
@@ -1608,6 +1903,7 @@
               <h2>Your library</h2>
               <p class="hint" style="margin:0">${state.clusters.length} cluster${state.clusters.length !== 1 ? 's' : ''} · ${state.decks.length} deck${state.decks.length !== 1 ? 's' : ''} saved on this device</p>
             </div>
+            ${renderShareImportPanel()}
             <div class="panel-card">
               <h2>Backup</h2>
               <p class="hint" style="margin:0 0 12px">Export your clusters and decks as JSON. Import on another browser or after clearing data.</p>
@@ -1642,6 +1938,7 @@
             <button class="btn-primary" data-auth-submit style="margin-top:12px" ${state.authBusy ? 'disabled' : ''}>${state.authBusy ? 'Please wait…' : (mode === 'register' ? 'Create account' : 'Sign in')}</button>
             <p class="hint" style="margin-top:14px;margin-bottom:0">Guest mode works too — sign in anytime to keep a personal profile on this device.</p>
           </div>
+          ${renderShareImportPanel()}
         </main>`;
     }
 
@@ -2096,10 +2393,11 @@
           </div>
         </div>`).join('');
       return `
-        ${d.cards.length ? `<div class="deck-toolbar">
-          <button class="btn-primary" data-study-now>Study now (${d.cards.length} cards)</button>
-          <button type="button" class="btn-outline btn-shuffle" data-shuffle-deck>🔀 Shuffle cards</button>
-        </div>` : ''}
+        <div class="deck-toolbar">
+          ${d.cards.length ? `<button class="btn-primary" data-study-now>Study now (${d.cards.length} cards)</button>` : ''}
+          <button type="button" class="btn-outline" data-share-deck>↗ Share deck</button>
+          ${d.cards.length ? `<button type="button" class="btn-outline btn-shuffle" data-shuffle-deck>🔀 Shuffle cards</button>` : ''}
+        </div>
         ${cards ? `<div class="card-list" id="card-list">${cards}</div>` : '<div class="empty"><div class="empty-icon">🃏</div><p>No cards yet — tap + to add your first one</p></div>'}`;
     }
 
@@ -2182,6 +2480,53 @@
         <input type="hidden" id="m-color" value="${esc(m.color || 'none')}" />
         <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-card>Save</button></div>
       </div></div>`;
+      if (m.type === 'share-deck') {
+        const d = deckById(m.deckId);
+        const cardCount = d?.cards.length || 0;
+        return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+          <h2>Share deck</h2>
+          <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;line-height:1.45">
+            Send <strong>${esc(d?.name || 'this deck')}</strong> (${cardCount} card${cardCount !== 1 ? 's' : ''}) to someone else. Study progress is not included.
+          </p>
+          ${m.link ? `
+            <label style="font-size:.78rem;font-weight:600;color:var(--muted)">Share link</label>
+            <div class="share-link-row">
+              <input id="share-deck-link" readonly value="${esc(m.link)}" />
+              <button type="button" class="btn-outline" data-copy-share-link style="flex:0 0 auto">Copy</button>
+            </div>` : `
+            <p class="share-hint">This deck is too large for a share link. Download the file and send it instead.</p>`}
+          <div class="backup-row" style="margin-top:14px">
+            <button type="button" class="btn-primary" data-download-share-deck>Download file</button>
+            ${typeof navigator !== 'undefined' && navigator.share ? '<button type="button" class="btn-outline" data-native-share-deck>Share…</button>' : ''}
+          </div>
+          <div class="modal-actions"><button class="cancel" data-close>Done</button></div>
+        </div></div>`;
+      }
+      if (m.type === 'import-share') {
+        const src = m.payload?.deck || {};
+        const cardCount = (src.cards || []).length;
+        const hint = m.payload?.cluster;
+        const matched = clusterHintMatch(hint);
+        const defaultCluster = matched?.id ?? (hint?.name ? '__new__' : (state.clusters[0]?.id ?? null));
+        const createOpt = hint?.name && !matched
+          ? `<option value="__new__" ${defaultCluster === '__new__' ? 'selected' : ''}>${esc(hint.emoji || '📁')} Create “${esc(hint.name)}”</option>`
+          : '';
+        return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+          <h2>Import shared deck</h2>
+          <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;line-height:1.45">
+            <strong>${esc(src.name || 'Shared deck')}</strong> · ${cardCount} card${cardCount !== 1 ? 's' : ''}
+            ${hint?.name ? `<br><span style="font-size:.8rem">Shared from ${esc(hint.emoji || '📁')} ${esc(hint.name)}</span>` : ''}
+          </p>
+          <div class="field">
+            <label>Save to cluster</label>
+            <select id="import-share-cluster">${createOpt}${renderClusterOptions(typeof defaultCluster === 'number' ? defaultCluster : null)}</select>
+          </div>
+          <div class="modal-actions">
+            <button class="cancel" data-close>Cancel</button>
+            <button class="confirm" data-confirm-import-share>Import deck</button>
+          </div>
+        </div></div>`;
+      }
       return '';
     }
 
@@ -2264,6 +2609,49 @@
         const file = e.target.files?.[0];
         if (file) importUserData(file);
         e.target.value = '';
+      });
+      document.querySelector('[data-import-share-paste]')?.addEventListener('click', () => {
+        importSharedDeckFromText(document.getElementById('import-share-link')?.value);
+      });
+      document.getElementById('import-share-link')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') importSharedDeckFromText(e.target.value);
+      });
+      document.getElementById('import-share-file')?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) importSharedDeckFile(file);
+        e.target.value = '';
+      });
+      document.querySelector('[data-share-deck]')?.addEventListener('click', () => {
+        const d = deck();
+        if (d) openShareDeckModal(d.id);
+      });
+      document.querySelector('[data-copy-share-link]')?.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) copyShareDeckLink(deckId);
+      });
+      document.querySelector('[data-download-share-deck]')?.addEventListener('click', () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) shareDeckFile(deckId);
+      });
+      document.querySelector('[data-native-share-deck]')?.addEventListener('click', async () => {
+        const deckId = state.modal?.deckId;
+        if (deckId) await shareDeckNative(deckId);
+      });
+      document.querySelector('[data-confirm-import-share]')?.addEventListener('click', () => {
+        const payload = state.modal?.payload;
+        if (!payload) return;
+        const val = document.getElementById('import-share-cluster')?.value;
+        const clusterId = val === '__new__' ? '__new__' : (val ? parseInt(val, 10) : null);
+        try {
+          const deckId = importSharedDeck(payload, { clusterId });
+          state.modal = null;
+          state.deckId = deckId;
+          state.view = 'deck';
+          showToast('Shared deck imported');
+          render();
+        } catch (e) {
+          showToast('Could not import shared deck');
+        }
       });
       document.querySelector('[data-sign-out]')?.addEventListener('click', () => {
         if (confirm('Sign out of Shine?')) signOut();
@@ -2502,6 +2890,7 @@
         .catch(() => {});
     }
 
+    captureShareFromUrl();
     startSplash();
     load();
   </script>
