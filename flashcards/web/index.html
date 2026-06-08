@@ -46,6 +46,10 @@
     .btn-danger-sm{padding:8px 12px;background:#fef2f2;color:var(--danger);border:1px solid #fecaca;border-radius:10px;font-size:.8rem;font-weight:600;cursor:pointer}
     .card-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
     .card-item .en{font-weight:600} .card-item .de{color:var(--blue);margin-top:4px;font-size:1.05rem}
+    .card-item.card-fill-dark .de{color:rgba(255,255,255,.92)}
+    .card-item.card-fill-dark .card-meta{color:rgba(255,255,255,.75)}
+    .card-item.card-fill-dark .card-actions button{color:rgba(255,255,255,.85)}
+    .flip-face.flip-fill-dark{color:#fff}
     .card-actions{text-align:right;margin-top:8px}
     .card-actions button{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px}
     .cal-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
@@ -142,6 +146,7 @@
     .color-swatch{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);cursor:pointer}
     .color-swatch.active{border-color:var(--blue-dark);box-shadow:0 0 0 2px var(--blue)}
     .color-swatch.none{background:repeating-linear-gradient(45deg,#eee,#eee 4px,#fff 4px,#fff 8px)}
+    .color-swatch.swatch-dark{font-size:.65rem;font-weight:700;line-height:28px;text-align:center}
     .card-meta{font-size:.72rem;color:var(--muted);margin-top:8px}
     .schedule-fold{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
     .schedule-fold summary{cursor:pointer;padding:12px 14px;font-size:.85rem;font-weight:600;color:var(--blue-dark);list-style:none;display:flex;align-items:center;justify-content:space-between}
@@ -170,13 +175,20 @@
     const LEGACY_KEYS = ['german_flashcards_v3', 'german_flashcards_v2', 'german_flashcards_v1'];
 
     const CARD_COLORS = [
-      { id: 'none', hex: '', border: 'var(--border)' },
-      { id: 'blue', hex: '#e3f2fd', border: '#1565c0' },
-      { id: 'green', hex: '#e8f5e9', border: '#2e7d32' },
-      { id: 'yellow', hex: '#fff8e1', border: '#f9a825' },
-      { id: 'pink', hex: '#fce4ec', border: '#c2185b' },
-      { id: 'purple', hex: '#f3e5f5', border: '#7b1fa2' },
-      { id: 'orange', hex: '#fff3e0', border: '#ef6c00' },
+      { id: 'none', hex: '', border: 'var(--border)', label: 'None' },
+      { id: 'blue', hex: '#e3f2fd', border: '#1565c0', label: 'Blue light' },
+      { id: 'green', hex: '#e8f5e9', border: '#2e7d32', label: 'Green light' },
+      { id: 'yellow', hex: '#fff8e1', border: '#f9a825', label: 'Yellow light' },
+      { id: 'pink', hex: '#fce4ec', border: '#c2185b', label: 'Pink light' },
+      { id: 'purple', hex: '#f3e5f5', border: '#7b1fa2', label: 'Purple light' },
+      { id: 'orange', hex: '#fff3e0', border: '#ef6c00', label: 'Orange light' },
+      { id: 'blue-dark', hex: '#1565c0', border: '#0d47a1', label: 'Blue' },
+      { id: 'green-dark', hex: '#2e7d32', border: '#1b5e20', label: 'Green' },
+      { id: 'yellow-dark', hex: '#f57f17', border: '#e65100', label: 'Amber' },
+      { id: 'pink-dark', hex: '#c2185b', border: '#880e4f', label: 'Pink' },
+      { id: 'purple-dark', hex: '#7b1fa2', border: '#4a148c', label: 'Purple' },
+      { id: 'orange-dark', hex: '#ef6c00', border: '#e65100', label: 'Orange' },
+      { id: 'slate-dark', hex: '#37474f', border: '#263238', label: 'Slate' },
     ];
 
     const ALGORITHMS = {
@@ -437,16 +449,50 @@
       else if (kind === 'sm2') onCardSM2(card, recalled);
     }
 
+    function fillLuminance(hex) {
+      if (!hex || hex[0] !== '#') return 1;
+      const n = hex.length === 4
+        ? hex.slice(1).split('').map(ch => parseInt(ch + ch, 16))
+        : [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map(h => parseInt(h, 16));
+      const [r, g, b] = n.map(v => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    function isDarkFill(hex) {
+      return fillLuminance(hex) < 0.45;
+    }
+
+    function getCardColor(colorId) {
+      return CARD_COLORS.find(x => x.id === colorId) || CARD_COLORS[0];
+    }
+
     function cardColorStyle(colorId) {
-      const c = CARD_COLORS.find(x => x.id === colorId) || CARD_COLORS[0];
+      const c = getCardColor(colorId);
       if (!c.hex) return 'border-left:4px solid var(--border)';
-      return `border-left:4px solid ${c.border};background:${c.hex}`;
+      const dark = isDarkFill(c.hex);
+      const text = dark ? ';color:#fff' : '';
+      return `border-left:4px solid ${c.border};background:${c.hex}${text}`;
+    }
+
+    function cardColorClass(colorId) {
+      const c = getCardColor(colorId);
+      return c.hex && isDarkFill(c.hex) ? 'card-fill-dark' : '';
     }
 
     function flipColorStyle(colorId, face) {
-      const c = CARD_COLORS.find(x => x.id === colorId) || CARD_COLORS[0];
+      const c = getCardColor(colorId);
       if (!c.hex) return face === 'back' ? 'background:var(--blue-light)' : 'background:var(--white)';
-      return `background:${c.hex};border:2px solid ${c.border}`;
+      const dark = isDarkFill(c.hex);
+      const text = dark ? ';color:#fff' : '';
+      return `background:${c.hex};border:2px solid ${c.border}${text}`;
+    }
+
+    function flipColorClass(colorId) {
+      const c = getCardColor(colorId);
+      return c.hex && isDarkFill(c.hex) ? 'flip-fill-dark' : '';
     }
 
     function scheduleReview(deck, date, source = 'auto') {
@@ -840,16 +886,18 @@
     }
 
     function renderColorPicker(selected) {
-      return `<div class="color-pick">${CARD_COLORS.map(c => `
-        <button type="button" class="color-swatch ${c.id === 'none' ? 'none' : ''} ${(selected || 'none') === c.id ? 'active' : ''}"
-          data-pick-color="${c.id}" title="${c.id}"
-          style="${c.hex ? 'background:' + c.hex + ';border-color:' + c.border : ''}"></button>`).join('')}</div>`;
+      return `<div class="color-pick">${CARD_COLORS.map(c => {
+        const dark = c.hex && isDarkFill(c.hex);
+        return `<button type="button" class="color-swatch ${c.id === 'none' ? 'none' : ''} ${dark ? 'swatch-dark' : ''} ${(selected || 'none') === c.id ? 'active' : ''}"
+          data-pick-color="${c.id}" title="${c.label || c.id}"
+          style="${c.hex ? 'background:' + c.hex + ';border-color:' + c.border + (dark ? ';color:#fff' : '') : ''}">${dark ? 'A' : ''}</button>`;
+      }).join('')}</div>`;
     }
 
     function renderDeckCards(d) {
       const alg = getAlgorithm(d);
       const cards = d.cards.map(c => `
-        <div class="card-item" style="${cardColorStyle(c.color)}">
+        <div class="card-item ${cardColorClass(c.color)}" style="${cardColorStyle(c.color)}">
           <div class="en">${esc(c.en)}</div>
           <div class="de">${esc(c.de)}</div>
           ${isSmartScheduleOn(d) && alg === 'leitner' ? `<div class="card-meta">Leitner box ${c.leitnerBox || 1} · next in ${leitnerDaysForBox(c.leitnerBox)}d</div>` : ''}
@@ -892,8 +940,8 @@
           <div class="progress-bar"><div style="width:${prog}%"></div></div>
           <div class="flip-card ${s.flipped?'flipped':''}" data-flip>
             <div class="flip-inner">
-              <div class="flip-face flip-front" style="${flipColorStyle(c.color,'front')}">${esc(c.en)}</div>
-              <div class="flip-face flip-back" style="${flipColorStyle(c.color,'back')}">${esc(c.de)}</div>
+              <div class="flip-face flip-front ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'front')}">${esc(c.en)}</div>
+              <div class="flip-face flip-back ${flipColorClass(c.color)}" style="${flipColorStyle(c.color,'back')}">${esc(c.de)}</div>
             </div>
           </div>
           ${s.flipped ? `<div class="study-actions">
