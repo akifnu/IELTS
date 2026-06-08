@@ -11,7 +11,30 @@ cd flashcards/web
 
 Open **http://localhost:8080**
 
-## Deploy for production (recommended)
+## Live app (share this link)
+
+**GitHub Pages (permanent, recommended):** after a one-time setup below, the app is at:
+
+**https://akifnu.github.io/IELTS/**
+
+**CDN mirror (works immediately, no setup):**
+
+**https://cdn.jsdelivr.net/gh/akifnu/IELTS@gh-pages/index.html**
+
+Pushes to `main` that touch `flashcards/web/` auto-deploy to the `gh-pages` branch via GitHub Actions.
+
+### One-time GitHub Pages setup (repo owner)
+
+1. Open [Settings → Pages](https://github.com/akifnu/IELTS/settings/pages)
+2. **Build and deployment** → Source: **Deploy from a branch**
+3. Branch: **`gh-pages`** / **`/ (root)`** → **Save**
+4. Wait ~1 minute, then open **https://akifnu.github.io/IELTS/**
+
+### Optional: Netlify
+
+Add repository secrets `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID`, then the **Deploy Shine to Netlify** workflow runs on each push.
+
+## Deploy for production (other hosts)
 
 Host the `flashcards/web/` folder as a **static site** with HTTPS.
 

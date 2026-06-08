@@ -22,7 +22,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Prepare web config
-        run: cp flashcards/web/auth-config.example.js flashcards/web/auth-config.js
+        run: |
+          cp flashcards/web/auth-config.example.js flashcards/web/auth-config.js
+          # peaceiris skips gitignored files; allow auth-config.js in the gh-pages commit
+          sed -i '/^auth-config\.js$/d' flashcards/web/.gitignore
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4

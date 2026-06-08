@@ -1,0 +1,36 @@
+name: Deploy Shine to Netlify
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'flashcards/web/**'
+      - '.github/workflows/netlify.yml'
+
+concurrency:
+  group: netlify
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare web config
+        run: |
+          cp flashcards/web/auth-config.example.js flashcards/web/auth-config.js
+          sed -i '/^auth-config\.js$/d' flashcards/web/.gitignore
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './flashcards/web'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Deploy Shine web app'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
