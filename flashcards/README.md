@@ -4,11 +4,16 @@ A native Android flashcard app built with **Kotlin**, **Jetpack Compose**, and *
 
 ## Features
 
-- **Deck management** — create, view, and delete flashcard decks
-- **Card editor** — add, edit, and delete cards (front/back)
-- **Study mode** — flip cards with animation, mark correct/incorrect, track progress
-- **Persistent storage** — all data saved locally with Room SQLite
-- **Sample data** — two starter decks (Spanish Basics & Kotlin) on first launch
+- **Clusters** — organize decks into groups (Languages, Wellness, etc.)
+- **Deck management** — create, edit, delete, share decks
+- **Card editor** — add, edit, delete flashcards
+- **Spaced repetition** — Ebbinghaus, Leitner, and SM-2 algorithms with presets
+- **Study mode** — flip cards, Got it / Missed, auto-schedule next review
+- **Calendar** — plan sessions across decks, overload detection, spread busy days
+- **Sharing** — invite collaborators, export deck JSON, import shared decks
+- **Account** — display name, full library backup export/import
+- **Native UI** — Jetpack Compose with proper edge-to-edge layout on all screen sizes
+- **Offline** — Room SQLite, sample decks on first launch
 
 ## Screenshots (flow)
 
@@ -46,7 +51,7 @@ Download the latest **Shine** APK from [GitHub Releases](https://github.com/akif
 2. Open the APK and allow **Install unknown apps** when prompted
 3. Tap **Install**
 
-The Android app is **fully native** (Jetpack Compose + Room). It works offline with no WebView.
+The Android app is **fully native** (Jetpack Compose + Room) with clusters, spaced repetition (Ebbinghaus / Leitner / SM-2), calendar, sharing, and backup. No WebView.
 
 Build locally:
 
