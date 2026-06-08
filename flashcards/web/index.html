@@ -6,6 +6,8 @@
   <title>Shine — Lifestyle Flashcards</title>
   <meta name="description" content="Shine helps you store everyday knowledge in clusters and review with smart spaced repetition." />
   <meta name="theme-color" content="#5b5ef7" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Shine" />
   <meta property="og:title" content="Shine — Lifestyle Flashcards" />
@@ -37,10 +39,12 @@
     html{-webkit-tap-highlight-color:transparent}
     body{
       font-family:'Plus Jakarta Sans',system-ui,sans-serif;
-      background:var(--bg);color:var(--text);
+      background:linear-gradient(165deg,#e8eaff 0%,#f4f6fb 38%,#faf8ff 100%);
+      color:var(--text);
       min-height:100vh;max-width:480px;margin:0 auto;
       -webkit-font-smoothing:antialiased;
       position:relative;overflow-x:hidden;
+      box-shadow:0 0 80px rgba(91,94,247,.12);
     }
     body::before,body::after{
       content:'';position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(60px);opacity:.55;
@@ -64,9 +68,15 @@
     .splash-content p{margin-top:10px;opacity:.82;font-size:.92rem;line-height:1.5}
     @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
     header.app-header{
-      background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-      border-bottom:1px solid var(--glass-border);padding:16px 20px;
+      background:rgba(255,255,255,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(91,94,247,.08);padding:18px 20px 16px;
       display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;
+      box-shadow:0 4px 24px rgba(91,94,247,.06);
+    }
+    header.app-header{position:sticky}
+    header.app-header::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:3px;
+      background:linear-gradient(90deg,var(--primary),var(--accent),#a78bfa);
     }
     header:not(.app-header){background:var(--glass);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);padding:14px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
     header h1{font-size:1.15rem;font-weight:700;flex:1;color:var(--text);letter-spacing:-.02em}
@@ -76,12 +86,13 @@
     .icon-btn:active{transform:scale(.96)}
     main{padding:18px 18px 110px}
     .deck-card{
-      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-      padding:18px 18px 18px 20px;margin-bottom:10px;cursor:pointer;position:relative;
-      box-shadow:var(--shadow-sm);transition:transform .2s var(--ease),box-shadow .2s var(--ease);
+      background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(248,249,253,.92));
+      border:1px solid rgba(91,94,247,.14);border-radius:var(--radius);
+      padding:18px 18px 18px 24px;margin-bottom:12px;cursor:pointer;position:relative;
+      box-shadow:0 10px 32px rgba(91,94,247,.1);transition:transform .22s var(--ease),box-shadow .22s var(--ease);
       overflow:hidden;
     }
-    .deck-card::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:4px;background:linear-gradient(180deg,var(--primary),var(--accent))}
+    .deck-card::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:5px;border-radius:0 6px 6px 0;background:linear-gradient(180deg,var(--primary),var(--accent));box-shadow:0 0 12px rgba(91,94,247,.4)}
     .deck-card:active{transform:scale(.985);box-shadow:var(--shadow)}
     .deck-card h2{font-size:1.02rem;font-weight:700;color:var(--text);letter-spacing:-.01em;padding-right:28px}
     .deck-card p{color:var(--muted);font-size:.84rem;margin-top:6px;line-height:1.45}
@@ -203,21 +214,26 @@
     .cancel{background:var(--surface-2);color:var(--muted)}
     .confirm{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 6px 16px rgba(91,94,247,.3)}
     .bottom-nav{
-      position:fixed;bottom:12px;left:50%;transform:translateX(-50%);
-      width:calc(100% - 32px);max-width:448px;
-      background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-      border:1px solid var(--glass-border);border-radius:22px;
-      display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom));
-      z-index:20;box-shadow:var(--shadow-lg);
+      position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+      width:calc(100% - 28px);max-width:452px;
+      background:rgba(255,255,255,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+      border:1px solid rgba(255,255,255,.9);border-radius:26px;
+      display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+      z-index:20;box-shadow:0 16px 48px rgba(91,94,247,.18),0 4px 12px rgba(15,23,42,.06);
     }
     .bottom-nav button{
-      flex:1;background:none;border:none;padding:10px 6px;color:var(--muted);
-      font-size:.68rem;font-weight:700;cursor:pointer;
-      display:flex;flex-direction:column;align-items:center;gap:4px;
-      border-radius:14px;transition:color .2s,background .2s;
+      flex:1;background:none;border:none;padding:10px 8px;color:var(--muted);
+      font-size:.67rem;font-weight:700;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:5px;
+      border-radius:18px;transition:all .25s var(--ease);position:relative;
     }
-    .bottom-nav button.active{color:var(--primary);background:rgba(91,94,247,.1)}
-    .bottom-nav .ni{font-size:1.25rem;line-height:1}
+    .bottom-nav button.active{
+      color:#fff;background:linear-gradient(135deg,var(--primary),var(--accent));
+      box-shadow:0 8px 22px rgba(91,94,247,.38);transform:translateY(-1px);
+    }
+    .bottom-nav .ni{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+    .bottom-nav .ni svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .bottom-nav button.active .ni svg{stroke:#fff}
     .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
     .toggle-row strong{font-size:.9rem}
     .toggle-row small{display:block;color:var(--muted);font-size:.75rem;margin-top:2px;font-weight:400}
@@ -1363,12 +1379,18 @@
       }
     }
 
+    const NAV_ICONS = {
+      decks: '<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+      calendar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+      account: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+    };
+
     function renderBottomNav() {
       return `
         <nav class="bottom-nav">
-          <button class="${state.tab === 'decks' ? 'active' : ''}" data-tab="decks"><span class="ni">📚</span>Decks</button>
-          <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar"><span class="ni">📅</span>Calendar</button>
-          <button class="${state.tab === 'account' ? 'active' : ''}" data-tab="account"><span class="ni">👤</span>Account</button>
+          <button class="${state.tab === 'decks' ? 'active' : ''}" data-tab="decks"><span class="ni">${NAV_ICONS.decks}</span>Decks</button>
+          <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar"><span class="ni">${NAV_ICONS.calendar}</span>Calendar</button>
+          <button class="${state.tab === 'account' ? 'active' : ''}" data-tab="account"><span class="ni">${NAV_ICONS.account}</span>Account</button>
         </nav>`;
     }
 
@@ -2283,7 +2305,10 @@
     });
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+        .then(() => navigator.serviceWorker.register('sw.js?v=3'))
+        .catch(() => {});
     }
 
     startSplash();
