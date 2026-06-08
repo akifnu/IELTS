@@ -3,273 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flashcards</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <title>German Flashcards</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --blue: #1565c0;
-      --blue-dark: #0d47a1;
-      --blue-light: #e3f2fd;
-      --blue-soft: #bbdefb;
-      --bg: #f8fbff;
-      --white: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --danger: #dc2626;
-      --shadow: 0 4px 24px rgba(21, 101, 192, 0.08);
-      --radius: 18px;
+      --blue:#1565c0; --blue-dark:#0d47a1; --blue-light:#e3f2fd; --blue-soft:#bbdefb;
+      --bg:#f8fbff; --white:#fff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0;
+      --danger:#dc2626; --warn:#f59e0b; --shadow:0 4px 24px rgba(21,101,192,.08); --radius:18px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      max-width: 480px;
-      margin: 0 auto;
-    }
-
-    /* Splash */
-    #splash {
-      position: fixed; inset: 0; z-index: 200;
-      display: flex; align-items: center; justify-content: center;
-      background: #000; overflow: hidden;
-      transition: opacity .6s ease, visibility .6s;
-    }
-    #splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-    #splash .bg {
-      position: absolute; inset: 0;
-      background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80') center/cover;
-      transform: scale(1.05);
-      animation: kenburns 2s ease forwards;
-    }
-    #splash .overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(13,71,161,.45) 0%, rgba(21,101,192,.75) 100%);
-    }
-    @keyframes kenburns { to { transform: scale(1); } }
-    .splash-content {
-      position: relative; z-index: 1; text-align: center; color: #fff;
-      padding: 32px; animation: fadeUp .8s ease;
-    }
-    .splash-content .greeting { font-size: 1rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; opacity: .9; }
-    .splash-content h1 { font-size: 2.4rem; font-weight: 700; margin-top: 12px; line-height: 1.2; }
-    .splash-content p { margin-top: 10px; opacity: .85; font-size: .95rem; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    header {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 20px;
-      display: flex; align-items: center; gap: 12px;
-      position: sticky; top: 0; z-index: 10;
-    }
-    header h1 { font-size: 1.15rem; font-weight: 600; flex: 1; color: var(--blue-dark); }
-    .icon-btn {
-      background: var(--blue-light); border: none; border-radius: 12px;
-      color: var(--blue); font-size: 1.1rem; padding: 8px 12px; cursor: pointer;
-    }
-    main { padding: 16px 16px 100px; }
-
-    .due-banner {
-      background: linear-gradient(135deg, var(--blue) 0%, #1976d2 100%);
-      color: #fff; border-radius: var(--radius); padding: 18px 20px;
-      margin-bottom: 16px; box-shadow: var(--shadow);
-    }
-    .due-banner h2 { font-size: 1rem; font-weight: 600; }
-    .due-banner p { font-size: .85rem; opacity: .9; margin: 6px 0 14px; }
-    .due-banner button {
-      background: #fff; color: var(--blue); border: none;
-      border-radius: 12px; padding: 10px 18px; font-weight: 600; cursor: pointer;
-    }
-
-    .deck-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
-      cursor: pointer; position: relative; transition: box-shadow .2s, border-color .2s;
-    }
-    .deck-card:hover { box-shadow: var(--shadow); border-color: var(--blue-soft); }
-    .deck-card h2 { font-size: 1.05rem; font-weight: 600; color: var(--blue-dark); }
-    .deck-card p { color: var(--muted); font-size: .88rem; margin-top: 4px; }
-    .deck-card .meta { display: flex; gap: 12px; margin-top: 10px; font-size: .8rem; font-weight: 600; }
-    .deck-card .meta .due { color: var(--blue); }
-    .deck-card .meta .total { color: var(--muted); }
-    .deck-card .delete {
-      position: absolute; top: 12px; right: 12px;
-      background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem;
-    }
-
-    .fab {
-      position: fixed; right: 20px; bottom: 88px;
-      width: 56px; height: 56px; border-radius: 50%;
-      background: var(--blue); color: #fff; border: none;
-      font-size: 1.8rem; line-height: 1; cursor: pointer;
-      box-shadow: 0 6px 20px rgba(21,101,192,.35);
-    }
-
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: 480px;
-      background: var(--white); border-top: 1px solid var(--border);
-      display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-    }
-    .bottom-nav button {
-      flex: 1; background: none; border: none; padding: 10px;
-      color: var(--muted); font-size: .72rem; font-weight: 600; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-    }
-    .bottom-nav button.active { color: var(--blue); }
-    .bottom-nav .nav-icon { font-size: 1.25rem; }
-
-    .study-btn, .btn-primary {
-      width: 100%; padding: 14px; margin-bottom: 14px;
-      background: var(--blue); color: #fff; border: none;
-      border-radius: 14px; font-weight: 600; cursor: pointer;
-    }
-    .btn-outline {
-      width: 100%; padding: 14px; margin-top: 8px;
-      background: var(--white); color: var(--blue); border: 2px solid var(--blue);
-      border-radius: 14px; font-weight: 600; cursor: pointer;
-    }
-
-    .card-item {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
-    }
-    .card-item .back { color: var(--muted); margin-top: 6px; font-size: .92rem; }
-    .card-item .sr-info {
-      margin-top: 10px; font-size: .78rem; color: var(--blue);
-      background: var(--blue-light); display: inline-block; padding: 4px 10px; border-radius: 20px;
-    }
-    .card-actions { text-align: right; margin-top: 8px; }
-    .card-actions button { background: none; border: none; color: var(--muted); padding: 4px 8px; cursor: pointer; }
-    .card-actions .del { color: var(--danger); }
-
-    /* Calendar */
-    .cal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .cal-header button {
-      background: var(--blue-light); border: none; color: var(--blue);
-      width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 1.1rem;
-    }
-    .cal-header h2 { font-size: 1.05rem; font-weight: 600; color: var(--blue-dark); }
-    .cal-weekdays {
-      display: grid; grid-template-columns: repeat(7, 1fr);
-      text-align: center; font-size: .72rem; font-weight: 600;
-      color: var(--muted); margin-bottom: 8px;
-    }
-    .cal-grid {
-      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
-    }
-    .cal-day {
-      aspect-ratio: 1; border: none; border-radius: 12px;
-      background: var(--white); font-size: .85rem; font-weight: 500;
-      cursor: pointer; position: relative; color: var(--text);
-      border: 1px solid transparent;
-    }
-    .cal-day.other { color: #cbd5e1; background: transparent; }
-    .cal-day.today { border-color: var(--blue); color: var(--blue); font-weight: 700; }
-    .cal-day.has-due { background: var(--blue-light); color: var(--blue-dark); font-weight: 600; }
-    .cal-day.selected { background: var(--blue); color: #fff; }
-    .cal-day .dot {
-      position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-      width: 5px; height: 5px; border-radius: 50%; background: var(--blue);
-    }
-    .cal-day.selected .dot { background: #fff; }
-    .cal-legend {
-      display: flex; gap: 16px; margin: 16px 0; font-size: .78rem; color: var(--muted);
-    }
-    .cal-legend span::before {
-      content: ''; display: inline-block; width: 10px; height: 10px;
-      border-radius: 3px; margin-right: 6px; vertical-align: middle;
-    }
-    .cal-legend .l-today::before { border: 2px solid var(--blue); }
-    .cal-legend .l-due::before { background: var(--blue-light); }
-    .cal-detail {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px; margin-top: 12px;
-    }
-    .cal-detail h3 { font-size: .95rem; margin-bottom: 10px; color: var(--blue-dark); }
-    .cal-detail-item {
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-      font-size: .88rem;
-    }
-    .cal-detail-item:last-child { border: none; }
-    .cal-detail-item small { color: var(--muted); display: block; margin-top: 2px; }
-
-    /* Study */
-    .progress-row { display: flex; justify-content: space-between; font-size: .82rem; color: var(--muted); margin-bottom: 8px; }
-    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
-    .progress-bar > div { height: 100%; background: var(--blue); transition: width .3s; }
-    .flip-card { perspective: 1000px; min-height: 260px; margin: 16px 0 20px; cursor: pointer; }
-    .flip-inner { position: relative; width: 100%; height: 260px; transition: transform .5s; transform-style: preserve-3d; }
-    .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
-    .flip-face {
-      position: absolute; inset: 0; backface-visibility: hidden;
-      border-radius: 20px; display: flex; align-items: center; justify-content: center;
-      padding: 24px; text-align: center; font-size: 1.3rem; font-weight: 500;
-      border: 1px solid var(--border); box-shadow: var(--shadow);
-    }
-    .flip-front { background: var(--white); }
-    .flip-back { background: var(--blue-light); color: var(--blue-dark); transform: rotateY(180deg); }
-    .study-actions { display: flex; gap: 12px; }
-    .study-actions button { flex: 1; padding: 14px; border-radius: 14px; font-weight: 600; cursor: pointer; border: none; }
-    .missed { background: var(--white); border: 2px solid var(--border) !important; color: var(--text); }
-    .got-it { background: var(--blue); color: #fff; }
-    .show-answer { width: 100%; padding: 14px; background: var(--white); border: 2px solid var(--blue); color: var(--blue); border-radius: 14px; font-weight: 600; cursor: pointer; }
-
-    .results { text-align: center; padding: 24px 0; }
-    .results .score { font-size: 3rem; font-weight: 700; color: var(--blue); margin: 16px 0; }
-    .results .stats { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: left; margin: 20px 0; }
-
-    .profile-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 24px; text-align: center;
-    }
-    .profile-avatar {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: var(--blue-light); color: var(--blue);
-      font-size: 2rem; font-weight: 700; line-height: 72px; margin: 0 auto 12px;
-    }
-    .profile-card input {
-      width: 100%; padding: 12px; margin: 12px 0;
-      border: 1px solid var(--border); border-radius: 12px; font: inherit;
-    }
-    .ebbinghaus-info {
-      background: var(--blue-light); border-radius: var(--radius);
-      padding: 16px; margin-top: 16px; font-size: .85rem; color: var(--blue-dark); line-height: 1.5;
-    }
-    .ebbinghaus-info h3 { font-size: .9rem; margin-bottom: 8px; }
-
-    .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
-    .empty .emoji { font-size: 2.5rem; margin-bottom: 12px; }
-
-    .modal-bg {
-      position: fixed; inset: 0; background: rgba(15,23,42,.4);
-      display: flex; align-items: center; justify-content: center;
-      padding: 20px; z-index: 150;
-    }
-    .modal {
-      background: var(--white); border-radius: var(--radius);
-      padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.15);
-    }
-    .modal h2 { margin-bottom: 16px; color: var(--blue-dark); }
-    .modal input, .modal textarea {
-      width: 100%; padding: 12px; margin-bottom: 12px;
-      border: 1px solid var(--border); border-radius: 12px; font: inherit;
-    }
-    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .modal-actions button { padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; }
-    .cancel { background: var(--bg); color: var(--muted); }
-    .confirm { background: var(--blue); color: #fff; }
-    .hidden { display: none !important; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto}
+    #splash{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden;transition:opacity .6s,visibility .6s}
+    #splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+    #splash .bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=1200&q=80') center/cover;animation:kenburns 2s ease forwards}
+    #splash .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,71,161,.5),rgba(21,101,192,.8))}
+    @keyframes kenburns{to{transform:scale(1.02)}}
+    .splash-content{position:relative;z-index:1;text-align:center;color:#fff;padding:32px;animation:fadeUp .8s ease}
+    .splash-content .greeting{font-size:1rem;letter-spacing:.12em;text-transform:uppercase;opacity:.9}
+    .splash-content h1{font-size:2.2rem;font-weight:700;margin-top:12px}
+    .splash-content p{margin-top:10px;opacity:.85}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+    header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+    header h1{font-size:1.1rem;font-weight:600;flex:1;color:var(--blue-dark)}
+    .icon-btn{background:var(--blue-light);border:none;border-radius:12px;color:var(--blue);font-size:1rem;padding:8px 12px;cursor:pointer}
+    main{padding:16px 16px 96px}
+    .deck-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px;cursor:pointer;position:relative}
+    .deck-card h2{font-size:1.05rem;color:var(--blue-dark)}
+    .deck-card p{color:var(--muted);font-size:.88rem;margin-top:4px}
+    .deck-card .meta{display:flex;gap:12px;margin-top:10px;font-size:.78rem;font-weight:600}
+    .deck-card .due{color:var(--blue)} .deck-card .next{color:var(--muted)}
+    .deck-card .delete{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--danger);cursor:pointer}
+    .fab{position:fixed;right:20px;bottom:24px;width:56px;height:56px;border-radius:50%;background:var(--blue);color:#fff;border:none;font-size:1.8rem;cursor:pointer;box-shadow:0 6px 20px rgba(21,101,192,.35)}
+    .deck-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:4px}
+    .deck-tabs button{flex:1;border:none;background:none;padding:10px 6px;border-radius:10px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer}
+    .deck-tabs button.active{background:var(--blue);color:#fff}
+    .btn-primary{width:100%;padding:14px;background:var(--blue);color:#fff;border:none;border-radius:14px;font-weight:600;cursor:pointer;margin-bottom:10px}
+    .btn-outline{width:100%;padding:14px;background:var(--white);color:var(--blue);border:2px solid var(--blue);border-radius:14px;font-weight:600;cursor:pointer;margin-bottom:10px}
+    .btn-warn{width:100%;padding:12px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:12px;font-weight:600;cursor:pointer;margin-top:8px}
+    .btn-danger-sm{padding:8px 12px;background:#fef2f2;color:var(--danger);border:1px solid #fecaca;border-radius:10px;font-size:.8rem;font-weight:600;cursor:pointer}
+    .card-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+    .card-item .en{font-weight:600} .card-item .de{color:var(--blue);margin-top:4px;font-size:1.05rem}
+    .card-actions{text-align:right;margin-top:8px}
+    .card-actions button{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px}
+    .cal-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+    .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .cal-header button{background:var(--blue-light);border:none;color:var(--blue);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1.1rem}
+    .cal-header h2{font-size:1rem;color:var(--blue-dark)}
+    .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .cal-day{min-height:52px;border:1px solid var(--border);border-radius:10px;background:var(--bg);padding:4px;cursor:pointer;text-align:left;display:flex;flex-direction:column}
+    .cal-day.blank{border:none;background:transparent;cursor:default}
+    .cal-day .num{font-size:.75rem;font-weight:600;padding:2px 4px}
+    .cal-day.today{border-color:var(--blue);background:var(--blue-light)}
+    .cal-day.selected{border-color:var(--blue-dark);box-shadow:0 0 0 2px var(--blue-soft)}
+    .cal-day.overload{border-color:var(--danger);background:#fef2f2}
+    .cal-day .sess{font-size:.6rem;background:var(--blue);color:#fff;border-radius:4px;padding:2px 4px;margin-top:auto;line-height:1.2}
+    .cal-day .sess.manual{background:#64748b}
+    .cal-day .sess.done{opacity:.45;text-decoration:line-through}
+    .cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;font-size:.72rem;color:var(--muted)}
+    .cal-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}
+    .day-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:12px}
+    .day-panel h3{font-size:.92rem;color:var(--blue-dark);margin-bottom:10px}
+    .session-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+    .session-row:last-child{border:none}
+    .algo-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+    .algo-section h3{font-size:.92rem;color:var(--blue-dark);margin-bottom:12px}
+    .field{margin-bottom:12px}
+    .field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+    .field input,.field textarea,.field select{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font:inherit}
+    .field small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px;line-height:1.4}
+    .formula{background:var(--blue-light);border-radius:10px;padding:12px;font-size:.78rem;color:var(--blue-dark);line-height:1.5;margin-top:8px;font-family:ui-monospace,monospace}
+    .overload-box{background:#fff7ed;border:1px solid #fdba74;border-radius:var(--radius);padding:14px;margin-bottom:12px}
+    .overload-box h3{color:#c2410c;font-size:.9rem;margin-bottom:6px}
+    .flip-card{perspective:1000px;min-height:250px;margin:16px 0;cursor:pointer}
+    .flip-inner{position:relative;height:250px;transition:transform .5s;transform-style:preserve-3d}
+    .flip-card.flipped .flip-inner{transform:rotateY(180deg)}
+    .flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:1.25rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .flip-front{background:var(--white)} .flip-back{background:var(--blue-light);color:var(--blue-dark);transform:rotateY(180deg)}
+    .progress-row{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-bottom:8px}
+    .progress-bar{height:6px;background:var(--border);border-radius:3px;margin-bottom:18px;overflow:hidden}
+    .progress-bar>div{height:100%;background:var(--blue);transition:width .3s}
+    .study-actions{display:flex;gap:10px}
+    .study-actions button{flex:1;padding:14px;border-radius:14px;font-weight:600;cursor:pointer;border:none}
+    .missed{background:var(--white);border:2px solid var(--border)!important}
+    .got-it{background:var(--blue);color:#fff}
+    .show-answer{width:100%;padding:14px;background:var(--white);border:2px solid var(--blue);color:var(--blue);border-radius:14px;font-weight:600;cursor:pointer}
+    .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+    .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:150}
+    .modal{background:var(--white);border-radius:var(--radius);padding:22px;width:100%;max-width:400px}
+    .modal h2{margin-bottom:14px;color:var(--blue-dark)}
+    .modal input,.modal textarea{width:100%;padding:11px;margin-bottom:10px;border:1px solid var(--border);border-radius:10px;font:inherit}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+    .modal-actions button{padding:10px 16px;border-radius:10px;border:none;font-weight:600;cursor:pointer}
+    .cancel{background:var(--bg);color:var(--muted)} .confirm{background:var(--blue);color:#fff}
   </style>
 </head>
 <body>
@@ -277,120 +103,234 @@
     <div class="bg"></div>
     <div class="overlay"></div>
     <div class="splash-content">
-      <div class="greeting">Good day</div>
+      <div class="greeting">Guten Tag</div>
       <h1 id="splash-name">Friend</h1>
-      <p>Your memory journey continues</p>
+      <p>German flashcards · Ebbinghaus spaced repetition</p>
     </div>
   </div>
   <div id="app"></div>
-
   <script>
-    // Ebbinghaus-inspired spaced repetition intervals (days)
-    const EBBINGHAUS_DAYS = [1, 2, 4, 7, 15, 30, 60];
+    const STORAGE_KEY = 'german_flashcards_v3';
 
-    const SAMPLE = [
-      { id: 1, name: 'Spanish Basics', description: 'Essential Spanish vocabulary', cards: [
-        { id: 1, front: 'Hello', back: 'Hola' },
-        { id: 2, front: 'Thank you', back: 'Gracias' },
-        { id: 3, front: 'Good morning', back: 'Buenos días' },
-        { id: 4, front: 'Goodbye', back: 'Adiós' },
-      ]},
-      { id: 2, name: 'Kotlin', description: 'Programming concepts in Kotlin', cards: [
-        { id: 1, front: 'val vs var', back: 'val is immutable, var is mutable' },
-        { id: 2, front: 'data class', back: 'Auto-generates equals, hashCode, copy, and toString' },
-        { id: 3, front: 'suspend fun', back: 'A function that can be paused and resumed (coroutine)' },
-        { id: 4, front: 'companion object', back: 'Static-like members scoped to a class' },
-      ]},
+    const DEFAULT_ALGO = {
+      enabled: true,
+      intervals: [1, 2, 4, 7, 15, 30, 60, 120],
+      initialStability: 1.0,
+      initialEase: 2.5,
+      minEase: 1.3,
+      maxEase: 3.0,
+      easeBonus: 0.15,
+      easePenalty: 0.25,
+      retentionTarget: 0.9,
+      maxSessionsPerDay: 1,
+      failIntervalDays: 1,
+      curveSteepness: 1.0,
+    };
+
+    const GERMAN_DECKS = [
+      {
+        id: 1, name: 'German Basics', description: 'Essential everyday German',
+        cards: [
+          { id: 1, en: 'Hello', de: 'Hallo' },
+          { id: 2, en: 'Good day', de: 'Guten Tag' },
+          { id: 3, en: 'Thank you', de: 'Danke' },
+          { id: 4, en: 'Please', de: 'Bitte' },
+          { id: 5, en: 'Yes / No', de: 'Ja / Nein' },
+          { id: 6, en: 'Goodbye', de: 'Auf Wiedersehen' },
+        ],
+      },
+      {
+        id: 2, name: 'German Travel', description: 'At the hotel, train & airport',
+        cards: [
+          { id: 1, en: 'Where is the station?', de: 'Wo ist der Bahnhof?' },
+          { id: 2, en: 'A ticket, please', de: 'Eine Fahrkarte, bitte' },
+          { id: 3, en: 'I have a reservation', de: 'Ich habe eine Reservierung' },
+          { id: 4, en: 'How much does it cost?', de: 'Was kostet das?' },
+        ],
+      },
+      {
+        id: 3, name: 'German Verbs', description: 'Common verbs & meanings',
+        cards: [
+          { id: 1, en: 'to be', de: 'sein' },
+          { id: 2, en: 'to have', de: 'haben' },
+          { id: 3, en: 'to go', de: 'gehen' },
+          { id: 4, en: 'to eat', de: 'essen' },
+          { id: 5, en: 'to speak', de: 'sprechen' },
+        ],
+      },
     ];
 
     let state = {
-      view: 'decks',
-      tab: 'decks',
-      decks: [],
-      userName: localStorage.getItem('flashcards_user') || '',
+      view: 'home',
       deckId: null,
+      deckTab: 'calendar',
       study: null,
       modal: null,
       calMonth: new Date(),
-      calSelected: todayStr(),
+      calSelected: null,
+      decks: [],
+      algo: { ...DEFAULT_ALGO },
+      userName: localStorage.getItem('flashcards_user') || '',
       ready: false,
     };
 
+    // ── Date helpers ──
     function todayStr() {
       const d = new Date();
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      return fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
     }
+    function fmt(y, m, d) { return `${y}-${pad(m)}-${pad(d)}`; }
     function pad(n) { return String(n).padStart(2, '0'); }
-    function parseDate(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
-    function addDays(dateStr, days) {
-      const d = parseDate(dateStr);
-      d.setDate(d.getDate() + days);
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    function parseDate(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+    function addDaysStr(s, n) {
+      const d = parseDate(s); d.setDate(d.getDate() + n);
+      return fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
     }
     function formatDate(s) {
       return parseDate(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     }
+    function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
 
-    function defaultSR() {
-      return { repetitions: 0, easeFactor: 2.5, interval: 0, nextReview: todayStr(), lastReview: null };
+    // ── Deck model ──
+    function newDeckSR() {
+      return { repetitions: 0, ease: DEFAULT_ALGO.initialEase, stability: DEFAULT_ALGO.initialStability, intervalDays: 0, lastReview: null };
+    }
+    function newScheduleEntry(date, source = 'auto') {
+      return { id: Date.now() + Math.random(), date, source, completed: false };
     }
 
-    function migrateDecks(decks) {
-      return decks.map(deck => ({
-        ...deck,
-        cards: deck.cards.map(c => ({ ...defaultSR(), ...c, nextReview: c.nextReview || todayStr() }))
-      }));
+    function initDeck(d) {
+      return {
+        ...d,
+        cards: (d.cards || []).map(c => ({ id: c.id, en: c.en || c.front, de: c.de || c.back })),
+        sr: d.sr || newDeckSR(),
+        schedule: d.schedule?.length ? d.schedule : [newScheduleEntry(todayStr(), 'auto')],
+        algo: { ...DEFAULT_ALGO, ...(d.algo || {}) },
+      };
     }
 
-    function loadDecks() {
-      const raw = JSON.parse(localStorage.getItem('flashcards') || 'null');
-      state.decks = migrateDecks(raw || SAMPLE);
+    function load() {
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (raw) {
+        state.decks = raw.decks.map(initDeck);
+        state.algo = { ...DEFAULT_ALGO, ...raw.algo };
+      } else {
+        state.decks = GERMAN_DECKS.map(initDeck);
+      }
+      save();
+    }
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ decks: state.decks, algo: state.algo }));
+    }
+    function deck() { return state.decks.find(d => d.id === state.deckId); }
+    function deckAlgo(d) { return { ...state.algo, ...(d.algo || {}) }; }
+    function nextId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; }
+
+    // ── Ebbinghaus full implementation ──
+    // Retention R(t) = e^(-t / S)  where S = memory stability (days)
+    function retentionAt(stability, daysSince) {
+      return Math.exp(-daysSince / Math.max(stability, 0.1));
+    }
+
+    function intervalFromStability(S, algo) {
+      // Find t where R(t) = retentionTarget: t = -S * ln(R)
+      const t = -S * Math.log(Math.max(0.01, Math.min(0.99, algo.retentionTarget)));
+      return Math.max(1, Math.round(t * algo.curveSteepness));
+    }
+
+    function computeNextReview(deck, recallScore) {
+      const algo = deckAlgo(deck);
+      const sr = deck.sr;
+      const passed = recallScore >= 0.6;
+
+      if (!passed) {
+        sr.repetitions = 0;
+        sr.stability = Math.max(0.5, sr.stability * 0.5);
+        sr.ease = Math.max(algo.minEase, sr.ease - algo.easePenalty);
+        sr.intervalDays = algo.failIntervalDays;
+      } else {
+        const rep = sr.repetitions;
+        if (rep < algo.intervals.length) {
+          sr.intervalDays = algo.intervals[rep];
+        } else {
+          sr.intervalDays = intervalFromStability(sr.stability, algo);
+        }
+        sr.stability = sr.stability * (1 + sr.ease * recallScore);
+        sr.ease = Math.min(algo.maxEase, sr.ease + algo.easeBonus * recallScore);
+        sr.repetitions = rep + 1;
+      }
+      sr.lastReview = todayStr();
+      const nextDate = addDaysStr(todayStr(), sr.intervalDays);
+      return { nextDate, passed, retention: retentionAt(sr.stability, sr.intervalDays) };
+    }
+
+    function scheduleReview(deck, date, source = 'auto') {
+      if (!deck.schedule) deck.schedule = [];
+      deck.schedule.push(newScheduleEntry(date, source));
+    }
+
+    function sessionsOn(deck, date) {
+      return (deck.schedule || []).filter(s => s.date === date && !s.completed);
+    }
+
+    function completedOn(deck, date) {
+      return (deck.schedule || []).filter(s => s.date === date && s.completed);
+    }
+
+    function nextScheduled(deck) {
+      const upcoming = (deck.schedule || []).filter(s => !s.completed).map(s => s.date).sort();
+      return upcoming[0] || null;
+    }
+
+    function isDue(deck) {
+      const today = todayStr();
+      return sessionsOn(deck, today).length > 0 || (nextScheduled(deck) || '') <= today;
+    }
+
+    function getOverloadDays(deck) {
+      const algo = deckAlgo(deck);
+      const counts = {};
+      (deck.schedule || []).filter(s => !s.completed).forEach(s => {
+        counts[s.date] = (counts[s.date] || 0) + 1;
+      });
+      return Object.entries(counts).filter(([, c]) => c > algo.maxSessionsPerDay).map(([date, count]) => ({ date, count }));
+    }
+
+    function spreadOverload(deck) {
+      const algo = deckAlgo(deck);
+      const byDate = {};
+      (deck.schedule || []).filter(s => !s.completed).forEach(s => {
+        if (!byDate[s.date]) byDate[s.date] = [];
+        byDate[s.date].push(s);
+      });
+      Object.entries(byDate).forEach(([date, sessions]) => {
+        if (sessions.length <= algo.maxSessionsPerDay) return;
+        sessions.slice(algo.maxSessionsPerDay).forEach(sess => {
+          for (let i = 1; i <= 60; i++) {
+            const target = addDaysStr(date, i);
+            if (sessionsOn(deck, target).length < algo.maxSessionsPerDay) {
+              sess.date = target;
+              break;
+            }
+          }
+        });
+      });
       save();
     }
 
-    function save() { localStorage.setItem('flashcards', JSON.stringify(state.decks)); }
-    function saveUser() { localStorage.setItem('flashcards_user', state.userName); }
-    function deck() { return state.decks.find(d => d.id === state.deckId); }
-    function nextId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; }
-
-    function allCards() {
-      return state.decks.flatMap(d => d.cards.map(c => ({ ...c, deckName: d.name, deckId: d.id })));
+    function clearDay(deck, date) {
+      deck.schedule = (deck.schedule || []).filter(s => s.date !== date || s.completed);
+      save();
     }
 
-    function cardsDueOn(dateStr) {
-      return allCards().filter(c => c.nextReview <= dateStr);
+    function rescheduleDay(deck, fromDate, toDate) {
+      sessionsOn(deck, fromDate).forEach(s => { s.date = toDate; });
+      save();
     }
 
-    function dueTodayCount() { return cardsDueOn(todayStr()).length; }
-
-    // Ebbinghaus algorithm: schedule next review based on recall quality
-    function applyEbbinghaus(card, recalled) {
-      if (!recalled) {
-        card.repetitions = 0;
-        card.interval = 1;
-        card.easeFactor = Math.max(1.3, (card.easeFactor || 2.5) - 0.2);
-      } else {
-        const rep = card.repetitions || 0;
-        if (rep < EBBINGHAUS_DAYS.length) {
-          card.interval = EBBINGHAUS_DAYS[rep];
-        } else {
-          card.interval = Math.round((card.interval || 30) * (card.easeFactor || 2.5));
-        }
-        card.repetitions = rep + 1;
-        card.easeFactor = Math.min(3.0, (card.easeFactor || 2.5) + 0.05);
-      }
-      card.lastReview = todayStr();
-      card.nextReview = addDays(todayStr(), card.interval);
-    }
-
-    function findCard(deckId, cardId) {
-      const d = state.decks.find(x => x.id === deckId);
-      return d?.cards.find(c => c.id === cardId);
-    }
-
+    // ── Splash ──
     function startSplash() {
-      const name = state.userName || 'Friend';
-      document.getElementById('splash-name').textContent = name;
+      document.getElementById('splash-name').textContent = state.userName || 'Friend';
       setTimeout(() => {
         document.getElementById('splash').classList.add('hide');
         state.ready = true;
@@ -399,379 +339,404 @@
       }, 2000);
     }
 
+    // ── Render ──
     function render() {
       if (!state.ready) return;
       const app = document.getElementById('app');
       if (state.view === 'study') app.innerHTML = renderStudy();
-      else if (state.view === 'detail') app.innerHTML = renderDetail();
-      else if (state.tab === 'calendar') app.innerHTML = renderCalendar();
-      else if (state.tab === 'profile') app.innerHTML = renderProfile();
-      else app.innerHTML = renderDecks();
+      else if (state.view === 'deck') app.innerHTML = renderDeck();
+      else app.innerHTML = renderHome();
       if (state.modal) app.innerHTML += renderModal();
-      if (state.view !== 'study' && state.view !== 'detail') app.innerHTML += renderNav();
       bind();
     }
 
-    function renderNav() {
-      return `
-        <nav class="bottom-nav">
-          <button class="${state.tab === 'decks' ? 'active' : ''}" data-tab="decks">
-            <span class="nav-icon">📚</span>Decks
-          </button>
-          <button class="${state.tab === 'calendar' ? 'active' : ''}" data-tab="calendar">
-            <span class="nav-icon">📅</span>Calendar
-          </button>
-          <button class="${state.tab === 'profile' ? 'active' : ''}" data-tab="profile">
-            <span class="nav-icon">👤</span>Profile
-          </button>
-        </nav>`;
-    }
-
-    function renderDecks() {
-      const due = dueTodayCount();
+    function renderHome() {
       const list = state.decks.map(d => {
-        const dueInDeck = d.cards.filter(c => c.nextReview <= todayStr()).length;
+        const due = isDue(d);
+        const next = nextScheduled(d);
         return `
-        <div class="deck-card" data-deck="${d.id}">
-          <button class="delete" data-del-deck="${d.id}" title="Delete">✕</button>
-          <h2>${esc(d.name)}</h2>
-          ${d.description ? `<p>${esc(d.description)}</p>` : ''}
-          <div class="meta">
-            <span class="due">${dueInDeck} due today</span>
-            <span class="total">${d.cards.length} cards</span>
-          </div>
-        </div>`;
+          <div class="deck-card" data-open-deck="${d.id}">
+            <button class="delete" data-del-deck="${d.id}">✕</button>
+            <h2>🇩🇪 ${esc(d.name)}</h2>
+            <p>${esc(d.description || '')}</p>
+            <div class="meta">
+              <span class="due">${due ? 'Review due' : 'On track'}</span>
+              <span class="next">${d.cards.length} cards · ${next ? 'Next: ' + formatDate(next) : 'No date'}</span>
+            </div>
+          </div>`;
       }).join('');
-
+      const dueDecks = state.decks.filter(isDue);
       return `
-        <header><h1>Flashcards</h1></header>
+        <header><h1>🇩🇪 German Flashcards</h1></header>
         <main>
-          ${due ? `
-            <div class="due-banner">
-              <h2>${due} card${due === 1 ? '' : 's'} ready to review</h2>
-              <p>Spaced repetition keeps memories strong — Ebbinghaus curve</p>
-              <button data-review-due>Start Review</button>
-            </div>` : ''}
-          ${list || `<div class="empty"><div class="emoji">📚</div><h2>No decks yet</h2><p>Tap + to create your first deck</p></div>`}
+          ${dueDecks.length ? `<div class="overload-box" style="background:var(--blue-light);border-color:var(--blue-soft)">
+            <h3 style="color:var(--blue-dark)">${dueDecks.length} deck${dueDecks.length>1?'s':''} due today</h3>
+            <p style="font-size:.85rem;color:var(--muted)">Open a deck → Calendar to study</p>
+          </div>` : ''}
+          ${list}
         </main>
-        <button class="fab" data-action="new-deck">+</button>`;
+        <button class="fab" data-new-deck>+</button>`;
     }
 
-    function renderDetail() {
+    function renderDeck() {
       const d = deck();
       if (!d) return '';
-      const due = d.cards.filter(c => c.nextReview <= todayStr()).length;
-      const cards = d.cards.map(c => `
-        <div class="card-item">
-          <div class="front">${esc(c.front)}</div>
-          <div class="back">${esc(c.back)}</div>
-          <div class="sr-info">Next: ${formatDate(c.nextReview)} · ${c.repetitions || 0} reviews</div>
-          <div class="card-actions">
-            <button data-edit-card="${c.id}">Edit</button>
-            <button class="del" data-del-card="${c.id}">Delete</button>
-          </div>
-        </div>`).join('');
+      const tab = state.deckTab;
+      const overload = getOverloadDays(d);
       return `
         <header>
-          <button class="icon-btn" data-back>←</button>
+          <button class="icon-btn" data-go-home>←</button>
           <h1>${esc(d.name)}</h1>
         </header>
         <main>
-          ${d.cards.length ? `
-            <button class="btn-primary" data-study-due>Review Due (${due})</button>
-            <button class="btn-outline" data-study-all>Study All (${d.cards.length})</button>` : ''}
-          ${cards || `<div class="empty"><div class="emoji">🃏</div><h2>No cards yet</h2><p>Tap + to add cards</p></div>`}
+          <div class="deck-tabs">
+            <button class="${tab==='calendar'?'active':''}" data-dtab="calendar">📅 Calendar</button>
+            <button class="${tab==='cards'?'active':''}" data-dtab="cards">🃏 Cards</button>
+            <button class="${tab==='algorithm'?'active':''}" data-dtab="algorithm">⚙️ Algorithm</button>
+          </div>
+          ${overload.length ? `
+            <div class="overload-box">
+              <h3>⚠ ${overload.length} overloaded day${overload.length>1?'s':''}</h3>
+              <p style="font-size:.82rem;color:#92400e;margin-bottom:8px">More than ${deckAlgo(d).maxSessionsPerDay} session(s) scheduled on the same day.</p>
+              <button class="btn-warn" data-spread-overload>Spread sessions out</button>
+              ${overload.map(o => `<button class="btn-warn" style="margin-top:6px" data-clear-day="${o.date}">Clear ${formatDate(o.date)} (${o.count})</button>`).join('')}
+            </div>` : ''}
+          ${tab === 'calendar' ? renderDeckCalendar(d) : ''}
+          ${tab === 'cards' ? renderDeckCards(d) : ''}
+          ${tab === 'algorithm' ? renderDeckAlgorithm(d) : ''}
         </main>
-        <button class="fab" data-action="new-card">+</button>`;
+        ${tab === 'cards' ? '<button class="fab" data-new-card>+</button>' : ''}`;
     }
 
-    function renderCalendar() {
+    function renderDeckCalendar(d) {
       const y = state.calMonth.getFullYear();
       const m = state.calMonth.getMonth();
-      const first = new Date(y, m, 1);
-      const startDay = first.getDay();
-      const daysInMonth = new Date(y, m + 1, 0).getDate();
-      const monthName = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-
-      const dueMap = {};
-      allCards().forEach(c => {
-        dueMap[c.nextReview] = (dueMap[c.nextReview] || 0) + 1;
-      });
+      const first = new Date(y, m, 1).getDay();
+      const dim = daysInMonth(y, m);
+      const monthName = new Date(y, m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      const algo = deckAlgo(d);
+      const selected = state.calSelected || todayStr();
 
       let cells = '';
-      for (let i = 0; i < startDay; i++) cells += `<button class="cal-day other" disabled></button>`;
-      for (let day = 1; day <= daysInMonth; day++) {
-        const ds = `${y}-${pad(m+1)}-${pad(day)}`;
-        const isToday = ds === todayStr();
-        const hasDue = dueMap[ds] > 0;
-        const selected = ds === state.calSelected;
+      for (let i = 0; i < first; i++) cells += '<div class="cal-day blank"></div>';
+      for (let day = 1; day <= dim; day++) {
+        const ds = fmt(y, m + 1, day);
+        const active = sessionsOn(d, ds);
+        const done = completedOn(d, ds);
+        const overload = active.length > algo.maxSessionsPerDay;
         let cls = 'cal-day';
-        if (isToday) cls += ' today';
-        if (hasDue) cls += ' has-due';
-        if (selected) cls += ' selected';
-        cells += `<button class="${cls}" data-cal-day="${ds}">${day}${hasDue ? '<span class="dot"></span>' : ''}</button>`;
+        if (ds === todayStr()) cls += ' today';
+        if (ds === selected) cls += ' selected';
+        if (overload) cls += ' overload';
+        const badges = [
+          ...active.map(s => `<span class="sess ${s.source}">Review</span>`),
+          ...done.map(() => `<span class="sess done">Done</span>`),
+        ].join('');
+        cells += `<div class="${cls}" data-pick-day="${ds}"><span class="num">${day}</span>${badges}</div>`;
       }
 
-      const selectedCards = cardsDueOn(state.calSelected);
-      const detail = selectedCards.length ? selectedCards.map(c => `
-        <div class="cal-detail-item">
-          ${esc(c.front)}
-          <small>${esc(c.deckName)} · interval ${c.interval || 0}d</small>
-        </div>`).join('') : `<p style="color:var(--muted);font-size:.88rem">No reviews scheduled</p>`;
+      const selActive = sessionsOn(d, selected);
+      const selDone = completedOn(d, selected);
+      const panel = `
+        <div class="day-panel">
+          <h3>${formatDate(selected)}</h3>
+          ${selActive.length ? selActive.map(s => `
+            <div class="session-row">
+              <span>📖 Review session <small style="color:var(--muted)">(${s.source})</small></span>
+              <button class="btn-danger-sm" data-rm-session="${s.id}">Remove</button>
+            </div>`).join('') : ''}
+          ${selDone.length ? `<p style="font-size:.82rem;color:var(--muted)">${selDone.length} completed session(s)</p>` : ''}
+          ${!selActive.length && !selDone.length ? '<p style="font-size:.85rem;color:var(--muted)">No sessions — tap below to schedule</p>' : ''}
+          <button class="btn-outline" style="margin-top:10px" data-add-session="${selected}">+ Add review on this day</button>
+          ${selActive.length && selected <= todayStr() ? `<button class="btn-primary" data-start-review>Start Review (${d.cards.length} cards)</button>` : ''}
+          ${selActive.length ? `<button class="btn-warn" data-clear-day="${selected}">Clear this day</button>` : ''}
+        </div>`;
 
       return `
-        <header><h1>Review Calendar</h1></header>
-        <main>
+        <div class="cal-wrap">
           <div class="cal-header">
             <button data-cal-prev>‹</button>
             <h2>${monthName}</h2>
             <button data-cal-next>›</button>
           </div>
-          <div class="cal-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+          <div class="cal-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
           <div class="cal-grid">${cells}</div>
           <div class="cal-legend">
-            <span class="l-today">Today</span>
-            <span class="l-due">Review due</span>
+            <span><i style="background:var(--blue)"></i>Scheduled review</span>
+            <span><i style="background:#64748b"></i>Manual</span>
+            <span><i style="border:2px solid var(--danger);background:#fef2f2"></i>Overloaded</span>
           </div>
-          <div class="cal-detail">
-            <h3>${formatDate(state.calSelected)} — ${selectedCards.length} card${selectedCards.length === 1 ? '' : 's'}</h3>
-            ${detail}
-            ${selectedCards.length && state.calSelected <= todayStr() ? `<button class="btn-primary" style="margin-top:14px" data-review-date="${state.calSelected}">Review Now</button>` : ''}
-          </div>
-          <div class="ebbinghaus-info">
-            <h3>Ebbinghaus Spaced Repetition</h3>
-            Cards are scheduled at 1, 2, 4, 7, 15, 30, then 60+ day intervals — matching how memory fades over time. Miss a card and it resets to 1 day.
-          </div>
-        </main>`;
+        </div>
+        ${panel}
+        <div class="formula" style="margin-top:12px">
+          Retention R = e^(−t/S) · S=${d.sr.stability.toFixed(1)}d · Next interval=${d.sr.intervalDays}d
+        </div>`;
     }
 
-    function renderProfile() {
-      const initial = (state.userName || '?')[0].toUpperCase();
+    function renderDeckCards(d) {
+      const cards = d.cards.map(c => `
+        <div class="card-item">
+          <div class="en">${esc(c.en)}</div>
+          <div class="de">${esc(c.de)}</div>
+          <div class="card-actions">
+            <button data-edit-card="${c.id}">Edit</button>
+            <button data-del-card="${c.id}" style="color:var(--danger)">Delete</button>
+          </div>
+        </div>`).join('');
+      return cards || '<div class="empty"><p>No cards yet — tap +</p></div>';
+    }
+
+    function renderDeckAlgorithm(d) {
+      const a = deckAlgo(d);
       return `
-        <header><h1>Profile</h1></header>
-        <main>
-          <div class="profile-card">
-            <div class="profile-avatar">${esc(initial)}</div>
-            <h2>${esc(state.userName || 'Set your name')}</h2>
-            <input id="profile-name" placeholder="Your name" value="${esc(state.userName)}" />
-            <button class="btn-primary" data-save-profile>Save Name</button>
+        <div class="algo-section">
+          <h3>Ebbinghaus settings for this deck</h3>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Overrides global defaults. Based on the forgetting curve R = e^(−t/S).</p>
+          <div class="field"><label>Enabled</label>
+            <select id="a-enabled"><option value="1" ${a.enabled?'selected':''}>Yes</option><option value="0" ${!a.enabled?'selected':''}>No (manual calendar only)</option></select>
           </div>
-          <div class="ebbinghaus-info">
-            <h3>How it works</h3>
-            When you mark a card <strong>Got it</strong>, the next review moves further out (Ebbinghaus curve). Mark <strong>Missed</strong> and it comes back tomorrow. Check the Calendar tab to plan ahead.
+          <div class="field"><label>Review intervals (days, comma-separated)</label>
+            <input id="a-intervals" value="${a.intervals.join(', ')}" />
+            <small>Early repetitions follow this sequence before stability formula kicks in.</small>
           </div>
-        </main>`;
+          <div class="field"><label>Target retention (0–1)</label>
+            <input id="a-retention" type="number" step="0.01" min="0.5" max="0.99" value="${a.retentionTarget}" />
+            <small>Higher = review more often. 0.9 means 90% recall at review time.</small>
+          </div>
+          <div class="field"><label>Initial stability S (days)</label>
+            <input id="a-stability" type="number" step="0.1" min="0.1" value="${a.initialStability}" />
+          </div>
+          <div class="field"><label>Ease factor (start / min / max)</label>
+            <input id="a-ease" value="${a.initialEase}, ${a.minEase}, ${a.maxEase}" />
+          </div>
+          <div class="field"><label>Ease bonus / penalty (pass / fail)</label>
+            <input id="a-ease-delta" value="${a.easeBonus}, ${a.easePenalty}" />
+          </div>
+          <div class="field"><label>Max sessions per day</label>
+            <input id="a-max-day" type="number" min="1" max="5" value="${a.maxSessionsPerDay}" />
+            <small>Days exceeding this show as overloaded — use Spread or Clear to fix.</small>
+          </div>
+          <div class="field"><label>Fail interval (days)</label>
+            <input id="a-fail" type="number" min="1" value="${a.failIntervalDays}" />
+          </div>
+          <div class="field"><label>Curve steepness multiplier</label>
+            <input id="a-steep" type="number" step="0.1" min="0.5" max="3" value="${a.curveSteepness}" />
+          </div>
+          <button class="btn-primary" data-save-algo>Save algorithm</button>
+          <button class="btn-outline" data-reset-algo>Reset to defaults</button>
+        </div>
+        <div class="formula">
+          <strong>Current deck state</strong><br>
+          Repetitions: ${d.sr.repetitions} · Ease: ${d.sr.ease.toFixed(2)} · Stability S: ${d.sr.stability.toFixed(1)}d<br>
+          Last review: ${d.sr.lastReview || 'never'} · Predicted retention at next review: ${(retentionAt(d.sr.stability, d.sr.intervalDays)*100).toFixed(0)}%
+        </div>`;
     }
 
     function renderStudy() {
       const s = state.study;
       if (!s) return '';
+      const d = deck();
       if (s.done) {
         const total = s.correct + s.incorrect;
-        const pct = total ? Math.round(s.correct / total * 100) : 0;
+        const score = total ? s.correct / total : 0;
+        const pct = Math.round(score * 100);
         return `
-          <header><button class="icon-btn" data-back-home>←</button><h1>Session Complete</h1></header>
-          <main class="results">
-            <div class="emoji">✨</div>
-            <h2>Well done${state.userName ? ', ' + esc(state.userName) : ''}!</h2>
-            <div class="score">${pct}%</div>
-            <div class="stats">
-              <div>Got it: ${s.correct}</div>
-              <div>Missed: ${s.incorrect}</div>
-              <div>Next reviews scheduled on calendar</div>
+          <header><button class="icon-btn" data-end-study>←</button><h1>Session done</h1></header>
+          <main style="text-align:center;padding-top:24px">
+            <h2 style="font-size:2.5rem;color:var(--blue);margin:16px 0">${pct}%</h2>
+            <p style="color:var(--muted);margin-bottom:20px">Got it: ${s.correct} · Missed: ${s.incorrect}</p>
+            <div class="formula" style="text-align:left;margin-bottom:16px">
+              Ebbinghaus scheduled next review based on recall score ${score.toFixed(2)}<br>
+              Next: ${d.sr.intervalDays} day(s) · Stability S=${d.sr.stability.toFixed(1)}d
             </div>
-            <button class="btn-primary" data-back-home>Back to Decks</button>
+            <button class="btn-primary" data-end-study>Back to calendar</button>
           </main>`;
       }
-      const card = s.cards[s.index];
-      const progress = ((s.index + (s.flipped ? 0.5 : 0)) / s.cards.length) * 100;
+      const c = s.cards[s.index];
+      const prog = ((s.index + (s.flipped ? .5 : 0)) / s.cards.length) * 100;
       return `
-        <header><button class="icon-btn" data-back-home>←</button><h1>Review</h1></header>
+        <header><button class="icon-btn" data-end-study>←</button><h1>Review</h1></header>
         <main>
-          <div class="progress-row"><span>${s.index + 1} / ${s.cards.length}</span><span>${s.flipped ? 'Answer' : 'Question'}</span></div>
-          <div class="progress-bar"><div style="width:${progress}%"></div></div>
-          <div class="flip-card ${s.flipped ? 'flipped' : ''}" data-flip>
+          <div class="progress-row"><span>${s.index+1} / ${s.cards.length}</span><span>${s.flipped?'German':'English'}</span></div>
+          <div class="progress-bar"><div style="width:${prog}%"></div></div>
+          <div class="flip-card ${s.flipped?'flipped':''}" data-flip>
             <div class="flip-inner">
-              <div class="flip-face flip-front">${esc(card.front)}</div>
-              <div class="flip-face flip-back">${esc(card.back)}</div>
+              <div class="flip-face flip-front">${esc(c.en)}</div>
+              <div class="flip-face flip-back">${esc(c.de)}</div>
             </div>
           </div>
-          <p style="text-align:center;color:var(--muted);margin-bottom:16px;font-size:.9rem">
-            ${s.flipped ? 'How well did you remember it?' : 'Tap the card to flip'}
-          </p>
-          ${s.flipped ? `
-            <div class="study-actions">
-              <button class="missed" data-answer="0">Missed</button>
-              <button class="got-it" data-answer="1">Got it</button>
-            </div>` : `
-            <button class="show-answer" data-flip-btn>Show Answer</button>`}
+          ${s.flipped ? `<div class="study-actions">
+            <button class="missed" data-ans="0">Missed</button>
+            <button class="got-it" data-ans="1">Got it</button>
+          </div>` : `<button class="show-answer" data-flip>Show German</button>`}
         </main>`;
     }
 
     function renderModal() {
       const m = state.modal;
-      if (m.type === 'welcome') return `
-        <div class="modal-bg">
-          <div class="modal">
-            <h2>Welcome!</h2>
-            <p style="color:var(--muted);margin-bottom:12px;font-size:.9rem">What's your name? We'll greet you each time you open the app.</p>
-            <input id="welcome-name" placeholder="Your name" autofocus />
-            <div class="modal-actions">
-              <button class="confirm" data-save-welcome>Continue</button>
-            </div>
-          </div>
-        </div>`;
-      if (m.type === 'deck') return `
-        <div class="modal-bg" data-close-modal>
-          <div class="modal" onclick="event.stopPropagation()">
-            <h2>${m.edit ? 'Edit Deck' : 'New Deck'}</h2>
-            <input id="m-name" placeholder="Deck name" value="${esc(m.name || '')}" />
-            <textarea id="m-desc" placeholder="Description (optional)" rows="2">${esc(m.description || '')}</textarea>
-            <div class="modal-actions">
-              <button class="cancel" data-close-modal>Cancel</button>
-              <button class="confirm" data-save-deck>Save</button>
-            </div>
-          </div>
-        </div>`;
-      if (m.type === 'card') return `
-        <div class="modal-bg" data-close-modal>
-          <div class="modal" onclick="event.stopPropagation()">
-            <h2>${m.edit ? 'Edit Card' : 'New Card'}</h2>
-            <textarea id="m-front" placeholder="Front (question)" rows="2">${esc(m.front || '')}</textarea>
-            <textarea id="m-back" placeholder="Back (answer)" rows="2">${esc(m.back || '')}</textarea>
-            <div class="modal-actions">
-              <button class="cancel" data-close-modal>Cancel</button>
-              <button class="confirm" data-save-card>Save</button>
-            </div>
-          </div>
-        </div>`;
+      if (m.type === 'welcome') return `<div class="modal-bg"><div class="modal">
+        <h2>Willkommen!</h2>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:10px">Your name appears on the splash screen.</p>
+        <input id="welcome-name" placeholder="Your name" />
+        <div class="modal-actions"><button class="confirm" data-save-welcome>Continue</button></div>
+      </div></div>`;
+      if (m.type === 'deck') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+        <h2>New German deck</h2>
+        <input id="m-name" placeholder="Deck name" />
+        <textarea id="m-desc" placeholder="Description" rows="2"></textarea>
+        <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-deck>Save</button></div>
+      </div></div>`;
+      if (m.type === 'card') return `<div class="modal-bg" data-close><div class="modal" onclick="event.stopPropagation()">
+        <h2>${m.edit?'Edit':'New'} card</h2>
+        <input id="m-en" placeholder="English" value="${esc(m.en||'')}" />
+        <input id="m-de" placeholder="German" value="${esc(m.de||'')}" />
+        <div class="modal-actions"><button class="cancel" data-close>Cancel</button><button class="confirm" data-save-card>Save</button></div>
+      </div></div>`;
       return '';
     }
 
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 
-    function startStudy(cards, deckId) {
-      if (!cards.length) return;
-      state.study = {
-        cards: cards.map(c => ({ ...c })),
-        deckId: deckId || null,
-        index: 0, flipped: false, correct: 0, incorrect: 0, done: false
-      };
+    function startStudy(d) {
+      state.study = { cards: [...d.cards].sort(() => Math.random() - .5), index: 0, flipped: false, correct: 0, incorrect: 0, done: false };
       state.view = 'study';
       render();
     }
 
+    function finishStudy() {
+      const s = state.study;
+      const d = deck();
+      if (!s || !d) return;
+      const total = s.correct + s.incorrect;
+      const score = total ? s.correct / total : 0.5;
+      const today = todayStr();
+
+      sessionsOn(d, today).forEach(sess => { sess.completed = true; });
+
+      if (deckAlgo(d).enabled) {
+        const { nextDate } = computeNextReview(d, score);
+        scheduleReview(d, nextDate, 'auto');
+      }
+      save();
+    }
+
     function bind() {
-      document.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', () => {
-        state.tab = el.dataset.tab; state.view = 'decks'; state.deckId = null; render();
-      }));
-      document.querySelector('[data-back]')?.addEventListener('click', () => { state.view = 'decks'; state.deckId = null; render(); });
-      document.querySelectorAll('[data-back-home]').forEach(el => el.addEventListener('click', () => {
-        state.view = 'decks'; state.deckId = null; state.study = null; render();
-      }));
-      document.querySelector('[data-action="new-deck"]')?.addEventListener('click', () => { state.modal = { type: 'deck' }; render(); });
-      document.querySelector('[data-action="new-card"]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
-      document.querySelector('[data-review-due]')?.addEventListener('click', () => {
-        startStudy(cardsDueOn(todayStr()));
-      });
-      document.querySelector('[data-study-due]')?.addEventListener('click', () => {
-        const d = deck();
-        startStudy(d.cards.filter(c => c.nextReview <= todayStr()), d.id);
-      });
-      document.querySelector('[data-study-all]')?.addEventListener('click', () => {
-        startStudy([...deck().cards], deck().id);
-      });
-      document.querySelector('[data-review-date]')?.addEventListener('click', (e) => {
-        startStudy(cardsDueOn(e.currentTarget.dataset.reviewDate));
-      });
-      document.querySelector('[data-save-profile]')?.addEventListener('click', () => {
-        state.userName = document.getElementById('profile-name').value.trim();
-        saveUser(); render();
-      });
-      document.querySelector('[data-save-welcome]')?.addEventListener('click', () => {
-        const n = document.getElementById('welcome-name').value.trim();
-        if (n) { state.userName = n; saveUser(); }
-        state.modal = null; render();
-      });
-      document.querySelectorAll('[data-deck]').forEach(el => el.addEventListener('click', e => {
+      document.querySelector('[data-go-home]')?.addEventListener('click', () => { state.view = 'home'; state.deckId = null; render(); });
+      document.querySelectorAll('[data-open-deck]').forEach(el => el.addEventListener('click', e => {
         if (e.target.closest('[data-del-deck]')) return;
-        state.deckId = +el.dataset.deck; state.view = 'detail'; render();
+        state.deckId = +el.dataset.openDeck;
+        state.view = 'deck';
+        state.deckTab = 'calendar';
+        state.calSelected = todayStr();
+        render();
       }));
       document.querySelectorAll('[data-del-deck]').forEach(el => el.addEventListener('click', e => {
         e.stopPropagation();
-        if (confirm('Delete this deck?')) {
-          state.decks = state.decks.filter(d => d.id !== +el.dataset.delDeck);
-          save(); render();
-        }
+        if (confirm('Delete deck?')) { state.decks = state.decks.filter(d => d.id !== +el.dataset.delDeck); save(); render(); }
       }));
-      document.querySelectorAll('[data-del-card]').forEach(el => el.addEventListener('click', () => {
-        if (confirm('Delete this card?')) {
-          deck().cards = deck().cards.filter(c => c.id !== +el.dataset.delCard);
-          save(); render();
+      document.querySelector('[data-new-deck]')?.addEventListener('click', () => { state.modal = { type: 'deck' }; render(); });
+      document.querySelector('[data-new-card]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
+      document.querySelectorAll('[data-dtab]').forEach(el => el.addEventListener('click', () => { state.deckTab = el.dataset.dtab; render(); }));
+      document.querySelector('[data-cal-prev]')?.addEventListener('click', () => {
+        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() - 1, 1); render();
+      });
+      document.querySelector('[data-cal-next]')?.addEventListener('click', () => {
+        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() + 1, 1); render();
+      });
+      document.querySelectorAll('[data-pick-day]').forEach(el => el.addEventListener('click', () => {
+        state.calSelected = el.dataset.pickDay; render();
+      }));
+      document.querySelectorAll('[data-add-session]').forEach(el => el.addEventListener('click', () => {
+        scheduleReview(deck(), el.dataset.addSession, 'manual'); save(); render();
+      }));
+      document.querySelectorAll('[data-rm-session]').forEach(el => el.addEventListener('click', () => {
+        const id = +el.dataset.rmSession;
+        deck().schedule = deck().schedule.filter(s => s.id !== id); save(); render();
+      }));
+      document.querySelectorAll('[data-clear-day]').forEach(el => el.addEventListener('click', () => {
+        if (confirm('Remove all sessions on this day?')) { clearDay(deck(), el.dataset.clearDay); render(); }
+      }));
+      document.querySelector('[data-spread-overload]')?.addEventListener('click', () => { spreadOverload(deck()); render(); });
+      document.querySelector('[data-start-review]')?.addEventListener('click', () => startStudy(deck()));
+      document.querySelectorAll('[data-end-study]').forEach(el => el.addEventListener('click', () => {
+        if (state.study?.done && !state.study.applied) {
+          finishStudy();
+          state.study.applied = true;
         }
+        state.study = null; state.view = 'deck'; state.deckTab = 'calendar'; render();
       }));
       document.querySelectorAll('[data-edit-card]').forEach(el => el.addEventListener('click', () => {
         const c = deck().cards.find(x => x.id === +el.dataset.editCard);
-        state.modal = { type: 'card', edit: c.id, front: c.front, back: c.back }; render();
+        state.modal = { type: 'card', edit: c.id, en: c.en, de: c.de }; render();
       }));
-      document.querySelectorAll('[data-close-modal]').forEach(el => el.addEventListener('click', () => { state.modal = null; render(); }));
+      document.querySelectorAll('[data-del-card]').forEach(el => el.addEventListener('click', () => {
+        if (confirm('Delete card?')) { deck().cards = deck().cards.filter(c => c.id !== +el.dataset.delCard); save(); render(); }
+      }));
+      document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => { state.modal = null; render(); }));
+      document.querySelector('[data-save-welcome]')?.addEventListener('click', () => {
+        const n = document.getElementById('welcome-name').value.trim();
+        if (n) { state.userName = n; localStorage.setItem('flashcards_user', n); }
+        state.modal = null; render();
+      });
       document.querySelector('[data-save-deck]')?.addEventListener('click', () => {
         const name = document.getElementById('m-name').value.trim();
         if (!name) return;
         const desc = document.getElementById('m-desc').value.trim();
-        if (state.modal.edit) {
-          const d = state.decks.find(x => x.id === state.modal.edit);
-          d.name = name; d.description = desc;
-        } else {
-          state.decks.unshift({ id: nextId(state.decks), name, description: desc, cards: [] });
-        }
+        state.decks.unshift(initDeck({ id: nextId(state.decks), name, description: desc, cards: [] }));
         save(); state.modal = null; render();
       });
       document.querySelector('[data-save-card]')?.addEventListener('click', () => {
-        const front = document.getElementById('m-front').value.trim();
-        const back = document.getElementById('m-back').value.trim();
-        if (!front || !back) return;
+        const en = document.getElementById('m-en').value.trim();
+        const de = document.getElementById('m-de').value.trim();
+        if (!en || !de) return;
         const d = deck();
         if (state.modal.edit) {
           const c = d.cards.find(x => x.id === state.modal.edit);
-          c.front = front; c.back = back;
+          c.en = en; c.de = de;
         } else {
-          d.cards.push({ id: nextId(d.cards), front, back, ...defaultSR() });
+          d.cards.push({ id: nextId(d.cards), en, de });
         }
         save(); state.modal = null; render();
       });
-      document.querySelector('[data-cal-prev]')?.addEventListener('click', () => {
-        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() - 1, 1);
-        render();
+      document.querySelector('[data-save-algo]')?.addEventListener('click', () => {
+        const d = deck();
+        const intervals = document.getElementById('a-intervals').value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => n > 0);
+        const easeParts = document.getElementById('a-ease').value.split(',').map(s => parseFloat(s.trim()));
+        const deltaParts = document.getElementById('a-ease-delta').value.split(',').map(s => parseFloat(s.trim()));
+        d.algo = {
+          enabled: document.getElementById('a-enabled').value === '1',
+          intervals: intervals.length ? intervals : DEFAULT_ALGO.intervals,
+          retentionTarget: parseFloat(document.getElementById('a-retention').value) || 0.9,
+          initialStability: parseFloat(document.getElementById('a-stability').value) || 1,
+          initialEase: easeParts[0] || 2.5,
+          minEase: easeParts[1] || 1.3,
+          maxEase: easeParts[2] || 3.0,
+          easeBonus: deltaParts[0] || 0.15,
+          easePenalty: deltaParts[1] || 0.25,
+          maxSessionsPerDay: parseInt(document.getElementById('a-max-day').value, 10) || 1,
+          failIntervalDays: parseInt(document.getElementById('a-fail').value, 10) || 1,
+          curveSteepness: parseFloat(document.getElementById('a-steep').value) || 1,
+        };
+        save(); alert('Algorithm saved'); render();
       });
-      document.querySelector('[data-cal-next]')?.addEventListener('click', () => {
-        state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() + 1, 1);
-        render();
+      document.querySelector('[data-reset-algo]')?.addEventListener('click', () => {
+        if (confirm('Reset algorithm to defaults?')) { deck().algo = { ...DEFAULT_ALGO }; save(); render(); }
       });
-      document.querySelectorAll('[data-cal-day]').forEach(el => el.addEventListener('click', () => {
-        state.calSelected = el.dataset.calDay; render();
-      }));
       const flip = () => { if (state.study && !state.study.done) { state.study.flipped = !state.study.flipped; render(); } };
       document.querySelector('[data-flip]')?.addEventListener('click', flip);
-      document.querySelector('[data-flip-btn]')?.addEventListener('click', flip);
-      document.querySelectorAll('[data-answer]').forEach(el => el.addEventListener('click', () => {
-        const recalled = el.dataset.answer === '1';
-        const s = state.study;
-        const cardRef = s.cards[s.index];
-        const real = findCard(cardRef.deckId || s.deckId || deck()?.id, cardRef.id);
-        if (real) applyEbbinghaus(real, recalled);
-        if (recalled) s.correct++; else s.incorrect++;
-        save();
-        s.flipped = false;
-        if (s.index + 1 >= s.cards.length) s.done = true;
-        else s.index++;
+      document.querySelectorAll('[data-ans]').forEach(el => el.addEventListener('click', () => {
+        const ok = el.dataset.ans === '1';
+        if (ok) state.study.correct++; else state.study.incorrect++;
+        state.study.flipped = false;
+        if (state.study.index + 1 >= state.study.cards.length) {
+          state.study.done = true;
+          if (!state.study.applied) { finishStudy(); state.study.applied = true; }
+        } else state.study.index++;
         render();
       }));
     }
 
-    loadDecks();
+    load();
     startSplash();
   </script>
 </body>
