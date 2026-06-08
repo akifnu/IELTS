@@ -130,6 +130,14 @@
     .stepper{display:flex;align-items:center;gap:12px;margin-top:8px}
     .stepper button{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--white);font-size:1.2rem;cursor:pointer;color:var(--blue)}
     .stepper .val{font-size:1.1rem;font-weight:700;min-width:2rem;text-align:center}
+    .schedule-fold{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+    .schedule-fold summary{cursor:pointer;padding:12px 14px;font-size:.85rem;font-weight:600;color:var(--blue-dark);list-style:none;display:flex;align-items:center;justify-content:space-between}
+    .schedule-fold summary::-webkit-details-marker{display:none}
+    .schedule-fold summary::after{content:'▾';color:var(--muted);font-size:.9rem;transition:transform .2s}
+    .schedule-fold[open] summary::after{transform:rotate(180deg)}
+    .schedule-fold summary .sched-line{color:var(--muted);font-weight:500;font-size:.8rem}
+    .schedule-fold .sched-body{padding:0 14px 14px;border-top:1px solid var(--border)}
+    .schedule-fold .sched-body h3{font-size:.9rem;margin:14px 0 4px}
   </style>
 </head>
 <body>
@@ -580,16 +588,18 @@
             <button class="btn-primary" data-add-global-session="${selected}">Add study session</button>
             ${selItems.length ? `<button class="btn-warn" data-clear-global="${selected}">Clear this day</button>` : ''}
           </div>
-          <div class="settings-card" style="margin-top:14px">
-            <h3>Busy days</h3>
-            <p class="hint">Warn me when more than this many decks are scheduled on the same day.</p>
-            <div class="stepper">
-              <button data-max-dec>−</button>
-              <span class="val" id="global-max-val">${state.globalMaxSessionsPerDay}</span>
-              <button data-max-inc>+</button>
-              <span style="font-size:.85rem;color:var(--muted)">decks / day</span>
+          <details class="schedule-fold" id="cal-settings-fold" ${state.calSettingsOpen ? 'open' : ''}>
+            <summary>Calendar options <span class="sched-line">Busy-day limit: ${state.globalMaxSessionsPerDay}</span></summary>
+            <div class="sched-body">
+              <p class="hint" style="margin-bottom:10px">Warn when more than this many decks land on the same day.</p>
+              <div class="stepper">
+                <button data-max-dec>−</button>
+                <span class="val">${state.globalMaxSessionsPerDay}</span>
+                <button data-max-inc>+</button>
+                <span style="font-size:.85rem;color:var(--muted)">decks / day</span>
+              </div>
             </div>
-          </div>
+          </details>
         </main>`;
     }
 
@@ -609,14 +619,24 @@
         <button class="fab" data-new-card>+</button>`;
     }
 
+    function scheduleSummary(d) {
+      const ebbOn = isEbbinghausOn(d);
+      if (!ebbOn) return '📅 Manual · use Calendar tab';
+      const preset = PRESETS[getDeckPreset(d)].label;
+      const next = nextScheduled(d);
+      return `🧠 Smart · ${preset}${next ? ' · ' + formatDate(next) : ''}`;
+    }
+
     function renderScheduleCard(d) {
       const ebbOn = isEbbinghausOn(d);
       const preset = getDeckPreset(d);
       const next = nextScheduled(d);
       return `
-        <div class="settings-card">
-          <h3>When should you review this deck?</h3>
-          <p class="hint">Pick one — you can change this anytime.</p>
+        <details class="schedule-fold" id="deck-schedule-fold" ${state.deckScheduleOpen ? 'open' : ''}>
+          <summary>Review schedule <span class="sched-line">${scheduleSummary(d)}</span></summary>
+          <div class="sched-body">
+          <h3>When should you review?</h3>
+          <p class="hint">Optional — defaults work for most people.</p>
           <div class="mode-pick">
             <button type="button" class="mode-opt ${!ebbOn ? 'active' : ''}" data-set-mode="manual">
               <div class="mo-icon">📅</div>
@@ -643,7 +663,8 @@
               ${renderAdvancedFields(d)}
             </details>` : `
             <p style="font-size:.8rem;color:var(--muted);margin-top:10px">Go to <strong>Calendar</strong> (bottom) to add this deck to a day.</p>`}
-        </div>`;
+          </div>
+        </details>`;
     }
 
     function renderAdvancedFields(d) {
@@ -782,11 +803,19 @@
       }));
       document.querySelector('[data-new-deck]')?.addEventListener('click', () => { state.modal = { type: 'deck' }; render(); });
       document.querySelector('[data-new-card]')?.addEventListener('click', () => { state.modal = { type: 'card' }; render(); });
+      document.getElementById('deck-schedule-fold')?.addEventListener('toggle', (e) => {
+        state.deckScheduleOpen = e.target.open;
+      });
+      document.getElementById('cal-settings-fold')?.addEventListener('toggle', (e) => {
+        state.calSettingsOpen = e.target.open;
+      });
       document.querySelectorAll('[data-set-mode]').forEach(el => el.addEventListener('click', () => {
+        state.deckScheduleOpen = true;
         setScheduleMode(deck(), el.dataset.setMode === 'auto');
         render();
-      }));
+      });
       document.querySelectorAll('[data-preset]').forEach(el => el.addEventListener('click', () => {
+        state.deckScheduleOpen = true;
         applyPreset(deck(), el.dataset.preset);
         render();
       }));
@@ -832,6 +861,7 @@
         state.study = null; state.view = 'deck'; render();
       }));
       document.querySelector('[data-save-advanced]')?.addEventListener('click', () => {
+        state.deckScheduleOpen = true;
         const d = deck();
         const intervals = document.getElementById('a-intervals').value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => n > 0);
         d.algo = {
