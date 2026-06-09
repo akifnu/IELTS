@@ -106,6 +106,10 @@ data class AppSettings(
     val globalMaxSessionsPerDay: Int = 3,
     val userName: String = "",
     val onboarded: Boolean = false,
+    val themeMode: String = "system",
+    val defaultAlgorithm: String = "ebbinghaus",
+    val defaultPreset: String = "normal",
+    val defaultSmartSchedule: Boolean = true,
 )
 
 data class InboxItem(

@@ -95,6 +95,28 @@ class ShineRepository(
         saveSettings(s.copy(globalMaxSessionsPerDay = max.coerceIn(1, 10)))
     }
 
+    suspend fun setThemeMode(mode: String) {
+        val s = getSettings()
+        saveSettings(s.copy(themeMode = mode))
+    }
+
+    suspend fun setDefaultAlgorithm(algorithm: String) {
+        val s = getSettings()
+        if (algorithm !in ShineConstants.ALGORITHMS) return
+        saveSettings(s.copy(defaultAlgorithm = algorithm))
+    }
+
+    suspend fun setDefaultPreset(preset: String) {
+        val s = getSettings()
+        if (preset !in ShineConstants.PRESETS) return
+        saveSettings(s.copy(defaultPreset = preset))
+    }
+
+    suspend fun setDefaultSmartSchedule(enabled: Boolean) {
+        val s = getSettings()
+        saveSettings(s.copy(defaultSmartSchedule = enabled))
+    }
+
     suspend fun markOnboarded() {
         val s = getSettings()
         saveSettings(s.copy(onboarded = true))
@@ -127,14 +149,27 @@ class ShineRepository(
             userId = "guest",
             name = settings.userName.ifBlank { "Guest" },
         )
-        val deck = Deck(
+        val preset = ShineConstants.PRESETS[settings.defaultPreset] ?: ShineConstants.PRESETS["normal"]!!
+        val algo = AlgoConfig(
+            enabled = settings.defaultSmartSchedule,
+            algorithm = settings.defaultAlgorithm,
+            preset = settings.defaultPreset,
+            intervals = preset.intervals,
+            retentionTarget = preset.retentionTarget,
+            failIntervalDays = preset.failIntervalDays,
+        )
+        var deck = Deck(
             name = name.trim(),
             description = description.trim(),
             clusterId = clusterId,
             ownership = ownership,
-            algo = AlgoConfig(),
-            sr = DeckSr(ease = AlgoConfig().initialEase, stability = AlgoConfig().initialStability),
+            ebbinghaus = settings.defaultSmartSchedule,
+            algo = algo,
+            sr = DeckSr(ease = algo.initialEase, stability = algo.initialStability),
         )
+        if (settings.defaultSmartSchedule) {
+            deck = deck.copy(schedule = SpacedRepetitionEngine.seedSmartSchedule(deck))
+        }
         return deckDao.insert(Mappers.deckToEntity(deck))
     }
 

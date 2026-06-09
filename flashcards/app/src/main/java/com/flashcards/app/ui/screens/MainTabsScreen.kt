@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
@@ -15,7 +16,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,12 +51,14 @@ import com.flashcards.app.ui.components.ShineAppDrawer
 import com.flashcards.app.viewmodel.AccountViewModel
 import com.flashcards.app.viewmodel.CalendarViewModel
 import com.flashcards.app.viewmodel.HomeViewModel
+import com.flashcards.app.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
 private enum class MainDestination {
     Today,
     Calendar,
-    Clusters,
+    Flashcards,
+    Settings,
     Account,
     Inbox,
 }
@@ -69,6 +71,7 @@ fun MainTabsScreen(
     homeVm: HomeViewModel = hiltViewModel(),
     calendarVm: CalendarViewModel = hiltViewModel(),
     accountVm: AccountViewModel = hiltViewModel(),
+    settingsVm: SettingsViewModel = hiltViewModel(),
 ) {
     var destination by rememberSaveable { mutableStateOf(MainDestination.Today) }
     var showDeckDialog by remember { mutableStateOf<Long?>(null) }
@@ -85,7 +88,9 @@ fun MainTabsScreen(
     val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfo())
 
     val drawerAction = when (destination) {
-        MainDestination.Clusters -> DrawerAction.Clusters
+        MainDestination.Flashcards -> DrawerAction.Flashcards
+        MainDestination.Calendar -> DrawerAction.Calendar
+        MainDestination.Settings -> DrawerAction.Settings
         MainDestination.Account -> DrawerAction.Account
         MainDestination.Inbox -> DrawerAction.Inbox
         else -> null
@@ -105,7 +110,9 @@ fun MainTabsScreen(
                 selectedAction = drawerAction,
                 onAction = { action ->
                     when (action) {
-                        DrawerAction.Clusters -> navigateTo(MainDestination.Clusters)
+                        DrawerAction.Flashcards -> navigateTo(MainDestination.Flashcards)
+                        DrawerAction.Calendar -> navigateTo(MainDestination.Calendar)
+                        DrawerAction.Settings -> navigateTo(MainDestination.Settings)
                         DrawerAction.Account -> navigateTo(MainDestination.Account)
                         DrawerAction.Inbox -> navigateTo(MainDestination.Inbox)
                     }
@@ -147,7 +154,8 @@ fun MainTabsScreen(
                             when (destination) {
                                 MainDestination.Today -> Text("Today")
                                 MainDestination.Calendar -> Text("Study Calendar")
-                                MainDestination.Clusters -> Text("Clusters")
+                                MainDestination.Flashcards -> Text("Flashcards")
+                                MainDestination.Settings -> Text("Settings")
                                 MainDestination.Account -> Text("Account")
                                 MainDestination.Inbox -> Text("Inbox")
                             }
@@ -162,7 +170,7 @@ fun MainTabsScreen(
                 },
                 snackbarHost = { SnackbarHost(snackbar) },
                 floatingActionButton = {
-                    if (destination == MainDestination.Clusters) {
+                    if (destination == MainDestination.Flashcards) {
                         FloatingActionButton(onClick = { showClusterDialog = true }) {
                             Icon(Icons.Default.Add, contentDescription = "New cluster")
                         }
@@ -181,7 +189,7 @@ fun MainTabsScreen(
                         onStudyDeck = onStudyDeck,
                         modifier = contentModifier,
                     )
-                    MainDestination.Clusters -> LibraryScreen(
+                    MainDestination.Flashcards -> LibraryScreen(
                         viewModel = homeVm,
                         onOpenDeck = onOpenDeck,
                         onStudyDeck = onStudyDeck,
@@ -190,6 +198,10 @@ fun MainTabsScreen(
                         onEditCluster = { editCluster = it },
                         onDeleteCluster = { deleteClusterTarget = it },
                         onDeleteDeck = { deleteDeckId = it },
+                        modifier = contentModifier,
+                    )
+                    MainDestination.Settings -> SettingsScreen(
+                        viewModel = settingsVm,
                         modifier = contentModifier,
                     )
                     MainDestination.Account -> AccountScreen(
@@ -237,7 +249,7 @@ fun MainTabsScreen(
                     } else {
                         homeVm.createCluster(name, emoji) {
                             showClusterDialog = false
-                            destination = MainDestination.Clusters
+                            destination = MainDestination.Flashcards
                         }
                     }
                 }) { Text("Save") }

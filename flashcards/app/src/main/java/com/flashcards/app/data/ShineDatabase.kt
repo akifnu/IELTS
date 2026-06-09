@@ -24,7 +24,7 @@ import com.flashcards.app.data.entity.UserEntity
         InboxEntity::class,
         UserEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class ShineDatabase : RoomDatabase() {

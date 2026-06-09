@@ -38,7 +38,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.flashcards.app.domain.Deck
-import com.flashcards.app.ui.components.WeeklyStreakCard
 import com.flashcards.app.viewmodel.HomeViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -69,10 +68,6 @@ fun HomeScreen(
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-        }
-
-        item {
-            WeeklyStreakCard(streak = state.streak)
         }
 
         item {
@@ -306,7 +301,7 @@ private fun EmptyLibraryHint() {
         Column(Modifier.padding(20.dp)) {
             Text("Get started", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(
-                "Open the menu (☰) → Clusters to create your first deck library.",
+                "Open the menu (☰) → Flashcards to create your first deck library.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),

@@ -92,12 +92,20 @@ object Mappers {
         globalMaxSessionsPerDay = e.globalMaxSessionsPerDay,
         userName = e.userName,
         onboarded = e.onboarded,
+        themeMode = e.themeMode,
+        defaultAlgorithm = e.defaultAlgorithm,
+        defaultPreset = e.defaultPreset,
+        defaultSmartSchedule = e.defaultSmartSchedule,
     )
 
     fun settingsToEntity(s: AppSettings) = AppSettingsEntity(
         globalMaxSessionsPerDay = s.globalMaxSessionsPerDay,
         userName = s.userName,
         onboarded = s.onboarded,
+        themeMode = s.themeMode,
+        defaultAlgorithm = s.defaultAlgorithm,
+        defaultPreset = s.defaultPreset,
+        defaultSmartSchedule = s.defaultSmartSchedule,
     )
 
     fun inboxFromEntity(e: InboxEntity) = InboxItem(

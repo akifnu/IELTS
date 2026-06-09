@@ -8,8 +8,6 @@ import com.flashcards.app.domain.DateUtils
 import com.flashcards.app.domain.Deck
 import com.flashcards.app.domain.DeckPermissions
 import com.flashcards.app.domain.SpacedRepetitionEngine
-import com.flashcards.app.domain.StreakCalculator
-import com.flashcards.app.domain.StreakInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +32,6 @@ data class HomeUiState(
     val todayProgress: TodayProgress = TodayProgress(),
     val ownedDecks: List<Deck> = emptyList(),
     val sharedDecks: List<Deck> = emptyList(),
-    val streak: StreakInfo = StreakInfo(0, emptyList(), 0),
 )
 
 private fun Deck.completedToday(): Boolean {
@@ -70,7 +67,6 @@ class HomeViewModel @Inject constructor(
             ),
             ownedDecks = DeckPermissions.ownedDecks(decks),
             sharedDecks = DeckPermissions.sharedWithMe(decks),
-            streak = StreakCalculator.compute(decks),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 

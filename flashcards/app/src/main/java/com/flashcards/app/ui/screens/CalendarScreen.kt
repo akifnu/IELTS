@@ -263,47 +263,6 @@ fun CalendarScreen(
             }
         }
 
-        item {
-            Card(shape = RoundedCornerShape(16.dp)) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
-                        Text("Busy-day limit", fontWeight = FontWeight.SemiBold)
-                        Text(
-                            "Warn when too many decks share a day",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = { viewModel.setMaxSessionsPerDay(state.settings.globalMaxSessionsPerDay - 1) },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                        ) { Text("−", fontWeight = FontWeight.Bold) }
-                        Text(
-                            "${state.settings.globalMaxSessionsPerDay}",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                        )
-                        IconButton(
-                            onClick = { viewModel.setMaxSessionsPerDay(state.settings.globalMaxSessionsPerDay + 1) },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                        ) { Text("+", fontWeight = FontWeight.Bold) }
-                    }
-                }
-            }
-        }
     }
 }
 

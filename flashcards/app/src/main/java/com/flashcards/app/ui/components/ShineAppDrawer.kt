@@ -13,10 +13,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -44,7 +46,9 @@ import com.flashcards.app.viewmodel.AccountViewModel
 import kotlinx.coroutines.launch
 
 enum class DrawerAction {
-    Clusters,
+    Flashcards,
+    Calendar,
+    Settings,
     Account,
     Inbox,
 }
@@ -174,11 +178,37 @@ fun ShineAppDrawer(
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
+            Text(
+                "Study",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+            )
             NavigationDrawerItem(
-                label = { Text("Clusters") },
-                selected = selectedAction == DrawerAction.Clusters,
-                onClick = { onAction(DrawerAction.Clusters) },
+                label = { Text("Flashcards") },
+                selected = selectedAction == DrawerAction.Flashcards,
+                onClick = { onAction(DrawerAction.Flashcards) },
                 icon = { Icon(Icons.Default.Folder, contentDescription = null) },
+            )
+            NavigationDrawerItem(
+                label = { Text("Calendar") },
+                selected = selectedAction == DrawerAction.Calendar,
+                onClick = { onAction(DrawerAction.Calendar) },
+                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            )
+            NavigationDrawerItem(
+                label = { Text("Repetition & settings") },
+                selected = selectedAction == DrawerAction.Settings,
+                onClick = { onAction(DrawerAction.Settings) },
+                icon = { Icon(Icons.Default.Psychology, contentDescription = null) },
+            )
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Account",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
             )
             NavigationDrawerItem(
                 label = { Text("Profile & sign in") },
