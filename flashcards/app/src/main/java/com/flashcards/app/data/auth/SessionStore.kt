@@ -3,9 +3,11 @@ package com.flashcards.app.data.auth
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.flashcards.app.domain.UserSession
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class SessionStore(private val dataStore: DataStore<Preferences>) {
@@ -35,11 +37,21 @@ class SessionStore(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it.clear() }
     }
 
+    suspend fun getLastSplashScene(): Int? {
+        val value = dataStore.data.map { it[KEY_SPLASH_SCENE] }.first()
+        return value?.takeIf { it >= 0 }
+    }
+
+    suspend fun setLastSplashScene(index: Int) {
+        dataStore.edit { prefs -> prefs[KEY_SPLASH_SCENE] = index }
+    }
+
     companion object {
         private val KEY_ID = stringPreferencesKey("id")
         private val KEY_EMAIL = stringPreferencesKey("email")
         private val KEY_NAME = stringPreferencesKey("name")
         private val KEY_PROVIDER = stringPreferencesKey("provider")
         private val KEY_AVATAR = stringPreferencesKey("avatar")
+        private val KEY_SPLASH_SCENE = intPreferencesKey("splash_scene")
     }
 }

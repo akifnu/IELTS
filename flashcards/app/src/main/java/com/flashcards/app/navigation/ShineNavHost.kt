@@ -25,7 +25,6 @@ fun ShineNavHost(modifier: Modifier = Modifier) {
     ) {
         composable(NavRoutes.SPLASH) {
             SplashScreen(
-                onContinueGuest = {},
                 onSignedIn = {
                     navController.navigate(NavRoutes.MAIN) {
                         popUpTo(NavRoutes.SPLASH) { inclusive = true }
