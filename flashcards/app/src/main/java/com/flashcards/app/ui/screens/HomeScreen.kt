@@ -12,10 +12,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -226,11 +229,11 @@ private fun ClusterSection(
                         .clickable { onToggleCollapse?.invoke() },
                 )
                 if (showActions && cluster.id > 0) {
-                    Row {
-                        IconButton(onClick = onAddDeck) { Icon(Icons.Default.Add, null) }
-                        TextButton(onClick = onEditCluster) { Text("Edit") }
-                        IconButton(onClick = onDeleteCluster) { Icon(Icons.Default.Delete, null) }
-                    }
+                    ClusterActionsMenu(
+                        onAddDeck = onAddDeck,
+                        onEditCluster = onEditCluster,
+                        onDeleteCluster = onDeleteCluster,
+                    )
                 }
             }
             if (!collapsed) {
@@ -240,6 +243,34 @@ private fun ClusterSection(
                 if (decks.isEmpty()) Text("No decks yet", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(8.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun ClusterActionsMenu(
+    onAddDeck: () -> Unit,
+    onEditCluster: () -> Unit,
+    onDeleteCluster: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { expanded = true }) {
+        Icon(Icons.Default.MoreVert, contentDescription = "Cluster options")
+    }
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenuItem(
+            text = { Text("Add deck") },
+            onClick = { expanded = false; onAddDeck() },
+            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+        )
+        DropdownMenuItem(
+            text = { Text("Edit cluster") },
+            onClick = { expanded = false; onEditCluster() },
+        )
+        DropdownMenuItem(
+            text = { Text("Delete cluster") },
+            onClick = { expanded = false; onDeleteCluster() },
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+        )
     }
 }
 
@@ -255,6 +286,7 @@ private fun DeckRow(
     val due = SpacedRepetitionEngine.isDue(deck)
     val next = SpacedRepetitionEngine.nextScheduled(deck)
     val algo = if (DeckPermissions.isSmartScheduleOn(deck)) ShineConstants.ALGORITHMS[deck.algo.algorithm] else null
+    var menuOpen by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onOpenDeck(deck.id) },
         elevation = CardDefaults.cardElevation(1.dp),
@@ -262,18 +294,41 @@ private fun DeckRow(
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(deck.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (deck.description.isNotBlank()) Text(deck.description, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                if (deck.description.isNotBlank()) {
+                    Text(deck.description, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
                 Text(
                     "${deck.cards.size} cards · ${if (due) "Due today" else next?.let { DateUtils.formatDate(it) } ?: "On track"}${algo?.let { " · $it" } ?: ""}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            if (due) TextButton(onClick = { onStudyDeck(deck.id) }) { Text("Study") }
-            if (DeckPermissions.canShare(deck)) {
-                IconButton(onClick = { onShareDeck(deck.id) }) { Icon(Icons.Default.Share, null) }
+            if (due) {
+                TextButton(onClick = { onStudyDeck(deck.id) }) { Text("Study") }
             }
-            IconButton(onClick = { onDeleteDeck(deck.id) }) { Icon(Icons.Default.Delete, contentDescription = deleteLabel) }
+            IconButton(onClick = { menuOpen = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "Deck options")
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                if (due) {
+                    DropdownMenuItem(
+                        text = { Text("Study now") },
+                        onClick = { menuOpen = false; onStudyDeck(deck.id) },
+                    )
+                }
+                if (DeckPermissions.canShare(deck)) {
+                    DropdownMenuItem(
+                        text = { Text("Share") },
+                        onClick = { menuOpen = false; onShareDeck(deck.id) },
+                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text(deleteLabel) },
+                    onClick = { menuOpen = false; onDeleteDeck(deck.id) },
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                )
+            }
         }
     }
 }
