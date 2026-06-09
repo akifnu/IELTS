@@ -1,6 +1,5 @@
 package com.flashcards.app.ui.screens
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -9,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.DrawerValue
@@ -63,6 +63,7 @@ fun MainTabsScreen(
 ) {
     var destination by rememberSaveable { mutableStateOf(MainDestination.Decks) }
     var showDeckDialog by remember { mutableStateOf<Long?>(null) }
+    var requestNewCluster by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val homeState by homeVm.uiState.collectAsState()
     val accountState by accountVm.uiState.collectAsState()
@@ -137,22 +138,24 @@ fun MainTabsScreen(
                         },
                         title = {
                             when (destination) {
-                                MainDestination.Decks -> Column {
-                                    Text("Shine")
-                                    Text(
-                                        "Your knowledge, organized",
-                                        style = MaterialTheme.typography.bodySmall,
-                                    )
-                                }
+                                MainDestination.Decks -> Text("Decks")
                                 MainDestination.Calendar -> Text("Study Calendar")
                                 MainDestination.Account -> Text("Account")
                                 MainDestination.Inbox -> Text("Inbox")
+                            }
+                        },
+                        actions = {
+                            if (destination == MainDestination.Decks) {
+                                IconButton(onClick = { requestNewCluster = true }) {
+                                    Icon(Icons.Default.CreateNewFolder, contentDescription = "New cluster")
+                                }
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             titleContentColor = MaterialTheme.colorScheme.onPrimary,
                             navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                            actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
                         ),
                     )
                 },
@@ -174,6 +177,8 @@ fun MainTabsScreen(
                         showDeckDialog = showDeckDialog,
                         onDismissDeckDialog = { showDeckDialog = null },
                         onAddDeckToCluster = { showDeckDialog = it },
+                        requestNewCluster = requestNewCluster,
+                        onRequestNewClusterHandled = { requestNewCluster = false },
                         modifier = contentModifier,
                     )
                     MainDestination.Calendar -> CalendarScreen(
