@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
@@ -38,13 +39,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.flashcards.app.domain.Cluster
 import com.flashcards.app.viewmodel.AccountUiState
 import com.flashcards.app.viewmodel.AccountViewModel
-import com.flashcards.app.viewmodel.HomeUiState
 import kotlinx.coroutines.launch
 
 enum class DrawerAction {
+    Clusters,
     Account,
     Inbox,
 }
@@ -52,17 +52,9 @@ enum class DrawerAction {
 @Composable
 fun ShineAppDrawer(
     state: AccountUiState,
-    homeState: HomeUiState,
     selectedAction: DrawerAction?,
     onAction: (DrawerAction) -> Unit,
     onDismiss: () -> Unit,
-    onOpenDeck: (Long) -> Unit,
-    onStudyDeck: (Long) -> Unit,
-    onAddDeckToCluster: (Long) -> Unit,
-    onNewCluster: () -> Unit,
-    onEditCluster: (Cluster) -> Unit,
-    onDeleteCluster: (Cluster) -> Unit,
-    onDeleteDeck: (Long) -> Unit,
     viewModel: AccountViewModel,
     snackbar: SnackbarHostState,
     modifier: Modifier = Modifier,
@@ -182,24 +174,11 @@ fun ShineAppDrawer(
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
-            DrawerClusterLibrary(
-                state = homeState,
-                onOpenDeck = onOpenDeck,
-                onStudyDeck = onStudyDeck,
-                onAddDeckToCluster = onAddDeckToCluster,
-                onNewCluster = onNewCluster,
-                onEditCluster = onEditCluster,
-                onDeleteCluster = onDeleteCluster,
-                onDeleteDeck = onDeleteDeck,
-                onDismiss = onDismiss,
-            )
-
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Account",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+            NavigationDrawerItem(
+                label = { Text("Clusters") },
+                selected = selectedAction == DrawerAction.Clusters,
+                onClick = { onAction(DrawerAction.Clusters) },
+                icon = { Icon(Icons.Default.Folder, contentDescription = null) },
             )
             NavigationDrawerItem(
                 label = { Text("Profile & sign in") },

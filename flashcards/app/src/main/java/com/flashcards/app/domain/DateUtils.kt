@@ -9,6 +9,8 @@ object DateUtils {
 
     fun todayStr(): String = LocalDate.now().format(fmt)
 
+    fun toDateString(date: LocalDate): String = date.format(fmt)
+
     fun parseDate(s: String): LocalDate = LocalDate.parse(s, fmt)
 
     fun addDaysStr(s: String, n: Int): String = parseDate(s).plusDays(n.toLong()).format(fmt)

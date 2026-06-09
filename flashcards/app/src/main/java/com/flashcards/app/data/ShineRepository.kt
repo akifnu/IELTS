@@ -306,8 +306,20 @@ class ShineRepository(
         val correct = cardResults.count { it.second }
         val score = if (total > 0) correct.toDouble() / total else 0.5
 
-        var schedule = deck.schedule.map { s ->
-            if (s.date == today && !s.completed) s.copy(completed = true) else s
+        var schedule = deck.schedule
+        if (cardResults.isNotEmpty()) {
+            schedule = if (schedule.any { it.date == today }) {
+                schedule.map { s ->
+                    if (s.date == today) s.copy(completed = true) else s
+                }
+            } else {
+                schedule + com.flashcards.app.domain.ScheduleEntry(
+                    id = System.currentTimeMillis(),
+                    date = today,
+                    source = "study",
+                    completed = true,
+                )
+            }
         }
         var sr = deck.sr
         if (DeckPermissions.isSmartScheduleOn(deck)) {
@@ -315,8 +327,10 @@ class ShineRepository(
             val (nextDate, intervalDays) = SpacedRepetitionEngine.computeNextReview(deckWithCards, score)
             schedule = schedule + SpacedRepetitionEngine.newScheduleEntry(nextDate, "auto")
             sr = deck.sr.copy(lastReview = today, intervalDays = intervalDays)
+        } else if (cardResults.isNotEmpty()) {
+            sr = deck.sr.copy(lastReview = today)
         }
-        updateDeck(deck.copy(schedule = schedule, sr = sr))
+        updateDeck(deck.copy(cards = updatedCards, schedule = schedule, sr = sr))
     }
 
     suspend fun addSession(deckId: Long, date: String) {

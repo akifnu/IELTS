@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +56,7 @@ import kotlinx.coroutines.launch
 private enum class MainDestination {
     Today,
     Calendar,
+    Clusters,
     Account,
     Inbox,
 }
@@ -82,6 +85,7 @@ fun MainTabsScreen(
     val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfo())
 
     val drawerAction = when (destination) {
+        MainDestination.Clusters -> DrawerAction.Clusters
         MainDestination.Account -> DrawerAction.Account
         MainDestination.Inbox -> DrawerAction.Inbox
         else -> null
@@ -98,25 +102,15 @@ fun MainTabsScreen(
         drawerContent = {
             ShineAppDrawer(
                 state = accountState,
-                homeState = homeState,
                 selectedAction = drawerAction,
                 onAction = { action ->
                     when (action) {
+                        DrawerAction.Clusters -> navigateTo(MainDestination.Clusters)
                         DrawerAction.Account -> navigateTo(MainDestination.Account)
                         DrawerAction.Inbox -> navigateTo(MainDestination.Inbox)
                     }
                 },
                 onDismiss = { scope.launch { drawerState.close() } },
-                onOpenDeck = onOpenDeck,
-                onStudyDeck = onStudyDeck,
-                onAddDeckToCluster = { showDeckDialog = it },
-                onNewCluster = {
-                    showClusterDialog = true
-                    scope.launch { drawerState.close() }
-                },
-                onEditCluster = { editCluster = it },
-                onDeleteCluster = { deleteClusterTarget = it },
-                onDeleteDeck = { deleteDeckId = it },
                 viewModel = accountVm,
                 snackbar = snackbar,
             )
@@ -153,6 +147,7 @@ fun MainTabsScreen(
                             when (destination) {
                                 MainDestination.Today -> Text("Today")
                                 MainDestination.Calendar -> Text("Study Calendar")
+                                MainDestination.Clusters -> Text("Clusters")
                                 MainDestination.Account -> Text("Account")
                                 MainDestination.Inbox -> Text("Inbox")
                             }
@@ -166,6 +161,13 @@ fun MainTabsScreen(
                     )
                 },
                 snackbarHost = { SnackbarHost(snackbar) },
+                floatingActionButton = {
+                    if (destination == MainDestination.Clusters) {
+                        FloatingActionButton(onClick = { showClusterDialog = true }) {
+                            Icon(Icons.Default.Add, contentDescription = "New cluster")
+                        }
+                    }
+                },
             ) { padding ->
                 val contentModifier = Modifier.fillMaxSize().padding(padding)
                 when (destination) {
@@ -177,6 +179,17 @@ fun MainTabsScreen(
                     MainDestination.Calendar -> CalendarScreen(
                         viewModel = calendarVm,
                         onStudyDeck = onStudyDeck,
+                        modifier = contentModifier,
+                    )
+                    MainDestination.Clusters -> LibraryScreen(
+                        viewModel = homeVm,
+                        onOpenDeck = onOpenDeck,
+                        onStudyDeck = onStudyDeck,
+                        onAddDeckToCluster = { showDeckDialog = it },
+                        onNewCluster = { showClusterDialog = true },
+                        onEditCluster = { editCluster = it },
+                        onDeleteCluster = { deleteClusterTarget = it },
+                        onDeleteDeck = { deleteDeckId = it },
                         modifier = contentModifier,
                     )
                     MainDestination.Account -> AccountScreen(
@@ -222,7 +235,10 @@ fun MainTabsScreen(
                             editCluster = null
                         }
                     } else {
-                        homeVm.createCluster(name, emoji) { showClusterDialog = false }
+                        homeVm.createCluster(name, emoji) {
+                            showClusterDialog = false
+                            destination = MainDestination.Clusters
+                        }
                     }
                 }) { Text("Save") }
             },
