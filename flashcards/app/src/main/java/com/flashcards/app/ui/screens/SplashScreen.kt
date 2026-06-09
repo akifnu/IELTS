@@ -13,9 +13,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -42,7 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.flashcards.app.util.GoogleSignInHelper
 import com.flashcards.app.viewmodel.SplashViewModel
@@ -59,6 +64,8 @@ fun SplashScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val kenBurns = remember { Animatable(1.06f) }
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val scroll = rememberScrollState()
 
     LaunchedEffect(state.sceneIndex) {
         kenBurns.snapTo(1.06f)
@@ -67,7 +74,7 @@ fun SplashScreen(
 
     fun proceed() {
         viewModel.continueAsGuest()
-        if (state.onboarded) onSignedIn() else onNeedOnboarding()
+        if (viewModel.uiState.value.onboarded) onSignedIn() else onNeedOnboarding()
     }
 
     Box(
@@ -75,13 +82,15 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Color(0xFF0A0A12)),
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = ImageRequest.Builder(context)
                 .data("file:///android_asset/splash/${scene.assetFile}")
                 .crossfade(true)
                 .build(),
             contentDescription = scene.credit,
             contentScale = ContentScale.Crop,
+            loading = { SplashPhotoFallback() },
+            error = { SplashPhotoFallback() },
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
@@ -106,10 +115,13 @@ fun SplashScreen(
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .heightIn(max = screenHeight * 0.88f)
+                .verticalScroll(scroll)
+                .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 28.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.Bottom,
+                .padding(horizontal = 28.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.Start,
         ) {
             SplashLine(visible = state.animateContent, delayMs = 0) {
@@ -153,7 +165,7 @@ fun SplashScreen(
                     color = Color.White.copy(alpha = 0.9f),
                     style = MaterialTheme.typography.bodyLarge,
                     lineHeight = 24.sp,
-                    modifier = Modifier.fillMaxWidth(0.92f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -195,6 +207,8 @@ fun SplashScreen(
                                         onDone = { proceed() },
                                         onError = { },
                                     )
+                                } else {
+                                    proceed()
                                 }
                             }
                         },
@@ -232,11 +246,24 @@ fun SplashScreen(
                     color = Color.White.copy(alpha = 0.4f),
                     fontSize = 10.sp,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
                 )
             }
         }
     }
+}
+
+@Composable
+private fun SplashPhotoFallback() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFF1E1B4B), Color(0xFF5B5EF7)),
+                ),
+            ),
+    )
 }
 
 @Composable
