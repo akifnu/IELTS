@@ -7,16 +7,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +30,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -34,6 +40,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +58,9 @@ import com.flashcards.app.domain.Flashcard
 import com.flashcards.app.domain.ShineConstants
 import com.flashcards.app.domain.SpacedRepetitionEngine
 import com.flashcards.app.ui.components.CardDialog
+import com.flashcards.app.ui.components.ConfirmDialog
+import com.flashcards.app.ui.components.DeckDialog
+import com.flashcards.app.ui.util.cardBorderColor
 import com.flashcards.app.util.ShareHelper
 import com.flashcards.app.viewmodel.DeckDetailViewModel
 import kotlinx.coroutines.launch
@@ -68,7 +78,22 @@ fun DeckDetailScreen(
     val scope = rememberCoroutineScope()
     var showAddCard by remember { mutableStateOf(false) }
     var editCard by remember { mutableStateOf<Flashcard?>(null) }
+    var deleteCardTarget by remember { mutableStateOf<Flashcard?>(null) }
+    var showEditDeck by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
+    var localCards by remember { mutableStateOf<List<Flashcard>>(emptyList()) }
+    LaunchedEffect(deck?.cards) {
+        deck?.cards?.let { localCards = it }
+    }
+    fun moveCard(index: Int, direction: Int) {
+        val target = index + direction
+        if (target !in localCards.indices) return
+        val updated = localCards.toMutableList()
+        val item = updated.removeAt(index)
+        updated.add(target, item)
+        localCards = updated
+        viewModel.reorderCards(updated.map { it.id })
+    }
     var inviteEmail by remember { mutableStateOf("") }
     var inviteRole by remember { mutableStateOf("viewer") }
 
@@ -128,6 +153,9 @@ fun DeckDetailScreen(
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
                 },
                 actions = {
+                    if (state.canEdit) {
+                        IconButton(onClick = { showEditDeck = true }) { Icon(Icons.Default.Edit, null) }
+                    }
                     if (state.canShare) {
                         IconButton(onClick = { showShare = true }) { Icon(Icons.Default.Share, null) }
                     }
@@ -150,7 +178,10 @@ fun DeckDetailScreen(
             Text("Loading…", Modifier.padding(padding).padding(24.dp))
             return@Scaffold
         }
-        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             if (deck.access != null) {
                 item {
                     Card {
@@ -164,9 +195,14 @@ fun DeckDetailScreen(
             }
             item {
                 if (deck.cards.isNotEmpty()) {
-                    Button(onClick = onStudy, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.PlayArrow, null)
-                        Text(" Study (${deck.cards.size} cards)", modifier = Modifier.padding(start = 8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onStudy, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.PlayArrow, null)
+                            Text(" Study (${deck.cards.size})", modifier = Modifier.padding(start = 8.dp))
+                        }
+                        OutlinedButton(onClick = { localCards = deck.cards.shuffled() }) {
+                            Icon(Icons.Default.Shuffle, null)
+                        }
                     }
                 }
             }
@@ -215,19 +251,36 @@ fun DeckDetailScreen(
                     }
                 }
             }
-            items(deck.cards, key = { it.id }) { card ->
+            items(localCards.size, key = { localCards[it].id }) { index ->
+                val card = localCards[index]
                 Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text(card.front, fontWeight = FontWeight.Bold)
-                        Text(card.back, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
-                        if (state.smartScheduleOn && deck.algo.algorithm == "leitner") {
-                            Text("Leitner box ${card.leitnerBox}", style = MaterialTheme.typography.labelSmall)
+                    Row(
+                        Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(
+                            Modifier
+                                .weight(1f)
+                                .border(3.dp, cardBorderColor(card.color), RoundedCornerShape(8.dp))
+                                .padding(8.dp),
+                        ) {
+                            Text(card.front, fontWeight = FontWeight.Bold)
+                            Text(card.back, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                            if (state.smartScheduleOn && deck.algo.algorithm == "leitner") {
+                                Text("Leitner box ${card.leitnerBox}", style = MaterialTheme.typography.labelSmall)
+                            }
                         }
                         if (state.canEdit) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                IconButton(onClick = { editCard = card }) { Icon(Icons.Default.Edit, null) }
-                                IconButton(onClick = { viewModel.deleteCard(card) }) { Icon(Icons.Default.Delete, null) }
+                            Column {
+                                IconButton(onClick = { moveCard(index, -1) }, enabled = index > 0) {
+                                    Icon(Icons.Default.KeyboardArrowUp, null)
+                                }
+                                IconButton(onClick = { moveCard(index, 1) }, enabled = index < localCards.lastIndex) {
+                                    Icon(Icons.Default.KeyboardArrowDown, null)
+                                }
                             }
+                            IconButton(onClick = { editCard = card }) { Icon(Icons.Default.Edit, null) }
+                            IconButton(onClick = { deleteCardTarget = card }) { Icon(Icons.Default.Delete, null) }
                         }
                     }
                 }
@@ -243,17 +296,43 @@ fun DeckDetailScreen(
     }
 
     if (showAddCard) {
-        CardDialog(title = "New Card", confirmLabel = "Add", onDismiss = { showAddCard = false }, onConfirm = { f, b ->
-            viewModel.addCard(f, b, null) { showAddCard = false }
-        })
+        CardDialog(
+            title = "New Card",
+            confirmLabel = "Add",
+            onDismiss = { showAddCard = false },
+            onConfirm = { f, b, c -> viewModel.addCard(f, b, c) { showAddCard = false } },
+        )
     }
     editCard?.let { card ->
         CardDialog(
             title = "Edit Card",
             initialFront = card.front,
             initialBack = card.back,
+            initialColor = card.color,
             onDismiss = { editCard = null },
-            onConfirm = { f, b -> viewModel.updateCard(card, f, b, card.color) { editCard = null } },
+            onConfirm = { f, b, c -> viewModel.updateCard(card, f, b, c) { editCard = null } },
+        )
+    }
+    deleteCardTarget?.let { card ->
+        ConfirmDialog(
+            title = "Delete card?",
+            message = "This cannot be undone.",
+            confirmLabel = "Delete",
+            onConfirm = {
+                viewModel.deleteCard(card)
+                deleteCardTarget = null
+            },
+            onDismiss = { deleteCardTarget = null },
+        )
+    }
+    if (showEditDeck && deck != null) {
+        DeckDialog(
+            title = "Edit Deck",
+            initialName = deck.name,
+            initialDescription = deck.description,
+            confirmLabel = "Save",
+            onDismiss = { showEditDeck = false },
+            onConfirm = { name, desc -> viewModel.updateDeck(name, desc) { showEditDeck = false } },
         )
     }
 }

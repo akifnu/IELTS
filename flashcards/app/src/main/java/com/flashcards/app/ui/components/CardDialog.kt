@@ -21,12 +21,14 @@ fun CardDialog(
     title: String,
     initialFront: String = "",
     initialBack: String = "",
+    initialColor: String? = null,
     confirmLabel: String = "Save",
     onDismiss: () -> Unit,
-    onConfirm: (front: String, back: String) -> Unit
+    onConfirm: (front: String, back: String, color: String?) -> Unit,
 ) {
     var front by remember { mutableStateOf(initialFront) }
     var back by remember { mutableStateOf(initialBack) }
+    var color by remember { mutableStateOf(initialColor) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -39,7 +41,7 @@ fun CardDialog(
                     label = { Text("Front (question)") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
-                    maxLines = 4
+                    maxLines = 4,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
@@ -48,22 +50,22 @@ fun CardDialog(
                     label = { Text("Back (answer)") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
-                    maxLines = 4
+                    maxLines = 4,
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Color")
+                Spacer(modifier = Modifier.height(8.dp))
+                ColorPickerRow(selected = color, onSelect = { color = it })
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(front, back) },
-                enabled = front.isNotBlank() && back.isNotBlank()
-            ) {
-                Text(confirmLabel)
-            }
+                onClick = { onConfirm(front, back, color) },
+                enabled = front.isNotBlank() && back.isNotBlank(),
+            ) { Text(confirmLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
     )
 }

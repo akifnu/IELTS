@@ -6,6 +6,9 @@ import com.flashcards.app.data.dao.FlashcardDao
 import com.flashcards.app.data.dao.InboxDao
 import com.flashcards.app.data.dao.SettingsDao
 import com.flashcards.app.data.entity.AppSettingsEntity
+import com.flashcards.app.data.entity.ClusterEntity
+import com.flashcards.app.data.entity.DeckEntity
+import com.flashcards.app.data.entity.FlashcardEntity
 import com.flashcards.app.domain.AlgoConfig
 import com.flashcards.app.domain.AppSettings
 import com.flashcards.app.domain.BackupData
@@ -37,8 +40,8 @@ class ShineRepository(
     private val flashcardDao: FlashcardDao,
     private val settingsDao: SettingsDao,
     private val inboxDao: InboxDao,
+    private val gson: Gson,
 ) {
-    private val gson = Gson()
 
     fun observeSettings(): Flow<AppSettings> =
         settingsDao.observe().map { e ->
@@ -177,6 +180,65 @@ class ShineRepository(
 
     suspend fun deleteCard(card: Flashcard) {
         flashcardDao.delete(Mappers.cardToEntity(card))
+    }
+
+    suspend fun reorderCards(deckId: Long, orderedCardIds: List<Long>) {
+        orderedCardIds.forEachIndexed { index, cardId ->
+            val entity = flashcardDao.getForDeck(deckId).find { it.id == cardId } ?: return@forEachIndexed
+            flashcardDao.update(entity.copy(sortOrder = index))
+        }
+    }
+
+    suspend fun seedSampleData() {
+        val existing = clusterDao.observeAll().first()
+        if (existing.isNotEmpty()) return
+
+        val clusters = listOf(
+            ClusterEntity(name = "Languages", emoji = "🌍", sortOrder = 0),
+            ClusterEntity(name = "Wellness", emoji = "🧘", sortOrder = 1),
+            ClusterEntity(name = "Life & Skills", emoji = "✨", sortOrder = 2),
+        )
+        val clusterIds = clusters.map { clusterDao.insert(it) }
+
+        val sampleDecks = listOf(
+            Triple(clusterIds[0], "Spanish Phrases", "Everyday conversation") to listOf(
+                "Hello" to "Hola",
+                "Thank you" to "Gracias",
+                "How are you?" to "¿Cómo estás?",
+            ),
+            Triple(clusterIds[0], "French Basics", "Travel essentials") to listOf(
+                "Good morning" to "Bonjour",
+                "Please" to "S'il vous plaît",
+                "Where is…?" to "Où est…?",
+            ),
+            Triple(clusterIds[1], "Mindfulness", "Calm daily practices") to listOf(
+                "Box breathing" to "Inhale 4s · hold 4s · exhale 4s · hold 4s",
+                "Body scan" to "Notice tension from toes to head",
+                "Gratitude pause" to "Name 3 things you appreciate today",
+            ),
+            Triple(clusterIds[2], "Coffee & Recipes", "Kitchen know-how") to listOf(
+                "Espresso ratio" to "1:2 coffee to liquid · ~25–30s shot",
+                "Vinaigrette base" to "3 parts oil · 1 part acid",
+            ),
+        )
+
+        sampleDecks.forEach { (meta, cards) ->
+            val (clusterId, name, desc) = meta
+            val deckId = deckDao.insert(
+                DeckEntity(
+                    clusterId = clusterId,
+                    name = name,
+                    description = desc,
+                    algoJson = gson.toJson(AlgoConfig()),
+                ),
+            )
+            cards.forEachIndexed { i, (front, back) ->
+                flashcardDao.insert(
+                    FlashcardEntity(deckId = deckId, front = front, back = back, sortOrder = i),
+                )
+            }
+        }
+        markOnboarded()
     }
 
     suspend fun setScheduleMode(deckId: Long, enabled: Boolean) {

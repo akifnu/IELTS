@@ -28,9 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.flashcards.app.data.ShineRepository
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.flashcards.app.viewmodel.AccountViewModel
 import com.flashcards.app.viewmodel.CalendarViewModel
 import com.flashcards.app.viewmodel.HomeViewModel
@@ -38,16 +36,15 @@ import com.flashcards.app.viewmodel.HomeViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainTabsScreen(
-    repository: ShineRepository,
     onOpenDeck: (Long) -> Unit,
     onStudyDeck: (Long) -> Unit,
+    homeVm: HomeViewModel = hiltViewModel(),
+    calendarVm: CalendarViewModel = hiltViewModel(),
+    accountVm: AccountViewModel = hiltViewModel(),
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var showDeckDialog by remember { mutableStateOf<Long?>(null) }
     val snackbar = remember { SnackbarHostState() }
-    val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repository))
-    val calendarVm: CalendarViewModel = viewModel(factory = CalendarViewModel.Factory(repository))
-    val accountVm: AccountViewModel = viewModel(factory = AccountViewModel.Factory(repository))
     val homeState by homeVm.uiState.collectAsState()
 
     Scaffold(

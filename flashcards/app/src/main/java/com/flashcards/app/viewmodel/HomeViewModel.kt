@@ -1,18 +1,19 @@
 package com.flashcards.app.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.flashcards.app.data.ShineRepository
 import com.flashcards.app.domain.Cluster
 import com.flashcards.app.domain.Deck
 import com.flashcards.app.domain.DeckPermissions
 import com.flashcards.app.domain.SpacedRepetitionEngine
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class HomeUiState(
     val clusters: List<Cluster> = emptyList(),
@@ -22,7 +23,10 @@ data class HomeUiState(
     val sharedDecks: List<Deck> = emptyList(),
 )
 
-class HomeViewModel(private val repository: ShineRepository) : ViewModel() {
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val repository: ShineRepository,
+) : ViewModel() {
     val uiState: StateFlow<HomeUiState> = combine(
         repository.observeClusters(),
         repository.observeDecks(),
@@ -69,11 +73,5 @@ class HomeViewModel(private val repository: ShineRepository) : ViewModel() {
 
     fun leaveDeck(deckId: Long) {
         viewModelScope.launch { repository.leaveSharedDeck(deckId) }
-    }
-
-    class Factory(private val repository: ShineRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            HomeViewModel(repository) as T
     }
 }

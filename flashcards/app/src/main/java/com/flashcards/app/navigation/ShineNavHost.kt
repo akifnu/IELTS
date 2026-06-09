@@ -2,33 +2,53 @@ package com.flashcards.app.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.flashcards.app.FlashcardsApp
 import com.flashcards.app.ui.screens.DeckDetailScreen
 import com.flashcards.app.ui.screens.MainTabsScreen
+import com.flashcards.app.ui.screens.OnboardingScreen
+import com.flashcards.app.ui.screens.SplashScreen
 import com.flashcards.app.ui.screens.StudyScreen
-import com.flashcards.app.viewmodel.DeckDetailViewModel
-import com.flashcards.app.viewmodel.StudyViewModel
 
 @Composable
 fun ShineNavHost(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
-    val repository = (LocalContext.current.applicationContext as FlashcardsApp).repository
 
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.MAIN,
+        startDestination = NavRoutes.SPLASH,
         modifier = modifier,
     ) {
+        composable(NavRoutes.SPLASH) {
+            SplashScreen(
+                onContinueGuest = {},
+                onSignedIn = {
+                    navController.navigate(NavRoutes.MAIN) {
+                        popUpTo(NavRoutes.SPLASH) { inclusive = true }
+                    }
+                },
+                onNeedOnboarding = {
+                    navController.navigate(NavRoutes.ONBOARDING) {
+                        popUpTo(NavRoutes.SPLASH) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(NavRoutes.ONBOARDING) {
+            OnboardingScreen(
+                onDone = {
+                    navController.navigate(NavRoutes.MAIN) {
+                        popUpTo(NavRoutes.ONBOARDING) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(NavRoutes.MAIN) {
             MainTabsScreen(
-                repository = repository,
                 onOpenDeck = { navController.navigate(NavRoutes.deckDetail(it)) },
                 onStudyDeck = { navController.navigate(NavRoutes.study(it)) },
             )
@@ -36,22 +56,26 @@ fun ShineNavHost(modifier: Modifier = Modifier) {
         composable(
             route = NavRoutes.DECK_DETAIL,
             arguments = listOf(navArgument("deckId") { type = NavType.LongType }),
-        ) { entry ->
-            val deckId = entry.arguments?.getLong("deckId") ?: return@composable
-            val vm: DeckDetailViewModel = viewModel(factory = DeckDetailViewModel.Factory(repository, deckId))
+        ) {
+            val vm = hiltViewModel<com.flashcards.app.viewmodel.DeckDetailViewModel>()
             DeckDetailScreen(
                 viewModel = vm,
                 onBack = { navController.popBackStack() },
-                onStudy = { navController.navigate(NavRoutes.study(deckId)) },
+                onStudy = {
+                    vm.uiState.value.deck?.id?.let { id ->
+                        navController.navigate(NavRoutes.study(id))
+                    }
+                },
             )
         }
         composable(
             route = NavRoutes.STUDY,
             arguments = listOf(navArgument("deckId") { type = NavType.LongType }),
-        ) { entry ->
-            val deckId = entry.arguments?.getLong("deckId") ?: return@composable
-            val vm: StudyViewModel = viewModel(factory = StudyViewModel.Factory(repository, deckId))
-            StudyScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        ) {
+            StudyScreen(
+                viewModel = hiltViewModel(),
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }

@@ -8,8 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import com.flashcards.app.navigation.ShineNavHost
 import com.flashcards.app.ui.theme.FlashcardsTheme
+import dagger.hilt.android.AndroidEntryPoint
 
-/** Native Jetpack Compose app — Android handles layout/insets on every device. */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

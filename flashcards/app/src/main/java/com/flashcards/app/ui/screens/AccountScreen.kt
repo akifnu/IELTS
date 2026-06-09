@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flashcards.app.ui.components.ConfirmDialog
+import com.flashcards.app.util.GoogleSignInHelper
 import com.flashcards.app.viewmodel.AccountViewModel
 import kotlinx.coroutines.launch
 
@@ -44,6 +46,23 @@ fun AccountScreen(
     val scope = rememberCoroutineScope()
     var importText by remember { mutableStateOf("") }
     var showImportPaste by remember { mutableStateOf(false) }
+    var authMode by remember { mutableStateOf("signin") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var showSignOut by remember { mutableStateOf(false) }
+
+    if (showSignOut) {
+        ConfirmDialog(
+            title = "Sign out?",
+            message = "Your data stays on this device.",
+            confirmLabel = "Sign out",
+            onConfirm = {
+                viewModel.signOut { showSignOut = false }
+            },
+            onDismiss = { showSignOut = false },
+        )
+    }
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri ?: return@rememberLauncherForActivityResult
@@ -75,6 +94,87 @@ fun AccountScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
+        item {
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    if (state.session.isSignedIn) {
+                        Text(state.session.name, fontWeight = FontWeight.Bold)
+                        Text(state.session.email.orEmpty(), style = MaterialTheme.typography.bodySmall)
+                        Text("Signed in with ${state.session.provider}", style = MaterialTheme.typography.labelSmall)
+                        OutlinedButton(
+                            onClick = { showSignOut = true },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) { Text("Sign out") }
+                    } else {
+                        Text("Account", fontWeight = FontWeight.Bold)
+                        Row(Modifier.padding(top = 8.dp)) {
+                            TextButton(onClick = { authMode = "signin" }) { Text(if (authMode == "signin") "• Sign in" else "Sign in") }
+                            TextButton(onClick = { authMode = "register" }) { Text(if (authMode == "register") "• Register" else "Register") }
+                        }
+                        if (authMode == "register") {
+                            OutlinedTextField(
+                                value = name,
+                                onValueChange = { name = it },
+                                label = { Text("Name") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                        }
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Email") },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            singleLine = true,
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password (8+ chars)") },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            singleLine = true,
+                        )
+                        state.authError?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(
+                            onClick = {
+                                if (authMode == "register") {
+                                    viewModel.registerEmail(name, email, password) {
+                                        email = ""; password = ""; name = ""
+                                        scope.launch { snackbar.showSnackbar("Account created") }
+                                    }
+                                } else {
+                                    viewModel.signInEmail(email, password) {
+                                        scope.launch { snackbar.showSnackbar("Signed in") }
+                                    }
+                                }
+                            },
+                            enabled = !state.authBusy,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) { Text(if (authMode == "register") "Create account" else "Sign in") }
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val cred = GoogleSignInHelper.signIn(context)
+                                    if (cred != null) {
+                                        viewModel.signInGoogle(
+                                            cred.id,
+                                            null,
+                                            cred.displayName,
+                                            cred.profilePictureUri?.toString(),
+                                        ) { scope.launch { snackbar.showSnackbar("Signed in with Google") } }
+                                    } else {
+                                        snackbar.showSnackbar("Google sign-in unavailable")
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) { Text("Continue with Google") }
+                    }
+                }
+            }
+        }
         item {
             Card {
                 Column(Modifier.padding(16.dp)) {

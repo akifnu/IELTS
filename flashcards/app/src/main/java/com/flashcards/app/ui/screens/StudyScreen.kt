@@ -25,11 +25,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.flashcards.app.ui.components.ConfirmDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -41,6 +46,20 @@ import com.flashcards.app.viewmodel.StudyViewModel
 @Composable
 fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
+    var showEndEarly by remember { mutableStateOf(false) }
+
+    if (showEndEarly) {
+        ConfirmDialog(
+            title = "End session?",
+            message = "Your progress so far will be saved.",
+            confirmLabel = "End session",
+            onConfirm = {
+                viewModel.endEarly()
+                showEndEarly = false
+            },
+            onDismiss = { showEndEarly = false },
+        )
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -49,6 +68,13 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                 title = { Text(state.deck?.name ?: "Study") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
+                },
+                actions = {
+                    if (!state.isComplete && state.results.isNotEmpty()) {
+                        TextButton(onClick = { showEndEarly = true }) {
+                            Text("End", color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -77,6 +103,7 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
                         backText = state.currentCard?.back.orEmpty(),
                         isFlipped = state.isFlipped,
                         onFlip = viewModel::flipCard,
+                        colorId = state.currentCard?.color,
                         modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 16.dp),
                     )
                     Text(

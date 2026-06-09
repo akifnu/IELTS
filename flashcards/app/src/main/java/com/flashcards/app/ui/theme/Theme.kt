@@ -46,6 +46,7 @@ fun FlashcardsTheme(
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
+        typography = ShineTypography,
         content = content,
     )
 }

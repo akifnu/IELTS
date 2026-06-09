@@ -39,6 +39,7 @@ import com.flashcards.app.domain.Deck
 import com.flashcards.app.domain.DeckPermissions
 import com.flashcards.app.domain.ShineConstants
 import com.flashcards.app.domain.SpacedRepetitionEngine
+import com.flashcards.app.ui.components.ConfirmDialog
 import com.flashcards.app.ui.components.DeckDialog
 import com.flashcards.app.viewmodel.HomeViewModel
 
@@ -55,6 +56,9 @@ fun HomeScreen(
     val state by viewModel.uiState.collectAsState()
     var showClusterDialog by remember { mutableStateOf(false) }
     var editCluster by remember { mutableStateOf<Cluster?>(null) }
+    var deleteDeckId by remember { mutableStateOf<Long?>(null) }
+    var deleteClusterTarget by remember { mutableStateOf<Cluster?>(null) }
+    var collapsedClusters by remember { mutableStateOf(setOf<Long>()) }
 
     LazyColumn(
         modifier = modifier,
@@ -83,9 +87,17 @@ fun HomeScreen(
                     onStudyDeck = onStudyDeck,
                     onAddDeck = { onAddDeckToCluster(cluster.id) },
                     onEditCluster = { editCluster = cluster },
-                    onDeleteCluster = { viewModel.deleteCluster(cluster) },
+                    onDeleteCluster = { deleteClusterTarget = cluster },
                     onShareDeck = { onOpenDeck(it) },
-                    onDeleteDeck = { viewModel.deleteDeck(it) },
+                    onDeleteDeck = { deleteDeckId = it },
+                    collapsed = cluster.id in collapsedClusters,
+                    onToggleCollapse = {
+                        collapsedClusters = if (cluster.id in collapsedClusters) {
+                            collapsedClusters - cluster.id
+                        } else {
+                            collapsedClusters + cluster.id
+                        }
+                    },
                 )
             }
         }
@@ -102,7 +114,7 @@ fun HomeScreen(
                     onEditCluster = {},
                     onDeleteCluster = {},
                     onShareDeck = { onOpenDeck(it) },
-                    onDeleteDeck = { viewModel.deleteDeck(it) },
+                    onDeleteDeck = { deleteDeckId = it },
                 )
             }
         }
@@ -118,7 +130,7 @@ fun HomeScreen(
                     onEditCluster = {},
                     onDeleteCluster = {},
                     onShareDeck = {},
-                    onDeleteDeck = { viewModel.leaveDeck(it) },
+                    onDeleteDeck = { deleteDeckId = it },
                     deleteLabel = "Leave",
                 )
             }
@@ -160,6 +172,31 @@ fun HomeScreen(
             },
         )
     }
+    deleteDeckId?.let { id ->
+        val isShared = state.sharedDecks.any { it.id == id }
+        ConfirmDialog(
+            title = if (isShared) "Leave deck?" else "Delete deck?",
+            message = if (isShared) "You will lose access to this shared deck." else "This deck and all its cards will be deleted.",
+            confirmLabel = if (isShared) "Leave" else "Delete",
+            onConfirm = {
+                if (isShared) viewModel.leaveDeck(id) else viewModel.deleteDeck(id)
+                deleteDeckId = null
+            },
+            onDismiss = { deleteDeckId = null },
+        )
+    }
+    deleteClusterTarget?.let { cluster ->
+        ConfirmDialog(
+            title = "Delete cluster?",
+            message = "Decks will move to Other.",
+            confirmLabel = "Delete",
+            onConfirm = {
+                viewModel.deleteCluster(cluster)
+                deleteClusterTarget = null
+            },
+            onDismiss = { deleteClusterTarget = null },
+        )
+    }
 }
 
 @Composable
@@ -168,6 +205,8 @@ private fun ClusterSection(
     decks: List<Deck>,
     showActions: Boolean = true,
     deleteLabel: String = "Delete",
+    collapsed: Boolean = false,
+    onToggleCollapse: (() -> Unit)? = null,
     onOpenDeck: (Long) -> Unit,
     onStudyDeck: (Long) -> Unit,
     onAddDeck: () -> Unit,
@@ -179,7 +218,13 @@ private fun ClusterSection(
     Card {
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("${cluster.emoji} ${cluster.name}", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(
+                    "${if (collapsed) "▸" else "▾"} ${cluster.emoji} ${cluster.name}",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onToggleCollapse?.invoke() },
+                )
                 if (showActions && cluster.id > 0) {
                     Row {
                         IconButton(onClick = onAddDeck) { Icon(Icons.Default.Add, null) }
@@ -188,10 +233,12 @@ private fun ClusterSection(
                     }
                 }
             }
-            decks.forEach { deck ->
-                DeckRow(deck, onOpenDeck, onStudyDeck, onShareDeck, onDeleteDeck, deleteLabel)
+            if (!collapsed) {
+                decks.forEach { deck ->
+                    DeckRow(deck, onOpenDeck, onStudyDeck, onShareDeck, onDeleteDeck, deleteLabel)
+                }
+                if (decks.isEmpty()) Text("No decks yet", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(8.dp))
             }
-            if (decks.isEmpty()) Text("No decks yet", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(8.dp))
         }
     }
 }

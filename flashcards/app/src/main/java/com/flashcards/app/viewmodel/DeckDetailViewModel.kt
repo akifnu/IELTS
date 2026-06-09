@@ -1,7 +1,7 @@
 package com.flashcards.app.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.flashcards.app.data.ShineRepository
 import com.flashcards.app.domain.Cluster
@@ -9,11 +9,13 @@ import com.flashcards.app.domain.Deck
 import com.flashcards.app.domain.DeckPermissions
 import com.flashcards.app.domain.Flashcard
 import com.flashcards.app.domain.SpacedRepetitionEngine
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class DeckDetailUiState(
     val deck: Deck? = null,
@@ -25,10 +27,13 @@ data class DeckDetailUiState(
     val isDue: Boolean = false,
 )
 
-class DeckDetailViewModel(
+@HiltViewModel
+class DeckDetailViewModel @Inject constructor(
     private val repository: ShineRepository,
-    private val deckId: Long,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+    private val deckId: Long = checkNotNull(savedStateHandle["deckId"])
+
     val uiState: StateFlow<DeckDetailUiState> = combine(
         repository.observeDeck(deckId),
         repository.observeClusters(),
@@ -62,6 +67,18 @@ class DeckDetailViewModel(
         viewModelScope.launch { repository.deleteCard(card) }
     }
 
+    fun reorderCards(orderedIds: List<Long>) {
+        viewModelScope.launch { repository.reorderCards(deckId, orderedIds) }
+    }
+
+    fun updateDeck(name: String, description: String, onDone: () -> Unit) {
+        viewModelScope.launch {
+            val deck = uiState.value.deck ?: return@launch
+            repository.updateDeck(deck.copy(name = name.trim(), description = description.trim()))
+            onDone()
+        }
+    }
+
     fun setScheduleMode(enabled: Boolean) {
         viewModelScope.launch { repository.setScheduleMode(deckId, enabled) }
     }
@@ -89,10 +106,6 @@ class DeckDetailViewModel(
         viewModelScope.launch { repository.removeCollaborator(deckId, email) }
     }
 
-    fun updateCollaboratorRole(email: String, role: String) {
-        viewModelScope.launch { repository.updateCollaboratorRole(deckId, email, role) }
-    }
-
     suspend fun buildShareJson(role: String = "viewer") = repository.buildShareJson(deckId, role)
 
     fun leaveDeck(onDone: () -> Unit) {
@@ -100,14 +113,5 @@ class DeckDetailViewModel(
             repository.leaveSharedDeck(deckId)
             onDone()
         }
-    }
-
-    class Factory(
-        private val repository: ShineRepository,
-        private val deckId: Long,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DeckDetailViewModel(repository, deckId) as T
     }
 }
