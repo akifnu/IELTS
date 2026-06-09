@@ -1,200 +1,36 @@
 package com.flashcards.app
 
-import android.annotation.SuppressLint
-import android.graphics.Color
 import android.os.Bundle
-import android.view.ViewGroup
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color as ComposeColor
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import kotlin.math.roundToInt
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.flashcards.app.navigation.ShineNavHost
+import com.flashcards.app.ui.theme.FlashcardsTheme
+import com.flashcards.app.viewmodel.SettingsViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    internal var webView: WebView? = null
-    private var pageLoaded by mutableStateOf(false)
-
-    var windowInsetsCss: IntArray = intArrayOf(0, 0, 0, 0)
-        private set
-
-    private fun pxToCss(px: Int): Int {
-        val density = resources.displayMetrics.density
-        return (px / density).roundToInt()
-    }
-
-    fun pushInsetsToWebView() {
-        val view = webView ?: return
-        val insets = windowInsetsCss
-        val js = "window.applyShineInsets&&window.applyShineInsets(${insets[0]},${insets[1]},${insets[2]},${insets[3]})"
-        view.evaluateJavascript(js, null)
-        pushViewportToWebView()
-    }
-
-    fun pushViewportToWebView() {
-        val view = webView ?: return
-        view.evaluateJavascript("window.applyShineViewport&&window.applyShineViewport()", null)
-    }
-
-    private fun applyWindowInsets(insets: WindowInsetsCompat) {
-        val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-        windowInsetsCss = intArrayOf(
-            pxToCss(bars.top),
-            pxToCss(bars.bottom),
-            pxToCss(bars.left),
-            pxToCss(bars.right),
-        )
-        pushInsetsToWebView()
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
-
         setContent {
-            val loaded = pageLoaded
-            val view = webView
-
-            BackHandler(enabled = view?.canGoBack() == true) {
-                view?.goBack()
+            val settingsVm: SettingsViewModel = hiltViewModel()
+            val settings by settingsVm.uiState.collectAsState()
+            val darkTheme = when (settings.themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> isSystemInDarkTheme()
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                ComposeColor(0xFFE8EAFF),
-                                ComposeColor(0xFFF4F6FB),
-                                ComposeColor(0xFFFAF8FF)
-                            )
-                        )
-                    )
-            ) {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { context ->
-                        WebView(context).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                            webView = this
-                            setBackgroundColor(Color.TRANSPARENT)
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            settings.allowFileAccess = true
-                            settings.allowContentAccess = true
-                            settings.mediaPlaybackRequiresUserGesture = false
-                            settings.loadWithOverviewMode = true
-                            settings.useWideViewPort = true
-                            settings.textZoom = 100
-                            settings.mixedContentMode =
-                                android.webkit.WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-                            settings.layoutAlgorithm =
-                                android.webkit.WebSettings.LayoutAlgorithm.NORMAL
-                            isHorizontalScrollBarEnabled = false
-                            overScrollMode = android.view.View.OVER_SCROLL_NEVER
-                            addJavascriptInterface(ShineBridge(this@MainActivity), "ShineAndroid")
-                            ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
-                                applyWindowInsets(insets)
-                                insets
-                            }
-                            addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                                pushViewportToWebView()
-                            }
-                            webChromeClient = WebChromeClient()
-                            webViewClient = object : WebViewClient() {
-                                override fun onPageFinished(view: WebView?, url: String?) {
-                                    pageLoaded = true
-                                    pushInsetsToWebView()
-                                    pushViewportToWebView()
-                                }
-
-                                override fun shouldOverrideUrlLoading(
-                                    view: WebView,
-                                    request: WebResourceRequest
-                                ): Boolean {
-                                    val url = request.url.toString()
-                                    return if (url.startsWith("file:///android_asset/")) {
-                                        false
-                                    } else {
-                                        view.loadUrl(url)
-                                        true
-                                    }
-                                }
-                            }
-                            loadUrl("file:///android_asset/www/index.html")
-                        }
-                    }
-                )
-
-                if (!loaded) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        ComposeColor(0xFFE8EAFF),
-                                        ComposeColor(0xFFF4F6FB)
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Shine",
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = ComposeColor(0xFF5B5EF7)
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            CircularProgressIndicator(color = ComposeColor(0xFF5B5EF7))
-                        }
-                    }
-                }
+            FlashcardsTheme(darkTheme = darkTheme) {
+                ShineNavHost(modifier = Modifier.fillMaxSize())
             }
-        }
-
-        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
-            applyWindowInsets(insets)
-            insets
         }
     }
 }

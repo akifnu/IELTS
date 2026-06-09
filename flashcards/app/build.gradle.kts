@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -13,10 +14,11 @@ android {
         applicationId = "com.flashcards.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3.0"
+        versionCode = 20
+        versionName = "4.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"\"")
     }
 
     signingConfigs {
@@ -51,33 +53,8 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
-}
-
-val copyWebAssets = tasks.register<Copy>("copyWebAssets") {
-    from("${rootProject.projectDir}/web") {
-        exclude(
-            "share-relay/**",
-            "serve.sh",
-            "netlify.toml",
-            "README.md",
-            ".gitignore",
-            ".netlify/**",
-            "auth-config.js"
-        )
-    }
-    into(layout.projectDirectory.dir("src/main/assets/www"))
-    doLast {
-        copy {
-            from("${rootProject.projectDir}/web/auth-config.example.js")
-            into(layout.projectDirectory.dir("src/main/assets/www"))
-            rename { "auth-config.js" }
-        }
-    }
-}
-
-tasks.named("preBuild") {
-    dependsOn(copyWebAssets)
 }
 
 dependencies {
@@ -91,7 +68,10 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.ui:ui-text-google-fonts")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material3:material3-adaptive-navigation-suite")
+    implementation("androidx.compose.material3:material3-window-size-class")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.5")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
@@ -100,6 +80,18 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
+
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-android-compiler:2.51.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

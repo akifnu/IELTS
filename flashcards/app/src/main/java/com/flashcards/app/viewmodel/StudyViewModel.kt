@@ -1,49 +1,56 @@
 package com.flashcards.app.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.flashcards.app.data.Flashcard
-import com.flashcards.app.data.FlashcardsRepository
+import com.flashcards.app.data.ShineRepository
+import com.flashcards.app.domain.Deck
+import com.flashcards.app.domain.Flashcard
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class StudyUiState(
+    val deck: Deck? = null,
     val cards: List<Flashcard> = emptyList(),
     val currentIndex: Int = 0,
     val isFlipped: Boolean = false,
-    val correctCount: Int = 0,
-    val incorrectCount: Int = 0,
+    val results: List<Pair<Flashcard, Boolean>> = emptyList(),
     val isComplete: Boolean = false,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
 ) {
     val currentCard: Flashcard? get() = cards.getOrNull(currentIndex)
     val progress: Float
         get() = if (cards.isEmpty()) 0f else (currentIndex + if (isComplete) 1 else 0).toFloat() / cards.size
     val progressLabel: String
         get() = if (cards.isEmpty()) "0 / 0" else "${minOf(currentIndex + 1, cards.size)} / ${cards.size}"
+    val correctCount: Int get() = results.count { it.second }
+    val incorrectCount: Int get() = results.count { !it.second }
 }
 
-class StudyViewModel(
-    private val repository: FlashcardsRepository,
-    private val deckId: Long
+@HiltViewModel
+class StudyViewModel @Inject constructor(
+    private val repository: ShineRepository,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-
+    private val deckId: Long = checkNotNull(savedStateHandle["deckId"])
     private val _uiState = MutableStateFlow(StudyUiState())
     val uiState: StateFlow<StudyUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            repository.getCards(deckId).collect { cards ->
+            repository.observeDeck(deckId).collect { deck ->
+                val cards = deck?.cards?.shuffled().orEmpty()
                 _uiState.update {
-                    it.copy(
-                        cards = cards.shuffled(),
-                        isLoading = false,
-                        isComplete = cards.isEmpty()
-                    )
+                    if (it.cards.isEmpty() && !it.isComplete) {
+                        it.copy(deck = deck, cards = cards, isLoading = false, isComplete = cards.isEmpty())
+                    } else {
+                        it.copy(deck = deck, isLoading = false)
+                    }
                 }
             }
         }
@@ -53,64 +60,56 @@ class StudyViewModel(
         _uiState.update { it.copy(isFlipped = !it.isFlipped) }
     }
 
-    fun markCorrect() {
-        recordAnswer(correct = true)
-    }
+    fun markCorrect() = recordAnswer(true)
 
-    fun markIncorrect() {
-        recordAnswer(correct = false)
-    }
+    fun markIncorrect() = recordAnswer(false)
 
     private fun recordAnswer(correct: Boolean) {
         val state = _uiState.value
         val card = state.currentCard ?: return
-
-        viewModelScope.launch {
-            repository.recordStudyResult(card.id, correct)
-        }
-
+        val newResults = state.results + (card to correct)
         val nextIndex = state.currentIndex + 1
         if (nextIndex >= state.cards.size) {
-            _uiState.update {
-                it.copy(
-                    isFlipped = false,
-                    correctCount = it.correctCount + if (correct) 1 else 0,
-                    incorrectCount = it.incorrectCount + if (correct) 0 else 1,
-                    isComplete = true
-                )
-            }
+            finishSession(newResults)
         } else {
             _uiState.update {
-                it.copy(
-                    currentIndex = nextIndex,
-                    isFlipped = false,
-                    correctCount = it.correctCount + if (correct) 1 else 0,
-                    incorrectCount = it.incorrectCount + if (correct) 0 else 1
-                )
+                it.copy(results = newResults, currentIndex = nextIndex, isFlipped = false)
             }
         }
     }
 
-    fun restart() {
+    fun endEarly() {
+        val results = _uiState.value.results
+        if (results.isNotEmpty()) finishSession(results)
+    }
+
+    private fun finishSession(results: List<Pair<Flashcard, Boolean>>) {
+        viewModelScope.launch {
+            repository.finishStudy(deckId, results)
+        }
+        _uiState.update {
+            it.copy(results = results, isFlipped = false, isComplete = true)
+        }
+    }
+
+    fun restart(shuffle: Boolean = true) {
         _uiState.update { state ->
+            val cards = if (shuffle) state.deck?.cards?.shuffled().orEmpty() else state.deck?.cards.orEmpty()
             state.copy(
-                cards = state.cards.shuffled(),
+                cards = cards,
                 currentIndex = 0,
                 isFlipped = false,
-                correctCount = 0,
-                incorrectCount = 0,
-                isComplete = false
+                results = emptyList(),
+                isComplete = false,
             )
         }
     }
 
-    class Factory(
-        private val repository: FlashcardsRepository,
-        private val deckId: Long
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return StudyViewModel(repository, deckId) as T
+    fun shuffleRemaining() {
+        _uiState.update { state ->
+            val remaining = state.cards.drop(state.currentIndex).shuffled()
+            val kept = state.cards.take(state.currentIndex)
+            state.copy(cards = kept + remaining)
         }
     }
 }
