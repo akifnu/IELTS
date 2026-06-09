@@ -14,11 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.flashcards.app.ui.components.FlipCard
+import com.flashcards.app.ui.components.StudyCelebration
 import com.flashcards.app.viewmodel.StudyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,7 +91,14 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
             when {
                 state.isLoading -> Text("Loading cards…")
                 state.cards.isEmpty() -> Text("No cards to study")
-                state.isComplete -> StudyComplete(state.correctCount, state.incorrectCount, viewModel::restart, onBack)
+                state.isComplete -> StudyCelebration(
+                    deckName = state.deck?.name ?: "Deck",
+                    correct = state.correctCount,
+                    incorrect = state.incorrectCount,
+                    onStudyAgain = viewModel::restart,
+                    onDone = onBack,
+                    modifier = Modifier.fillMaxSize(),
+                )
                 else -> {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(state.progressLabel, style = MaterialTheme.typography.labelLarge)
@@ -135,26 +139,3 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
     }
 }
 
-@Composable
-private fun StudyComplete(correct: Int, incorrect: Int, onRestart: () -> Unit, onBack: () -> Unit) {
-    val total = correct + incorrect
-    val percent = if (total == 0) 0 else correct * 100 / total
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Default.EmojiEvents, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 16.dp))
-        Text("Session Complete!", style = MaterialTheme.typography.headlineSmall)
-        Text("$percent% correct", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 16.dp))
-        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-            Column(Modifier.padding(20.dp)) {
-                Text("Got it: $correct")
-                Text("Missed: $incorrect")
-                Text("Total: $total")
-            }
-        }
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onRestart, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Refresh, null)
-            Text("Study Again", modifier = Modifier.padding(start = 8.dp))
-        }
-        OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Back to Deck") }
-    }
-}

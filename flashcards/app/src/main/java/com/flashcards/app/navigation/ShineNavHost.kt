@@ -73,7 +73,9 @@ fun ShineNavHost(modifier: Modifier = Modifier) {
         ) {
             StudyScreen(
                 viewModel = hiltViewModel(),
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.popBackStack(NavRoutes.MAIN, inclusive = false)
+                },
             )
         }
     }

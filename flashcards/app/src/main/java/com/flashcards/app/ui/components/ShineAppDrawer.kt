@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Backup
@@ -36,24 +38,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flashcards.app.domain.Cluster
 import com.flashcards.app.viewmodel.AccountUiState
 import com.flashcards.app.viewmodel.AccountViewModel
+import com.flashcards.app.viewmodel.HomeUiState
 import kotlinx.coroutines.launch
 
 enum class DrawerAction {
     Account,
     Inbox,
-    Backup,
-    ImportShare,
-    SignOut,
 }
 
 @Composable
 fun ShineAppDrawer(
     state: AccountUiState,
+    homeState: HomeUiState,
     selectedAction: DrawerAction?,
     onAction: (DrawerAction) -> Unit,
     onDismiss: () -> Unit,
+    onOpenDeck: (Long) -> Unit,
+    onStudyDeck: (Long) -> Unit,
+    onAddDeckToCluster: (Long) -> Unit,
+    onNewCluster: () -> Unit,
+    onEditCluster: (Cluster) -> Unit,
+    onDeleteCluster: (Cluster) -> Unit,
+    onDeleteDeck: (Long) -> Unit,
     viewModel: AccountViewModel,
     snackbar: SnackbarHostState,
     modifier: Modifier = Modifier,
@@ -144,7 +153,11 @@ fun ShineAppDrawer(
     }
 
     ModalDrawerSheet(modifier = modifier) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 20.dp)) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 20.dp),
+        ) {
             Text("Shine", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(
                 if (state.session.isSignedIn) state.session.name else state.settings.userName.ifBlank { "Flashcards" },
@@ -169,8 +182,27 @@ fun ShineAppDrawer(
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
+            DrawerClusterLibrary(
+                state = homeState,
+                onOpenDeck = onOpenDeck,
+                onStudyDeck = onStudyDeck,
+                onAddDeckToCluster = onAddDeckToCluster,
+                onNewCluster = onNewCluster,
+                onEditCluster = onEditCluster,
+                onDeleteCluster = onDeleteCluster,
+                onDeleteDeck = onDeleteDeck,
+                onDismiss = onDismiss,
+            )
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Account",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+            )
             NavigationDrawerItem(
-                label = { Text("Account") },
+                label = { Text("Profile & sign in") },
                 selected = selectedAction == DrawerAction.Account,
                 onClick = { onAction(DrawerAction.Account) },
                 icon = { Icon(Icons.Default.Person, contentDescription = null) },
@@ -200,7 +232,7 @@ fun ShineAppDrawer(
 
             Spacer(Modifier.height(8.dp))
             Text(
-                "Library",
+                "Backup",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),

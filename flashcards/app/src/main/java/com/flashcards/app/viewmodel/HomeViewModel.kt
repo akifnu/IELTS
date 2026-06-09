@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flashcards.app.data.ShineRepository
 import com.flashcards.app.domain.Cluster
+import com.flashcards.app.domain.DateUtils
 import com.flashcards.app.domain.Deck
 import com.flashcards.app.domain.DeckPermissions
 import com.flashcards.app.domain.SpacedRepetitionEngine
@@ -15,13 +16,29 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class TodayProgress(
+    val dueDeckCount: Int = 0,
+    val completedDeckCount: Int = 0,
+    val dueCardCount: Int = 0,
+    val progressFraction: Float = 0f,
+    val allCaughtUp: Boolean = true,
+)
+
 data class HomeUiState(
     val clusters: List<Cluster> = emptyList(),
     val decks: List<Deck> = emptyList(),
     val dueDecks: List<Deck> = emptyList(),
+    val completedTodayDecks: List<Deck> = emptyList(),
+    val todayProgress: TodayProgress = TodayProgress(),
     val ownedDecks: List<Deck> = emptyList(),
     val sharedDecks: List<Deck> = emptyList(),
 )
+
+private fun Deck.completedToday(): Boolean {
+    val today = DateUtils.todayStr()
+    val sessions = schedule.filter { it.date == today }
+    return sessions.isNotEmpty() && sessions.all { it.completed }
+}
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -31,10 +48,23 @@ class HomeViewModel @Inject constructor(
         repository.observeClusters(),
         repository.observeDecks(),
     ) { clusters, decks ->
+        val dueDecks = decks.filter { SpacedRepetitionEngine.isDue(it) }
+        val completedToday = decks.filter { it.completedToday() }
+        val dueCount = dueDecks.size
+        val completedCount = completedToday.size
+        val totalToday = dueCount + completedCount
         HomeUiState(
             clusters = clusters,
             decks = decks,
-            dueDecks = decks.filter { SpacedRepetitionEngine.isDue(it) },
+            dueDecks = dueDecks,
+            completedTodayDecks = completedToday,
+            todayProgress = TodayProgress(
+                dueDeckCount = dueCount,
+                completedDeckCount = completedCount,
+                dueCardCount = dueDecks.sumOf { it.cards.size },
+                progressFraction = if (totalToday == 0) 1f else completedCount.toFloat() / totalToday,
+                allCaughtUp = dueCount == 0,
+            ),
             ownedDecks = DeckPermissions.ownedDecks(decks),
             sharedDecks = DeckPermissions.sharedWithMe(decks),
         )
