@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flashcards.app.ui.components.ConfirmDialog
+import com.flashcards.app.ui.components.GoogleSignInButton
 import com.flashcards.app.util.GoogleSignInHelper
 import com.flashcards.app.viewmodel.AccountViewModel
 import kotlinx.coroutines.launch
@@ -153,7 +154,7 @@ fun AccountScreen(
                             enabled = !state.authBusy,
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         ) { Text(if (authMode == "register") "Create account" else "Sign in") }
-                        OutlinedButton(
+                        GoogleSignInButton(
                             onClick = {
                                 scope.launch {
                                     val cred = GoogleSignInHelper.signIn(context)
@@ -169,8 +170,9 @@ fun AccountScreen(
                                     }
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        ) { Text("Continue with Google") }
+                            modifier = Modifier.padding(top = 8.dp),
+                            lightBackground = false,
+                        )
                     }
                 }
             }

@@ -1,9 +1,14 @@
 package com.flashcards.app.ui.screens
 
+import android.graphics.BitmapFactory
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +28,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -47,8 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
+import com.flashcards.app.ui.components.GoogleSignInButton
 import com.flashcards.app.util.GoogleSignInHelper
 import com.flashcards.app.viewmodel.SplashViewModel
 import kotlinx.coroutines.launch
@@ -64,12 +69,16 @@ fun SplashScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val kenBurns = remember { Animatable(1.06f) }
+    val photoScale = kenBurns.value
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val scroll = rememberScrollState()
-
-    LaunchedEffect(state.sceneIndex) {
+    LaunchedEffect(state.sceneIndex, state.ready) {
+        if (!state.ready) return@LaunchedEffect
         kenBurns.snapTo(1.06f)
-        kenBurns.animateTo(1f, tween(durationMillis = 14_000, easing = FastOutSlowInEasing))
+        kenBurns.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 14_000, easing = FastOutSlowInEasing),
+        )
     }
 
     fun proceed() {
@@ -82,22 +91,32 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Color(0xFF0A0A12)),
     ) {
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(context)
-                .data("file:///android_asset/splash/${scene.assetFile}")
-                .crossfade(true)
-                .build(),
-            contentDescription = scene.credit,
-            contentScale = ContentScale.Crop,
-            loading = { SplashPhotoFallback() },
-            error = { SplashPhotoFallback() },
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = kenBurns.value
-                    scaleY = kenBurns.value
-                },
-        )
+        Crossfade(
+            targetState = state.sceneIndex,
+            animationSpec = tween(700),
+            label = "splashPhoto",
+        ) { index ->
+            val photo = rememberSplashBitmap(com.flashcards.app.domain.SplashScenes.all[index].assetFile)
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = photoScale
+                        scaleY = photoScale
+                    },
+            ) {
+                if (photo != null) {
+                    Image(
+                        bitmap = photo,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    SplashPhotoFallback()
+                }
+            }
+        }
 
         Box(
             modifier = Modifier
@@ -124,7 +143,7 @@ fun SplashScreen(
                 .padding(horizontal = 28.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.Start,
         ) {
-            SplashLine(visible = state.animateContent, delayMs = 0) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 0) {
                 Text(
                     "SHINE",
                     color = Color.White.copy(alpha = 0.85f),
@@ -134,7 +153,7 @@ fun SplashScreen(
                 )
             }
             Spacer(Modifier.height(14.dp))
-            SplashLine(visible = state.animateContent, delayMs = 80) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 80) {
                 Text(
                     scene.essence.uppercase(),
                     color = Color.White.copy(alpha = 0.92f),
@@ -149,7 +168,7 @@ fun SplashScreen(
                 )
             }
             Spacer(Modifier.height(12.dp))
-            SplashLine(visible = state.animateContent, delayMs = 180) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 180) {
                 Text(
                     scene.headline,
                     color = Color.White,
@@ -159,7 +178,7 @@ fun SplashScreen(
                 )
             }
             Spacer(Modifier.height(10.dp))
-            SplashLine(visible = state.animateContent, delayMs = 300) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 300) {
                 Text(
                     scene.subline,
                     color = Color.White.copy(alpha = 0.9f),
@@ -169,7 +188,7 @@ fun SplashScreen(
                 )
             }
             Spacer(Modifier.height(12.dp))
-            SplashLine(visible = state.animateContent, delayMs = 420) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 420) {
                 Text(
                     viewModel.personalLine(),
                     color = Color.White.copy(alpha = 0.78f),
@@ -179,7 +198,7 @@ fun SplashScreen(
                 )
             }
             Spacer(Modifier.height(22.dp))
-            SplashLine(visible = state.animateContent, delayMs = 540) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 540) {
                 Button(
                     onClick = { proceed() },
                     modifier = Modifier.fillMaxWidth(),
@@ -193,9 +212,9 @@ fun SplashScreen(
                 }
             }
             Spacer(Modifier.height(14.dp))
-            SplashLine(visible = state.animateContent, delayMs = 640) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 640) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(
+                    GoogleSignInButton(
                         onClick = {
                             scope.launch {
                                 val cred = GoogleSignInHelper.signIn(context)
@@ -205,22 +224,14 @@ fun SplashScreen(
                                         cred.displayName,
                                         cred.profilePictureUri?.toString(),
                                         onDone = { proceed() },
-                                        onError = { },
+                                        onError = { proceed() },
                                     )
                                 } else {
                                     proceed()
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.95f),
-                            contentColor = Color(0xFF1F1F1F),
-                        ),
-                    ) {
-                        Text("Continue with Google", fontWeight = FontWeight.SemiBold)
-                    }
+                    )
                     TextButton(
                         onClick = { proceed() },
                         modifier = Modifier.fillMaxWidth(),
@@ -231,7 +242,7 @@ fun SplashScreen(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            SplashLine(visible = state.animateContent, delayMs = 740) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 740) {
                 TextButton(onClick = { viewModel.cycleScene() }) {
                     Text(
                         "See another beginning →",
@@ -240,7 +251,7 @@ fun SplashScreen(
                     )
                 }
             }
-            SplashLine(visible = state.animateContent, delayMs = 820) {
+            SplashAnimatedLine(visible = state.animateContent, delayMs = 820) {
                 Text(
                     scene.credit,
                     color = Color.White.copy(alpha = 0.4f),
@@ -254,39 +265,38 @@ fun SplashScreen(
 }
 
 @Composable
+private fun rememberSplashBitmap(fileName: String): ImageBitmap? {
+    val context = LocalContext.current
+    return remember(fileName) {
+        runCatching {
+            context.assets.open("splash/$fileName").use { stream ->
+                BitmapFactory.decodeStream(stream)?.asImageBitmap()
+            }
+        }.getOrNull()
+    }
+}
+
+@Composable
 private fun SplashPhotoFallback() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF1E1B4B), Color(0xFF5B5EF7)),
-                ),
-            ),
+            .background(Brush.linearGradient(listOf(Color(0xFF1E1B4B), Color(0xFF5B5EF7)))),
     )
 }
 
 @Composable
-private fun SplashLine(
+private fun SplashAnimatedLine(
     visible: Boolean,
     delayMs: Int,
     content: @Composable () -> Unit,
 ) {
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(850, delayMillis = delayMs, easing = FastOutSlowInEasing),
-        label = "splashAlpha",
-    )
-    val offsetY by animateFloatAsState(
-        targetValue = if (visible) 0f else 18f,
-        animationSpec = tween(850, delayMillis = delayMs, easing = FastOutSlowInEasing),
-        label = "splashOffset",
-    )
-    Box(
-        modifier = Modifier.graphicsLayer {
-            this.alpha = alpha
-            translationY = offsetY
-        },
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(850, delayMillis = delayMs, easing = FastOutSlowInEasing)) +
+            slideInVertically(
+                tween(850, delayMillis = delayMs, easing = FastOutSlowInEasing),
+            ) { fullHeight -> fullHeight / 3 },
     ) {
         content()
     }

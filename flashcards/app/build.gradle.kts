@@ -14,8 +14,8 @@ android {
         applicationId = "com.flashcards.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "4.2.0"
+        versionCode = 15
+        versionName = "4.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"\"")

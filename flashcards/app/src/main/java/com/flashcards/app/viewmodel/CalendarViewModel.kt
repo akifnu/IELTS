@@ -41,14 +41,17 @@ class CalendarViewModel @Inject constructor(
 ) : ViewModel() {
     private val monthFlow = kotlinx.coroutines.flow.MutableStateFlow(YearMonth.now())
     private val selectedDateFlow = kotlinx.coroutines.flow.MutableStateFlow(DateUtils.todayStr())
+    private val scheduleDeckIdFlow = kotlinx.coroutines.flow.MutableStateFlow<Long?>(null)
 
     val uiState: StateFlow<CalendarUiState> = combine(
         monthFlow,
         selectedDateFlow,
+        scheduleDeckIdFlow,
         repository.observeDecks(),
         repository.observeSettings(),
-    ) { month, selected, decks, settings ->
-        val scheduleDeckId = decks.firstOrNull()?.id
+    ) { month, selected, pickedDeckId, decks, settings ->
+        val scheduleDeckId = pickedDeckId?.takeIf { id -> decks.any { it.id == id } }
+            ?: decks.firstOrNull()?.id
         val overload = repository.globalOverloadDays(decks, settings.globalMaxSessionsPerDay)
         CalendarUiState(
             month = month,
@@ -59,6 +62,10 @@ class CalendarViewModel @Inject constructor(
             overloadDays = overload,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CalendarUiState())
+
+    fun setScheduleDeck(deckId: Long) {
+        scheduleDeckIdFlow.value = deckId
+    }
 
     fun prevMonth() {
         monthFlow.value = monthFlow.value.minusMonths(1)

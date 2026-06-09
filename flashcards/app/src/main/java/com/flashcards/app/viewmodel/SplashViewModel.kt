@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -71,6 +72,7 @@ class SplashViewModel @Inject constructor(
             val next = SplashScenes.pickRandom(current)
             _uiState.update { it.copy(animateContent = false, sceneIndex = next) }
             sessionStore.setLastSplashScene(next)
+            delay(80)
             _uiState.update { it.copy(animateContent = true) }
         }
     }
